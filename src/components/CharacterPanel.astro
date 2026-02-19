@@ -1,0 +1,37 @@
+---
+
+---
+<div class="panel">
+  <div class="draft-manager">
+    <label style="color: #10b981; font-size: 0.9rem; margin-bottom: 8px; display: flex; justify-content: space-between;">
+      <span>💾 多卡片草稿箱</span>
+      <span id="saveIndicator" style="color: #3b82f6; font-size: 0.75rem; display: none;">✔️ 已自动保存</span>
+    </label>
+    <select id="draftSelect" style="background-color: #1e293b; color: white; border: 1px solid #10b981; padding: 5px; width: 100%; border-radius: 4px; outline: none;"></select>
+    <div class="draft-controls">
+      <button id="btnNewDraft" class="btn btn-add" style="flex: 1;">📄 新建空白卡</button>
+      <button id="btnDeleteDraft" class="btn btn-delete" style="flex: 1;">🗑️ 删除当前卡</button>
+    </div>
+  </div>
+
+  <h2>🧑‍🎤 角色设定</h2>
+  
+  <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center;">
+    <div style="width: 60px; height: 60px; border-radius: 8px; background: #0f172a; border: 1px dashed #475569; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+      <span id="avatarPlaceholder" style="font-size: 0.7rem; color: #64748b;">无图</span>
+      <img id="avatarImg" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+    </div>
+    <div style="flex: 1;">
+      <label style="font-size: 0.8rem;">上传头像 (将被隐写并生成新卡片)</label>
+      <input type="file" id="charImageInput" accept="image/*" style="padding: 4px; font-size: 0.75rem;" />
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="form-group"><label>角色名 (Name)</label><input type="text" id="charName" placeholder="Name" /></div>
+    <div class="form-group"><label>世界书名 (Worldbook)</label><input type="text" id="wbName" placeholder="Worldbook" /></div>
+  </div>
+  <div class="form-group"><label>角色描述 (Description)</label><textarea id="charDesc" style="min-height: 120px;"></textarea></div>
+  <div class="form-group"><label>第一条消息 (First Message)</label><textarea id="firstMes" style="min-height: 120px;"></textarea></div>
+  <div class="form-group"><label>作者注释 (Creator Notes)</label><textarea id="creatorNotes"></textarea></div>
+</div>

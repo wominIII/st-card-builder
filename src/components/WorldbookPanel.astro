@@ -1,0 +1,89 @@
+---
+
+
+---
+<div class="panel">
+  <h2>📖 世界书条目</h2>
+  
+  <div style="background: rgba(139, 92, 246, 0.1); border: 1px dashed #8b5cf6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <h4 style="margin: 0 0 10px 0; color: #d8b4fe; font-size: 0.95rem;">🤖 AI 单条生成（自动叠加）</h4>
+    <p style="font-size: 0.75rem; color: #94a3b8; margin: 0 0 10px 0;">AI 会自动读取已有的词条，确保世界观连贯且不重复。</p>
+    <div style="display: flex; gap: 10px;">
+      <input type="text" id="wbSinglePrompt" placeholder="定向要求(可选)，如：写一把专属武器..." style="flex: 1;" />
+      <button id="btnAiSingleWb" class="btn" style="width: auto; margin: 0; background-color: #8b5cf6;">🎲 生成 1 条</button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+      <input type="checkbox" id="wbIncludeCharData" checked style="width: 14px; height: 14px; accent-color: #8b5cf6; cursor: pointer;" />
+      <label for="wbIncludeCharData" style="margin: 0; color: #cbd5e1; font-size: 0.8rem; cursor: pointer; font-weight: normal;">生成时融合当前【角色名与角色描述】(若构建通用世界观请取消勾选)</label>
+    </div>
+  </div>
+
+  <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #334155;">
+    <h4 style="margin: 0 0 10px 0; color: #94a3b8; font-size: 0.85rem;">✍️ 手动录入 / 修改区</h4>
+    <div class="form-group">
+      <label>条目标题 (Comment)</label>
+      <input type="text" id="entryComment" placeholder="例如：===特殊武器===" />
+    </div>
+    
+    <div class="form-group">
+      <label>设定内容 (Content)</label>
+      <textarea id="entryContent" placeholder="具体设定详情..."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>触发词 (Keys) - 多个用英文逗号隔开</label>
+      <input type="text" id="entryKeys" placeholder="空为常驻，有词为触发" />
+    </div>
+    
+    <div class="grid-2">
+      <div class="form-group">
+        <label>触发策略 (Strategy)</label>
+        <select id="entryStrategy">
+          <option value="constant">常驻 (Constant)</option>
+          <option value="selective" selected>关键词 (Selective)</option>
+          <option value="vectorized">向量化 (Vectorized)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>插入位置 (Position)</label>
+        <select id="entryPosition">
+          <option value="0">0-之前(Char)</option>
+          <option value="1">1-之后(Char)</option>
+          <option value="2">2-前(EM)</option>
+          <option value="3">3-后(EM)</option>
+          <option value="4" selected>4-深度 (Depth)</option>
+          <option value="5">5-之前(AN)</option>
+          <option value="6">6-之后(AN)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="form-group">
+        <label>深度 (Depth)</label>
+        <input type="number" id="entryDepth" value="4" min="0" />
+      </div>
+      <div class="form-group">
+        <label>深度角色 (Role)</label>
+        <select id="entryRole">
+          <option value="0">系统 (System)</option>
+          <option value="1">用户 (User)</option>
+          <option value="2">助手 (AI)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>插入顺序 (Order)</label>
+        <input type="number" id="entryOrder" value="100" />
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label>触发概率 (Probability %)</label>
+      <input type="number" id="entryProb" value="100" min="1" max="100" />
+    </div>
+
+    <button id="btnAddEntry" class="btn btn-add">➕ 保存到列表</button>
+  </div>
+
+  <div id="entriesList"></div>
+</div>

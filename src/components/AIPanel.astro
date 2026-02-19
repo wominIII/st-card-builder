@@ -1,0 +1,61 @@
+---
+
+---
+<div class="panel ai-panel">
+  <h2>✨ AI 引擎</h2>
+  
+  <div class="grid-2">
+    <div class="form-group">
+      <label>API 接口地址 (URL)</label>
+      <input type="text" id="apiUrl" value="https:
+    </div>
+    <div class="form-group">
+      <label>API 密钥 (API Key)</label>
+      <input type="password" id="apiKey" placeholder="sk-..." />
+    </div>
+  </div>
+  
+  <div class="grid-2">
+    <button id="btnFetchModels" class="btn btn-fetch" style="margin-top: 0; height: 100%;">🔄 拉取可用模型</button>
+    <div class="form-group" style="margin-bottom: 0;">
+      <select id="modelSelect" style="height: 100%;">
+        <option value="">请先获取模型...</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; border-top: 1px dashed #6b7280; padding-top: 20px;">
+    
+    <div class="form-group preset-upload">
+      <label style="color: #d8b4fe;">📂 导入酒馆原生预设 (.json)</label>
+      <input type="file" id="presetInput" accept=".json" style="padding: 5px; font-size: 0.8rem;" />
+      
+      <div id="presetListContainer" style="display: none; max-height: 180px; overflow-y: auto; margin-top: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 8px;">
+        </div>
+      
+      <div id="presetStatus" style="font-size: 0.75rem; margin-top: 8px; color: #94a3b8;">
+        导入预设后，可勾选要注入的文风和规则
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label style="color: #38bdf8; font-size: 0.9rem;">📝 [阶段1] 角色设定提示词</label>
+      <textarea id="aiPrompt" placeholder="例如：一个在赛博朋克世界中靠捡垃圾为生的边缘黑客少女..." style="min-height: 80px;"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label style="color: #10b981; font-size: 0.9rem;">🌍 [阶段2] 世界书扩展提示词</label>
+      <textarea id="wbPrompt" placeholder="例如：生成1个常驻(constant)的赛博废土世界观；再生成3个关键词触发(selective)的特殊武器词条..." style="min-height: 80px; border-color: #10b981;"></textarea>
+    </div>
+
+    <button id="btnAiGenerate" class="btn btn-ai">🚀 生成(角色+世界书)</button>
+    <div id="aiStatus" class="status-text"></div>
+  </div>
+</div>
+
+<style>
+  
+  :global(.preset-item) { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 0.8rem; background: #334155; padding: 8px; border-radius: 4px; }
+  :global(.preset-item input[type="checkbox"]) { margin-top: 2px; width: 14px; height: 14px; accent-color: #8b5cf6; cursor: pointer; flex-shrink: 0; }
+  :global(.preset-item label) { margin: 0; cursor: pointer; flex: 1; user-select: none; color: #f8fafc; font-weight: normal; line-height: 1.3; }
+</style>

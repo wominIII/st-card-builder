@@ -1,0 +1,146 @@
+---
+
+
+---
+<div class="panel" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.05);">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #d97706; padding-bottom: 10px; margin-bottom: 15px;">
+    <h2 style="margin:0; border:none; padding:0; color: #fcd34d;">📊 动态状态栏 (半AI注入)</h2>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <input type="checkbox" id="sbEnable" style="width: 18px; height: 18px; accent-color: #f59e0b; cursor: pointer;" checked />
+      <label for="sbEnable" style="margin: 0; color: #fcd34d; cursor: pointer; font-weight: bold; font-size: 0.9rem;">启用状态栏</label>
+    </div>
+  </div>
+  <p style="font-size: 0.75rem; color: #94a3b8; margin: 0 0 15px 0;">开启后，导出时将自动挂载【底层高优输出指令】和【正则UI拦截器】。</p>
+
+  <div class="form-group">
+    <label>UI 抬头标题 (Title)</label>
+    <input type="text" id="sbTitle" value="📊 STATUS REPORT" />
+  </div>
+  <div class="form-group">
+    <label>需要监控的字段 (Fields - 逗号隔开)</label>
+    <input type="text" id="sbFields" value="生命值, 精神状态, 当前位置, 天气, 情绪" />
+  </div>
+  <div class="grid-2">
+    <div class="form-group" style="margin-bottom: 0;">
+      <label>UI 主题风格颜色</label>
+      <select id="sbColor">
+        <option value="#8b5cf6">赛博紫 (#8b5cf6)</option>
+        <option value="#38bdf8">深空蓝 (#38bdf8)</option>
+        <option value="#10b981">荧光绿 (#10b981)</option>
+        <option value="#f59e0b" selected>警示橙 (#f59e0b)</option>
+        <option value="#ef4444">危险红 (#ef4444)</option>
+        <option value="#f472b6">猛男粉 (#f472b6)</option>
+      </select>
+    </div>
+    <button id="btnAiStatusBar" class="btn" style="background-color: #d97706; margin-top: 22px; padding: 8px; font-size:0.85rem;">🤖 AI 智能匹配字段</button>
+  </div>
+  
+  <button id="btnInjectStatusBar" class="btn" style="width: 100%; margin-top: 15px; background-color: #f59e0b; color: #fff;">✨ 将配置注入到卡片中</button>
+  <div id="sbStatusText" class="status-text" style="color: #10b981;"></div>
+</div>
+
+<script is:inline>
+  
+  const btnAiStatusBar = document.getElementById('btnAiStatusBar');
+  const sbTitle = document.getElementById('sbTitle');
+  const sbFields = document.getElementById('sbFields');
+  const sbColor = document.getElementById('sbColor');
+  const btnInjectStatusBar = document.getElementById('btnInjectStatusBar');
+  const sbEnable = document.getElementById('sbEnable');
+  const sbStatusText = document.getElementById('sbStatusText');
+
+  
+  function extractJsonObjSafe(text) { 
+    const match = text.match(/```json\s*([\s\S]*?)\s*```/); 
+    let obj = match ? JSON.parse(match[1]) : JSON.parse(text); 
+    return (Array.isArray(obj) && obj.length > 0) ? obj[0] : obj;
+  }
+
+  
+  btnAiStatusBar.addEventListener('click', async () => {
+    
+    const apiUrl = document.getElementById('apiUrl')?.value.replace(/\/$/, '') + '/chat/completions';
+    const apiKey = document.getElementById('apiKey')?.value.trim();
+    const model = document.getElementById('modelSelect')?.value;
+    
+    const charName = document.getElementById('charName')?.value || '未知';
+    const charDesc = document.getElementById('charDesc')?.value || '未知';
+
+    if (!model) return alert('请先在左侧 AI 引擎面板拉取并选择模型！');
+    if (!charDesc || charDesc === '未知') return alert('请先在角色设定中填写角色描述，AI需要根据背景推断状态栏字段！');
+
+    btnAiStatusBar.disabled = true;
+    btnAiStatusBar.textContent = "⏳ AI 思考中...";
+
+    const sysPrompt = `你是一个跑团游戏状态栏UI设计大师。请根据用户的角色设定，构思一个契合背景的【状态栏标题】和【4-6个需要监控的状态字段】。
+比如：赛博朋克角色可以是"义体完整度, 污染指数, 电池余量"；魔法角色可以是"魔力值, 理智值, 魔法护盾"。
+必须且仅输出纯JSON对象：
+{
+  "title": "符合设定的UI标题，可带一个emoji，例如 🔮 MAGIC STATUS",
+  "fields": "字段1, 字段2, 字段3, 字段4"
+}`;
+
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(apiKey && { 'Authorization': `Bearer ${apiKey}` }) },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: "system", content: sysPrompt },
+            { role: "user", content: `角色名：${charName}\n角色设定：${charDesc}\n请为该角色生成匹配的状态栏配置。` }
+          ],
+          temperature: 0.8
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = extractJsonObjSafe((await res.json()).choices[0].message.content);
+      
+      if (data.title) sbTitle.value = data.title;
+      if (data.fields) sbFields.value = data.fields;
+      
+      
+      if (window.triggerGlobalUpdate) window.triggerGlobalUpdate();
+      
+    } catch(err) {
+      alert(`生成失败: ${err.message}`);
+    } finally {
+      btnAiStatusBar.disabled = false;
+      btnAiStatusBar.textContent = "🤖 AI 智能匹配字段";
+    }
+  });
+
+  
+  btnInjectStatusBar.addEventListener('click', () => {
+    if (!sbEnable.checked) return alert("请先在右上角勾选『启用状态栏』！");
+    const fieldsStr = sbFields.value.trim();
+    const color = sbColor.value;
+    const title = sbTitle.value.trim() || "STATUS REPORT";
+    if (!fieldsStr) return alert("请填写监控字段！");
+
+    
+    const wbTitle = "===系统底层：状态栏约束===";
+    const promptContent = `[System Note: 你的每一次回复【必须】在末尾携带角色的当前状态面板！\n格式要求极其严格，必须原样使用以下 <stablock> 标签包裹：\n<stablock>\n${fieldsStr.split(',').map(f => `${f.trim()}: <具体数值/状态>`).join(' | ')}\n</stablock>\n禁止遗漏任何字段，必须包含在回复的最末尾！]`;
+    
+    const newWbEntry = { comment: wbTitle, content: promptContent, keys: [], strategy: 'constant', position: 4, depth: 0, role: 0, order: 999, prob: 100 };
+
+    
+    const replacementHTML = `<div style="background: rgba(15, 23, 42, 0.7); border: 1px solid ${color}40; border-left: 4px solid ${color}; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85em; color: #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-top: 15px;"><div style="font-weight:bold; color:${color}; margin-bottom: 6px; border-bottom: 1px dashed ${color}80; padding-bottom: 4px; letter-spacing: 1px;">${title}</div><div style="white-space: pre-wrap; line-height: 1.6;">$1</div></div>`;
+    const regexScript = { id: "statusbar_" + Date.now(), scriptName: "状态栏UI美化 (系统生成)", regex: "<stablock>([\\s\\S]*?)<\\/stablock>", replacementString: replacementHTML, placement: [1], disabled: false, markdownOnly: false, promptOnly: false, runOnEdit: true, color: color };
+
+    
+    if (window.injectStatusBarGlobal) {
+      window.injectStatusBarGlobal(newWbEntry, regexScript);
+      sbStatusText.textContent = "✅ 注入成功！底层提示词与正则已就绪。";
+      setTimeout(() => sbStatusText.textContent = "", 3000);
+    }
+  });
+
+  
+  sbEnable.addEventListener('change', () => {
+    if (window.setStatusBarActiveState) {
+      window.setStatusBarActiveState(sbEnable.checked);
+    }
+  });
+</script>

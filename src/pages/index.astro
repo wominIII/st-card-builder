@@ -1,0 +1,585 @@
+---
+
+import AIPanel from '../components/AIPanel.astro';
+import CharacterPanel from '../components/CharacterPanel.astro';
+import WorldbookPanel from '../components/WorldbookPanel.astro';
+import PreviewPanel from '../components/PreviewPanel.astro';
+import StatusBarPanel from '../components/StatusBarPanel.astro'; 
+---
+
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>酒馆 V3 终极卡片构建器</title>
+    <script is:inline src="https:
+    
+    <style is:global>
+      body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; }
+      .container { display: flex; gap: 20px; max-width: 1800px; width: 100%; align-items: flex-start; }
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: #0f172a; border-radius: 8px; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; border: 2px solid #0f172a; }
+      ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+      .panel { background-color: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; flex: 1; min-width: 300px; max-height: calc(100vh - 40px); overflow-y: auto; }
+      .panel h2, .panel h3 { margin-top: 0; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.1rem; }
+      
+      .form-group { margin-bottom: 15px; }
+      .form-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; font-weight: bold; }
+      
+      
+      input[type="text"], input[type="password"], input[type="number"], textarea, select { 
+        width: 100%; background-color: #0f172a; border: 1px solid #475569; color: #f8fafc; 
+        padding: 8px 10px; border-radius: 6px; box-sizing: border-box; font-family: inherit; 
+        font-size: 0.9rem; outline: none; transition: all 0.2s ease; 
+      }
+      input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, textarea:focus, select:focus { 
+        border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); 
+      }
+      textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+      
+      input[type="file"] { color: #94a3b8; font-size: 0.85rem; cursor: pointer; padding: 0; }
+      input[type="file"]::file-selector-button {
+        background-color: #334155; color: #f8fafc; border: 1px solid #475569; padding: 6px 12px; 
+        border-radius: 6px; cursor: pointer; margin-right: 12px; font-weight: bold; 
+        font-family: inherit; font-size: 0.85rem; transition: all 0.2s ease;
+      }
+      input[type="file"]::file-selector-button:hover {
+        background-color: #1e293b; border-color: #8b5cf6; color: #d8b4fe; box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+      }
+      
+
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+      .ai-panel { border-color: #8b5cf6; background: linear-gradient(180deg, #1e293b 0%, #151025 100%); }
+      .ai-panel h2 { border-color: #8b5cf6; color: #d8b4fe; }
+      .status-text { font-size: 0.85rem; color: #10b981; min-height: 20px; margin-top: 10px; font-weight: bold; }
+      .preset-upload { border: 1px dashed #8b5cf6; padding: 10px; border-radius: 8px; background: rgba(139, 92, 246, 0.1); margin-bottom: 15px; }
+
+      .draft-manager { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 12px; border-radius: 8px; margin-bottom: 20px; }
+      .draft-controls { display: flex; gap: 8px; margin-top: 10px; }
+      .draft-controls button { padding: 6px 10px; font-size: 0.8rem; }
+
+      .btn { width: 100%; padding: 10px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.9rem;}
+      .btn:hover { background-color: #2563eb; }
+      .btn-fetch { background-color: #4b5563; margin-top: 5px; }
+      .btn-fetch:hover { background-color: #6b7280; }
+      .btn-ai { background-color: #8b5cf6; font-size: 1rem; padding: 12px; margin-top: 10px; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
+      .btn-ai:hover { background-color: #7c3aed; }
+      .btn-add { background-color: #10b981; }
+      .btn-delete { background-color: #ef4444; width: auto; padding: 4px 8px; font-size: 0.75rem; }
+      .btn-img { background-color: #f59e0b; width: auto; margin: 0; padding: 6px 12px;}
+      .btn-img:hover { background-color: #d97706; }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      .entry-item { background-color: #334155; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; flex-direction: column; }
+      .entry-item-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+      .entry-info h4 { margin: 0 0 4px 0; font-size: 0.9rem; }
+      .entry-info p { margin: 0; font-size: 0.75rem; color: #cbd5e1; }
+      
+      
+      .code-window { background-color: #05050a; border-radius: 10px; border: 1px solid #334155; display: flex; flex-direction: column; flex: 1.5; min-width: 450px; max-height: calc(100vh - 40px); position: sticky; top: 20px; overflow: hidden; }
+      .code-header { background-color: #1e293b; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+      .code-content-wrapper { position: relative; flex-grow: 1; overflow: auto; padding: 20px; }
+      .cyber-pre { margin: 0; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; color: #e2e8f0; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;}
+      
+      
+      .json-key { color: #38bdf8; font-weight: bold; }       
+      .json-string { color: #a3e635; }                       
+      .json-number { color: #f472b6; }                       
+      .json-boolean { color: #c084fc; font-weight: bold; }   
+      .json-null { color: #94a3b8; font-style: italic; }
+      
+      :global(.preset-item) { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 0.8rem; background: #334155; padding: 8px; border-radius: 4px; }
+      :global(.preset-item input[type="checkbox"]) { margin-top: 2px; width: 14px; height: 14px; accent-color: #8b5cf6; cursor: pointer; flex-shrink: 0; }
+      :global(.preset-item label) { margin: 0; cursor: pointer; flex: 1; user-select: none; color: #f8fafc; font-weight: normal; line-height: 1.3; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <AIPanel />
+      <div style="display: flex; flex-direction: column; gap: 20px; flex: 1; min-width: 300px;">
+        <CharacterPanel />
+        <StatusBarPanel /> 
+      </div>
+      <WorldbookPanel />
+      <PreviewPanel />
+    </div>
+
+    <script>
+      
+      
+      
+      const apiUrl = document.getElementById('apiUrl');
+      const apiKey = document.getElementById('apiKey');
+      const btnFetchModels = document.getElementById('btnFetchModels');
+      const modelSelect = document.getElementById('modelSelect');
+      const presetInput = document.getElementById('presetInput');
+      const presetListContainer = document.getElementById('presetListContainer');
+      const presetStatus = document.getElementById('presetStatus');
+      const aiPrompt = document.getElementById('aiPrompt');
+      const wbPrompt = document.getElementById('wbPrompt'); 
+      const btnAiGenerate = document.getElementById('btnAiGenerate');
+      const aiStatus = document.getElementById('aiStatus');
+      
+      const wbSinglePrompt = document.getElementById('wbSinglePrompt');
+      const btnAiSingleWb = document.getElementById('btnAiSingleWb');
+      const wbIncludeCharData = document.getElementById('wbIncludeCharData'); 
+
+      const draftSelect = document.getElementById('draftSelect');
+      const btnNewDraft = document.getElementById('btnNewDraft');
+      const btnDeleteDraft = document.getElementById('btnDeleteDraft');
+      const saveIndicator = document.getElementById('saveIndicator');
+
+      const charImageInput = document.getElementById('charImageInput');
+      const avatarImg = document.getElementById('avatarImg');
+      const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+
+      const charName = document.getElementById('charName');
+      const wbName = document.getElementById('wbName');
+      const charDesc = document.getElementById('charDesc');
+      const firstMes = document.getElementById('firstMes');
+      const creatorNotes = document.getElementById('creatorNotes');
+      
+      const entryComment = document.getElementById('entryComment');
+      const entryContent = document.getElementById('entryContent');
+      const entryKeys = document.getElementById('entryKeys');
+      const entryStrategy = document.getElementById('entryStrategy');
+      const entryPosition = document.getElementById('entryPosition');
+      const entryDepth = document.getElementById('entryDepth');
+      const entryRole = document.getElementById('entryRole');
+      const entryOrder = document.getElementById('entryOrder');
+      const entryProb = document.getElementById('entryProb');
+
+      const btnAddEntry = document.getElementById('btnAddEntry');
+      const entriesList = document.getElementById('entriesList');
+      const codePreview = document.getElementById('codePreview');
+      const btnDownloadJson = document.getElementById('btnDownloadJson');
+      const btnExportPNG = document.getElementById('btnExportPNG');
+
+      
+      const sbFields = document.getElementById('sbFields');
+      const sbColor = document.getElementById('sbColor');
+      const sbTitle = document.getElementById('sbTitle');
+      const btnInjectStatusBar = document.getElementById('btnInjectStatusBar');
+      const btnAiStatusBar = document.getElementById('btnAiStatusBar');
+      const sbStatusText = document.getElementById('sbStatusText');
+      const sbEnable = document.getElementById('sbEnable');
+
+      
+      let worldbookEntries = [];
+      let regexScripts = []; 
+      let currentAvatarBase64 = ""; 
+      let currentDraftId = ""; 
+      let parsedPresetList = []; 
+      let editingIndex = -1;
+
+      const DRAFTS_STORAGE_KEY = "st_v3_builder_drafts";
+      const CURRENT_DRAFT_KEY = "st_v3_builder_current_id";
+      const AI_CONFIG_KEY = "st_v3_builder_ai_config";
+
+      
+      
+      
+      if(btnAiStatusBar) {
+        btnAiStatusBar.addEventListener('click', async () => {
+          const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value;
+          if (!model) return alert('请先拉取并选择模型！');
+          if (!charDesc.value.trim()) return alert('请先填写角色描述，AI需要参考背景！');
+          btnAiStatusBar.disabled = true; btnAiStatusBar.textContent = "⏳ 思考中...";
+          const sysPrompt = `你是一个跑团游戏状态栏UI设计大师。请根据角色的背景设定，构思一个契合背景的【状态栏标题】和【4-6个需要监控的属性字段】。
+  格式必须输出纯JSON: { "title": "带emoji的标题", "fields": "字段1, 字段2, 字段3" }`;
+          try {
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: sysPrompt }, { role: "user", content: `角色名：${charName.value}\n设定：${charDesc.value}` } ], temperature: 0.8 }) });
+            const data = extractJsonObj((await res.json()).choices[0].message.content);
+            if (data.title && sbTitle) sbTitle.value = data.title; 
+            if (data.fields && sbFields) sbFields.value = data.fields;
+            debouncedUpdateAndSave();
+          } catch(err) { alert(`生成失败: ${err.message}`); } finally { btnAiStatusBar.disabled = false; btnAiStatusBar.textContent = "🤖 AI 构思标题与字段"; }
+        });
+      }
+
+      if(btnInjectStatusBar) {
+        btnInjectStatusBar.addEventListener('click', () => {
+          if (sbEnable && !sbEnable.checked) return alert("请先勾选『启用状态栏注入』开关！");
+          const fieldsStr = sbFields ? sbFields.value.trim() : ""; 
+          const color = sbColor ? sbColor.value : "#f59e0b"; 
+          const titleStr = sbTitle ? sbTitle.value.trim() : "STATUS REPORT";
+          if (!fieldsStr) return alert("请填写监控字段！");
+
+          
+          const wbTitle = "===系统底层：状态栏约束===";
+          const promptContent = `[System Note: 你的每一次回复【必须】在末尾携带角色的当前状态面板！\n格式要求极其严格，必须原样使用以下 <stablock> 标签包裹：\n<stablock>\n${fieldsStr.split(',').map(f => `${f.trim()}: <具体数值/状态>`).join(' | ')}\n</stablock>\n禁止遗漏任何字段，必须包含在回复的最末尾！]`;
+          
+          const existingIndex = worldbookEntries.findIndex(e => e.comment === wbTitle);
+          const newWbEntry = { comment: wbTitle, content: promptContent, keys: [], strategy: 'constant', position: 4, depth: 0, role: 0, order: 999, prob: 100 };
+          if (existingIndex >= 0) worldbookEntries[existingIndex] = newWbEntry; else worldbookEntries.push(newWbEntry);
+
+          
+          const regexId = "statusbar_" + Date.now();
+          const replacementHTML = `<div style="background: rgba(15, 23, 42, 0.7); border: 1px solid ${color}40; border-left: 4px solid ${color}; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85em; color: #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-top: 15px;"><div style="font-weight:bold; color:${color}; margin-bottom: 6px; border-bottom: 1px dashed ${color}80; padding-bottom: 4px; letter-spacing: 1px;">${titleStr}</div><div style="white-space: pre-wrap; line-height: 1.6;">$1</div></div>`;
+
+          
+          regexScripts = [{
+            id: regexId,
+            scriptName: "状态栏UI美化 (系统生成)",
+            findRegex: "<stablock>([\\s\\S]*?)<\\/stablock>",
+            replaceString: replacementHTML,
+            trimStrings: [],
+            placement: [1, 2], 
+            disabled: false, markdownOnly: false, promptOnly: false, runOnEdit: true, substituteRegex: false, minDepth: null, maxDepth: null
+          }];
+
+          if(sbStatusText) { sbStatusText.textContent = "✅ 注入成功！底层提示词与正则已就绪。"; setTimeout(() => sbStatusText.textContent = "", 3000); }
+          renderEntriesList(); debouncedUpdateAndSave();
+        });
+      }
+
+      if(sbEnable) sbEnable.addEventListener('change', () => debouncedUpdateAndSave());
+
+      
+      
+      
+      function saveAIConfig() { localStorage.setItem(AI_CONFIG_KEY, JSON.stringify({ url: apiUrl.value.trim(), key: apiKey.value.trim(), model: modelSelect.value })); }
+      function loadAIConfig() {
+        try { const config = JSON.parse(localStorage.getItem(AI_CONFIG_KEY));
+          if (config) { if (config.url) apiUrl.value = config.url; if (config.key) apiKey.value = config.key; if (config.model) { modelSelect.innerHTML = `<option value="${config.model}">${config.model}</option>`; modelSelect.value = config.model; } }
+        } catch (e) {}
+      }
+      apiUrl.addEventListener('input', saveAIConfig); apiKey.addEventListener('input', saveAIConfig); modelSelect.addEventListener('change', saveAIConfig);
+
+      
+      
+      
+      const crcTable = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1)); crcTable[n] = c; }
+      function crc32(arr) { let crc = 0 ^ (-1); for (let i = 0; i < arr.length; i++) crc = (crc >>> 8) ^ crcTable[(crc ^ arr[i]) & 0xFF]; return (crc ^ (-1)) >>> 0; }
+      function createTextChunk(keyword, text) {
+        const base64Text = btoa(unescape(encodeURIComponent(text))); const keywordBytes = new TextEncoder().encode(keyword); const textBytes = new TextEncoder().encode(base64Text);
+        const data = new Uint8Array(keywordBytes.length + 1 + textBytes.length); data.set(keywordBytes, 0); data.set(new Uint8Array([0]), keywordBytes.length); data.set(textBytes, keywordBytes.length + 1);
+        const type = new TextEncoder().encode('tEXt'); const typeAndData = new Uint8Array(4 + data.length); typeAndData.set(type, 0); typeAndData.set(data, 4);
+        const crc = crc32(typeAndData); const chunk = new Uint8Array(4 + 4 + data.length + 4);
+        chunk[0] = (data.length >>> 24) & 0xFF; chunk[1] = (data.length >>> 16) & 0xFF; chunk[2] = (data.length >>> 8) & 0xFF; chunk[3] = data.length & 0xFF;
+        chunk.set(typeAndData, 4); chunk[chunk.length - 4] = (crc >>> 24) & 0xFF; chunk[chunk.length - 3] = (crc >>> 16) & 0xFF; chunk[chunk.length - 2] = (crc >>> 8) & 0xFF; chunk[chunk.length - 1] = crc & 0xFF; return chunk;
+      }
+      charImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader(); reader.onload = function(event) {
+          const img = new Image(); img.onload = function() {
+            const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
+            canvas.getContext('2d').drawImage(img, 0, 0); currentAvatarBase64 = canvas.toDataURL('image/png');
+            avatarImg.src = currentAvatarBase64; avatarImg.style.display = 'block'; avatarPlaceholder.style.display = 'none'; debouncedUpdateAndSave();
+          }; img.src = event.target.result;
+        }; reader.readAsDataURL(file);
+      });
+      btnExportPNG.addEventListener('click', () => {
+        if (!currentAvatarBase64) return alert("❌ 请先上传头像！");
+        try {
+          const textChunk = createTextChunk('chara', JSON.stringify(generateFullJSON()));
+          const rawStr = atob(currentAvatarBase64.split(',')[1]); const rawBytes = new Uint8Array(rawStr.length);
+          for (let i = 0; i < rawStr.length; i++) rawBytes[i] = rawStr.charCodeAt(i);
+          const iendOffset = rawBytes.length - 12; const beforeIEND = rawBytes.slice(0, iendOffset); const iendChunk = rawBytes.slice(iendOffset);
+          const finalPng = new Uint8Array(beforeIEND.length + textChunk.length + iendChunk.length);
+          finalPng.set(beforeIEND, 0); finalPng.set(textChunk, beforeIEND.length); finalPng.set(iendChunk, beforeIEND.length + textChunk.length);
+          const blob = new Blob([finalPng], { type: 'image/png' }); const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = (charName.value.trim() || 'CharacterCard') + '.png'; a.click(); URL.revokeObjectURL(url);
+        } catch (err) { alert("❌ 导出失败: " + err.message); }
+      });
+
+      
+      
+      
+      const generateUUID = () => 'draft_' + Date.now();
+      function getAllDrafts() { try { return JSON.parse(localStorage.getItem(DRAFTS_STORAGE_KEY)) || {}; } catch(e) { return {}; } }
+      function updateDraftDropdown() {
+        const drafts = getAllDrafts(); draftSelect.innerHTML = ''; const keys = Object.keys(drafts);
+        if (keys.length === 0) { draftSelect.innerHTML = '<option value="">(空草稿箱)</option>'; return; }
+        keys.forEach(id => {
+          const draft = drafts[id]; const option = document.createElement('option'); option.value = id;
+          option.textContent = draft.charName ? `${draft.charName} (${draft.updatedAt})` : `未命名草稿 (${draft.updatedAt})`;
+          if (id === currentDraftId) option.selected = true; draftSelect.appendChild(option);
+        });
+      }
+      function loadDraft(id) {
+        const drafts = getAllDrafts(); if (!drafts[id]) return;
+        currentDraftId = id; localStorage.setItem(CURRENT_DRAFT_KEY, id); const data = drafts[id];
+        charName.value = data.charName || ''; wbName.value = data.wbName || ''; charDesc.value = data.charDesc || ''; firstMes.value = data.firstMes || ''; creatorNotes.value = data.creatorNotes || ''; 
+        worldbookEntries = data.worldbookEntries || [];
+        regexScripts = data.regexScripts || []; 
+        currentAvatarBase64 = data.avatarBase64 || ''; resetWBForm();
+        if (currentAvatarBase64) { avatarImg.src = currentAvatarBase64; avatarImg.style.display = 'block'; avatarPlaceholder.style.display = 'none'; } else { avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block'; }
+        updateDraftDropdown(); renderEntriesList(); updatePreviewAnimated();
+      }
+      function saveCurrentDraft() {
+        if (!currentDraftId) currentDraftId = generateUUID(); const drafts = getAllDrafts();
+        drafts[currentDraftId] = { 
+          charName: charName.value.trim(), wbName: wbName.value.trim(), charDesc: charDesc.value.trim(), firstMes: firstMes.value.trim(), creatorNotes: creatorNotes.value.trim(), 
+          worldbookEntries: worldbookEntries, regexScripts: regexScripts, 
+          avatarBase64: currentAvatarBase64, updatedAt: new Date().toLocaleTimeString('zh-CN', { hour12: false }) 
+        };
+        try { localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts)); localStorage.setItem(CURRENT_DRAFT_KEY, currentDraftId); if(draftSelect.options[draftSelect.selectedIndex]) draftSelect.options[draftSelect.selectedIndex].textContent = drafts[currentDraftId].charName ? `${drafts[currentDraftId].charName} (${drafts[currentDraftId].updatedAt})` : `未命名 (${drafts[currentDraftId].updatedAt})`; saveIndicator.style.display = 'inline'; setTimeout(() => saveIndicator.style.display = 'none', 1500); } catch (e) {}
+      }
+      btnNewDraft.addEventListener('click', () => {
+        currentDraftId = generateUUID(); charName.value = ''; wbName.value = ''; charDesc.value = ''; firstMes.value = ''; creatorNotes.value = ''; worldbookEntries = []; regexScripts = []; currentAvatarBase64 = ''; charImageInput.value = ''; avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block'; resetWBForm();
+        saveCurrentDraft(); updateDraftDropdown(); renderEntriesList(); updatePreviewAnimated();
+      });
+      btnDeleteDraft.addEventListener('click', () => {
+        if (!currentDraftId) return; if (!confirm("确定删除？")) return;
+        const drafts = getAllDrafts(); delete drafts[currentDraftId]; localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+        const keys = Object.keys(drafts); keys.length > 0 ? loadDraft(keys[0]) : btnNewDraft.click();
+      });
+      draftSelect.addEventListener('change', e => { if (e.target.value) loadDraft(e.target.value); });
+      let autoSaveTimer; function debouncedUpdateAndSave() { clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(() => { updatePreviewAnimated(); saveCurrentDraft(); }, 500); }
+
+      
+      
+      
+      function renderPresetList() {
+        if(parsedPresetList.length === 0) { presetListContainer.style.display = 'none'; presetStatus.textContent = "未找到可用的文本规则"; return; }
+        presetListContainer.style.display = 'block'; presetStatus.textContent = "✅ 预设载入成功！";
+        presetListContainer.innerHTML = parsedPresetList.map((item, index) => `
+          <div class="preset-item"><input type="checkbox" id="preset_chk_${index}" data-index="${index}" ${item.enabled ? 'checked' : ''} /><label for="preset_chk_${index}">${item.name}</label></div>
+        `).join('');
+        presetListContainer.querySelectorAll('input[type="checkbox"]').forEach(chk => { chk.addEventListener('change', (e) => { parsedPresetList[e.target.getAttribute('data-index')].enabled = e.target.checked; }); });
+      }
+      presetInput.addEventListener('change', (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader(); reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result); parsedPresetList = [];
+            if (data.prompts) {
+              const activeOrder = (data.prompt_order && data.prompt_order.length > 0) ? data.prompt_order[data.prompt_order.length - 1].order : [];
+              const enabledIds = activeOrder.filter(item => item.enabled).map(item => item.identifier);
+              data.prompts.forEach(p => { if (p.content && !p.marker) parsedPresetList.push({ id: p.identifier, name: p.name || '规则', content: p.content, enabled: activeOrder.length > 0 ? enabledIds.includes(p.identifier) : true }); });
+            }
+            renderPresetList();
+          } catch (err) { presetStatus.innerHTML = `❌ 解析失败`; presetStatus.style.color = '#ef4444'; presetListContainer.style.display = 'none'; }
+        }; reader.readAsText(file);
+      });
+
+      function extractJsonObj(text) { 
+        const match = text.match(/```json\s*([\s\S]*?)\s*```/); 
+        let obj = match ? JSON.parse(match[1]) : JSON.parse(text); 
+        return (Array.isArray(obj) && obj.length > 0) ? obj[0] : obj;
+      }
+
+      
+      
+      
+      btnFetchModels.addEventListener('click', async () => { 
+        const url = apiUrl.value.replace(/\/$/, '') + '/models'; const key = apiKey.value.trim(); btnFetchModels.textContent = '⏳...'; btnFetchModels.disabled = true;
+        try { const res = await fetch(url, { headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }}); const result = await res.json();
+          let models = Array.isArray(result.data) ? result.data.map(m => m.id) : Array.isArray(result) ? result.map(m => m.id || m.name) : []; models.sort(); modelSelect.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+          let savedConfig = {}; try { savedConfig = JSON.parse(localStorage.getItem(AI_CONFIG_KEY)) || {}; } catch(e){}
+          if (savedConfig.model && models.includes(savedConfig.model)) modelSelect.value = savedConfig.model;
+          saveAIConfig(); aiStatus.textContent = `✅ 成功获取 ${models.length} 个模型！`; aiStatus.style.color = '#10b981';
+        } catch (err) { aiStatus.textContent = `❌ ${err.message}`; } finally { btnFetchModels.textContent = '🔄 拉取'; btnFetchModels.disabled = false; }
+      });
+
+      async function generateContextAwareWBEntry(customDirection, stepInfo = "") {
+        const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value; 
+        const existingContext = worldbookEntries.map(e => `[标题:${e.comment}] (策略:${e.strategy}): ${e.content}`).join('\n-----\n');
+        const contextStr = existingContext ? `\n【已有设定参考(不可重复)】：\n${existingContext}` : "\n【当前世界书为空，请你奠定基调】";
+        const activePresetsStr = parsedPresetList.filter(p => p.enabled).map(p => `[规则: ${p.name}]\n${p.content}`).join('\n\n');
+        const presetInjection = activePresetsStr ? `\n\n【文风约束】：\n${activePresetsStr}` : "";
+
+        const includeChar = wbIncludeCharData && wbIncludeCharData.checked;
+        const charDataStr = includeChar ? `\n【当前角色】：名字：${charName.value.trim()} | 描述：${charDesc.value.trim()}\n` : "";
+
+        const systemPrompt = `你是一个酒馆V3世界书词条构建大师。请生成【仅仅1条】最新设定。${stepInfo}${charDataStr}
+${contextStr}
+${presetInjection}
+【输出要求】：必须且仅能输出1个JSON对象，格式：{ "comment": "标题", "content": "详情...", "keys": ["触发词1"], "strategy": "selective 或 constant", "position": 4 }`;
+
+        const userPrompt = customDirection ? `【请着重以下方向】：${customDirection}` : "【请顺着当前世界观自由发挥生成一块拼图，拒绝重复。】";
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: systemPrompt }, { role: "user", content: userPrompt } ], temperature: 0.8 }) });
+        if (!res.ok) throw new Error(`请求失败 HTTP ${res.status}`);
+        const entryData = extractJsonObj((await res.json()).choices[0].message.content);
+        
+        worldbookEntries.push({ comment: entryData.comment || '拓展设定', content: entryData.content || '', keys: Array.isArray(entryData.keys) ? entryData.keys : [], strategy: entryData.strategy || 'selective', position: parseInt(entryData.position) || 4, depth: 4, role: 0, order: 100, prob: 100 });
+      }
+
+      btnAiGenerate.addEventListener('click', async () => {
+        const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value; 
+        if (!model) return alert('请先拉取模型！'); if (!aiPrompt.value.trim()) return alert('请填写提示词！');
+        btnAiGenerate.disabled = true;
+
+        try {
+          aiStatus.textContent = '⏳ [阶段 1/2] 构思角色设定...'; aiStatus.style.color = '#38bdf8';
+          const activePresetsStr = parsedPresetList.filter(p => p.enabled).map(p => `[规则: ${p.name}]\n${p.content}`).join('\n');
+          const phase1System = `生成角色基础属性，仅输出JSON对象。格式：{ "charName": "角色名", "wbName": "世界书名", "charDesc": "描述", "firstMes": "开场白", "creatorNotes": "作者注释" }${activePresetsStr ? `\n【文风要求】：\n${activePresetsStr}` : ""}`;
+
+          const res1 = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: phase1System }, { role: "user", content: aiPrompt.value.trim() } ], temperature: 0.85 }) });
+          const charData = extractJsonObj((await res1.json()).choices[0].message.content);
+
+          charName.value = charData.charName || ''; wbName.value = charData.wbName || ''; charDesc.value = charData.charDesc || ''; firstMes.value = charData.firstMes || ''; creatorNotes.value = charData.creatorNotes || '';
+          worldbookEntries = []; debouncedUpdateAndSave();
+
+          const wbGoal = wbPrompt.value.trim();
+          for (let i = 0; i < 3; i++) {
+            aiStatus.textContent = `⏳ [阶段 2/2] 迭代生成第 ${i+1}/3 条世界书...`;
+            await generateContextAwareWBEntry(wbGoal, `当前是第 ${i+1} 步。`);
+            renderEntriesList(); debouncedUpdateAndSave();
+          }
+          aiStatus.textContent = '✅ 生成完毕！'; aiStatus.style.color = '#10b981';
+        } catch (err) { aiStatus.textContent = `❌ 中止: ${err.message}`; aiStatus.style.color = '#ef4444'; } 
+        finally { btnAiGenerate.disabled = false; }
+      });
+
+      btnAiSingleWb.addEventListener('click', async () => {
+        if (!modelSelect.value) return alert('请先选择可用模型！');
+        btnAiSingleWb.disabled = true; btnAiSingleWb.textContent = "⏳ Roll中...";
+        try { await generateContextAwareWBEntry(wbSinglePrompt.value.trim(), "单条补充。"); renderEntriesList(); debouncedUpdateAndSave(); wbSinglePrompt.value = ''; } 
+        catch(err) { alert(`生成失败: ${err.message}`); } finally { btnAiSingleWb.disabled = false; btnAiSingleWb.textContent = "🎲 串联生成 1 条"; }
+      });
+
+      
+      
+      
+      function resetWBForm() {
+        editingIndex = -1; entryComment.value = ''; entryContent.value = ''; entryKeys.value = '';
+        btnAddEntry.textContent = '➕ 保存到列表'; btnAddEntry.style.backgroundColor = '#10b981';
+      }
+
+      function editEntry(index) {
+        editingIndex = index; const entry = worldbookEntries[index];
+        entryComment.value = entry.comment || ''; entryContent.value = entry.content || ''; entryKeys.value = entry.keys.join(', ') || '';
+        entryStrategy.value = entry.strategy || 'selective'; entryPosition.value = entry.position || 0; entryDepth.value = entry.depth || 4;
+        entryRole.value = entry.role || 0; entryOrder.value = entry.order || 100; entryProb.value = entry.prob || 100;
+        btnAddEntry.textContent = '💾 确认覆盖原条目'; btnAddEntry.style.backgroundColor = '#f59e0b';
+        btnAddEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      async function aiRewriteSpecificEntry(index, customReq, btnNode) {
+        const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value; 
+        if (!model) return alert('请先选择模型！');
+        const oldEntry = worldbookEntries[index]; const oldText = btnNode.textContent;
+        btnNode.disabled = true; btnNode.textContent = "⏳ 重铸中...";
+
+        const activePresetsStr = parsedPresetList.filter(p => p.enabled).map(p => `[规则: ${p.name}]\n${p.content}`).join('\n\n');
+        const systemPrompt = `你是一个酒馆V3词条润色大师。你要修改一个【已存在的特定词条】。
+【原词条内容】:
+标题: ${oldEntry.comment} | 策略: ${oldEntry.strategy} | 触发词: ${oldEntry.keys.join(',')}
+内容: ${oldEntry.content}
+${activePresetsStr ? `\n【必须遵循的文风】：\n${activePresetsStr}` : ""}
+【任务要求】：根据用户要求重写内容。必须输出单个JSON对象，格式同上：{ "comment": "标题", "content": "详情...", "keys": ["触发词"], "strategy": "selective 或 constant", "position": ${oldEntry.position} }`;
+
+        try {
+          const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: systemPrompt }, { role: "user", content: `定向修改要求：${customReq}` } ], temperature: 0.8 }) });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const entryData = extractJsonObj((await res.json()).choices[0].message.content);
+          
+          worldbookEntries[index].comment = entryData.comment || oldEntry.comment;
+          worldbookEntries[index].content = entryData.content || oldEntry.content;
+          if (entryData.keys) worldbookEntries[index].keys = Array.isArray(entryData.keys) ? entryData.keys : [];
+          if (entryData.strategy) worldbookEntries[index].strategy = entryData.strategy;
+          renderEntriesList(); debouncedUpdateAndSave();
+        } catch(err) { alert(`重写失败: ${err.message}`); } finally { btnNode.disabled = false; btnNode.textContent = oldText; }
+      }
+
+      function renderEntriesList() {
+        entriesList.innerHTML = worldbookEntries.length ? '' : '<span style="color: #64748b; font-size: 0.8rem;">暂无条目，快让AI写一条！</span>';
+        const posMap = ["0前", "1后", "2前EM", "3后EM", "4深度", "5前AN", "6后AN"];
+        worldbookEntries.forEach((entry, index) => {
+          const div = document.createElement('div'); div.className = 'entry-item';
+          div.innerHTML = `
+            <div class="entry-item-header">
+              <div class="entry-info">
+                <h4>${entry.comment || '未命名'} <span style="color:#3b82f6;font-size:0.7rem;">[${entry.strategy}]</span></h4>
+                <p>位置: ${posMap[entry.position]} | 顺序: ${entry.order} | 深度: ${entry.depth} | 概率: ${entry.prob}%</p>
+                <p>触发词: ${entry.keys.join(', ') || '无'}</p>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 160px;">
+                <button class="btn btn-edit" data-index="${index}" style="width:auto; padding:4px 8px; font-size:0.75rem; background-color:#3b82f6;">✏️ 编辑</button>
+                <button class="btn btn-toggle-reroll" data-index="${index}" style="width:auto; padding:4px 8px; font-size:0.75rem; background-color:#8b5cf6;">✨ AI重写</button>
+                <button class="btn btn-delete" data-index="${index}" style="width:auto; padding:4px 8px; font-size:0.75rem;">🗑️ 删除</button>
+              </div>
+            </div>
+            <div id="reroll_area_${index}" style="display: none; width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #475569;">
+              <input type="text" id="reroll_prompt_${index}" placeholder="怎么修改？比如：加上光学迷彩的设定..." style="width:100%; padding:8px; margin-bottom:8px; border-radius:4px; border:1px solid #8b5cf6; background:#0f172a; color:#f8fafc; outline: none;" />
+              <button class="btn btn-submit-reroll" data-index="${index}" style="background-color:#8b5cf6; padding:8px; font-size: 0.85rem;">🎲 确定覆盖重写</button>
+            </div>
+          `;
+          entriesList.appendChild(div);
+        });
+
+        document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', e => { editEntry(parseInt(e.target.getAttribute('data-index'))); }));
+        document.querySelectorAll('.btn-toggle-reroll').forEach(b => b.addEventListener('click', e => { const area = document.getElementById(`reroll_area_${e.target.getAttribute('data-index')}`); area.style.display = area.style.display === 'none' ? 'block' : 'none'; }));
+        document.querySelectorAll('.btn-submit-reroll').forEach(b => b.addEventListener('click', async e => { const idx = parseInt(e.target.getAttribute('data-index')); const req = document.getElementById(`reroll_prompt_${idx}`).value.trim(); if (!req) return alert('请先填写修改要求！'); await aiRewriteSpecificEntry(idx, req, e.target); }));
+        document.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', e => { const idx = parseInt(e.target.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if(editingIndex === idx) resetWBForm(); renderEntriesList(); debouncedUpdateAndSave(); }));
+      }
+
+      btnAddEntry.addEventListener('click', () => {
+        if (!entryContent.value.trim()) return alert('内容不能为空！');
+        const newEntryObj = { comment: entryComment.value.trim(), content: entryContent.value.trim(), keys: entryKeys.value.split(',').map(k=>k.trim()).filter(k=>k), strategy: entryStrategy.value, position: parseInt(entryPosition.value), depth: parseInt(entryDepth.value)||4, role: parseInt(entryRole.value)||0, order: parseInt(entryOrder.value)||100, prob: parseInt(entryProb.value)||100 };
+        if (editingIndex >= 0) worldbookEntries[editingIndex] = newEntryObj; else worldbookEntries.push(newEntryObj);
+        resetWBForm(); renderEntriesList(); debouncedUpdateAndSave();
+      });
+
+      
+      
+      
+      function generateFullJSON() {
+        const formattedEntries = worldbookEntries.map((entry, idx) => ({
+          id: idx, keys: entry.keys, secondary_keys: [], comment: entry.comment, content: entry.content,
+          constant: entry.strategy === 'constant', selective: entry.strategy === 'selective' || entry.strategy === 'vectorized', insertion_order: entry.order || 100, enabled: true, position: "before_char", use_regex: false,
+          extensions: { position: entry.position, exclude_recursion: false, display_index: idx, probability: entry.prob || 100, useProbability: true, depth: entry.depth || 4, selectiveLogic: 0, outlet_name: "", group: "", group_override: false, group_weight: 100, prevent_recursion: false, delay_until_recursion: false, role: entry.role || 0, vectorized: entry.strategy === 'vectorized' }
+        }));
+        const cName = charName.value.trim() || "无名角色"; const wName = wbName.value.trim() || "无名世界书";
+        
+        const extensions = { world: wName };
+        
+        if (sbEnable && sbEnable.checked && regexScripts && regexScripts.length > 0) {
+          extensions.regex_scripts = regexScripts;
+        }
+
+        return {
+          name: cName, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creatorcomment: creatorNotes.value, avatar: "none", talkativeness: "0.5", fav: false, tags: [], spec: "chara_card_v3", spec_version: "3.0",
+          data: { name: cName, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creator_notes: creatorNotes.value, system_prompt: "", post_history_instructions: "", tags: [], creator: "", character_version: "1.0", alternate_greetings: [], extensions: extensions, character_book: { name: wName, entries: formattedEntries } }
+        };
+      }
+
+      
+      function syntaxHighlightJSON(jsonStr) {
+        jsonStr = jsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+          let cls = 'json-number';
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) cls = 'json-key';
+            else cls = 'json-string';
+          } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+          } else if (/null/.test(match)) {
+            cls = 'json-null';
+          }
+          return '<span class="' + cls + '">' + match + '</span>';
+        });
+      }
+
+      function updatePreviewAnimated() {
+        const fullJson = generateFullJSON();
+        const jsonString = JSON.stringify(fullJson, null, 2);
+        
+        
+        codePreview.innerHTML = syntaxHighlightJSON(jsonString);
+
+        
+        gsap.fromTo("#codeContentWrapper", 
+          { backgroundColor: "rgba(56,189,248,0.15)" }, 
+          { backgroundColor: "transparent", duration: 0.4, ease: "power2.out" }
+        );
+      }
+
+      [charName, wbName, charDesc, firstMes, creatorNotes].forEach(el => el.addEventListener('input', debouncedUpdateAndSave));
+      btnDownloadJson.addEventListener('click', () => { const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(generateFullJSON(), null, 2)); a.download = (charName.value || "card") + ".json"; a.click(); });
+
+      
+      loadAIConfig();
+      const drafts = getAllDrafts(); const lastId = localStorage.getItem(CURRENT_DRAFT_KEY);
+      if (lastId && drafts[lastId]) loadDraft(lastId); else if (Object.keys(drafts).length > 0) loadDraft(Object.keys(drafts)[0]); else btnNewDraft.click();
+
+    </script>
+  </body>
+</html>
