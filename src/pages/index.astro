@@ -21,9 +21,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
   </div>
 
   <script is:inline>
-    
-    
-    
+    // ============================================================
+    //  字段注释字典
+    // ============================================================
     var FIELD_DICT = {
       "name": { label: "角色名", tip: "角色的显示名称", type: "string", required: true },
       "description": { label: "角色描述(顶层)", tip: "V2兼容字段，与data.description同步", type: "string" },
@@ -124,9 +124,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
     }
     window.__fieldDict__ = { getFieldInfo: getFieldInfo, validateFullJSON: validateFullJSON };
 
-    
-    
-    
+    // ============================================================
+    //  DOM
+    // ============================================================
     var apiUrl               = document.getElementById('apiUrl');
     var apiKey               = document.getElementById('apiKey');
     var btnFetchModels       = document.getElementById('btnFetchModels');
@@ -167,9 +167,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
     var btnDownloadJson      = document.getElementById('btnDownloadJson');
     var btnExportPNG         = document.getElementById('btnExportPNG');
 
-    
-    
-    
+    // ============================================================
+    //  状态
+    // ============================================================
     var worldbookEntries     = [];
     var regexScripts         = [];
     var currentAvatarBase64  = "";
@@ -185,9 +185,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
     var CURRENT_KEY = "st_v3_builder_current_id";
     var AI_KEY      = "st_v3_builder_ai_config";
 
-    
-    
-    
+    // ============================================================
+    //  全局桥接
+    // ============================================================
     window.triggerGlobalUpdate = function() { debouncedUpdateAndSave(); };
 
     window.injectStatusBarGlobal = function(wbEntry, regexOrArray) {
@@ -206,38 +206,52 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       debouncedUpdateAndSave();
     };
 
-    window.applyJSONFromEditor = function(json) {
-      if (!json || !json.data) return;
-      charName.value     = json.data.name || json.name || '';
-      wbName.value       = (json.data.extensions && json.data.extensions.world) || '';
-      charDesc.value     = json.data.description || '';
-      firstMes.value     = json.data.first_mes || '';
-      creatorNotes.value = json.data.creator_notes || '';
-      if (json.data.character_book && json.data.character_book.entries) {
-        worldbookEntries = json.data.character_book.entries.map(function(e) {
-          return {
-            comment:  e.comment || '',
-            content:  e.content || '',
-            keys:     e.keys || [],
-            strategy: e.constant ? 'constant' : (e.extensions && e.extensions.vectorized ? 'vectorized' : 'selective'),
-            position: (e.extensions && e.extensions.position !== undefined) ? e.extensions.position : 4,
-            depth:    (e.extensions && e.extensions.depth !== undefined) ? e.extensions.depth : 4,
-            role:     (e.extensions && e.extensions.role !== undefined) ? e.extensions.role : 0,
-            order:    e.insertion_order || 100,
-            prob:     (e.extensions && e.extensions.probability !== undefined) ? e.extensions.probability : 100
-          };
-        });
-        renderEntriesList();
-      }
-      if (json.data.extensions && json.data.extensions.regex_scripts) {
-        regexScripts = json.data.extensions.regex_scripts;
-      }
-      if (json.data.alternate_greetings && json.data.alternate_greetings.length > 0) {
-        window.__altGreetings__ = json.data.alternate_greetings;
-        if (window.__renderAltGreetings__) window.__renderAltGreetings__();
-      }
-      saveCurrentDraft();
-    };
+window.applyJSONFromEditor = function(json) {
+  if (!json || !json.data) return;
+  charName.value     = json.data.name || json.name || '';
+  wbName.value       = (json.data.extensions && json.data.extensions.world) || '';
+  charDesc.value     = json.data.description || '';
+  firstMes.value     = json.data.first_mes || '';
+  creatorNotes.value = json.data.creator_notes || '';
+  if (json.data.character_book && json.data.character_book.entries) {
+    worldbookEntries = json.data.character_book.entries.map(function(e) {
+      return {
+        comment:  e.comment || '',
+        content:  e.content || '',
+        keys:     e.keys || [],
+        strategy: e.constant ? 'constant' : (e.extensions && e.extensions.vectorized ? 'vectorized' : 'selective'),
+        position: (e.extensions && e.extensions.position !== undefined) ? e.extensions.position : 4,
+        depth:    (e.extensions && e.extensions.depth !== undefined) ? e.extensions.depth : 4,
+        role:     (e.extensions && e.extensions.role !== undefined) ? e.extensions.role : 0,
+        order:    e.insertion_order || 100,
+        prob:     (e.extensions && e.extensions.probability !== undefined) ? e.extensions.probability : 100
+      };
+    });
+    renderEntriesList();
+  }
+  if (json.data.extensions && json.data.extensions.regex_scripts) {
+    regexScripts = json.data.extensions.regex_scripts;
+  }
+  if (json.data.alternate_greetings && json.data.alternate_greetings.length > 0) {
+    window.__altGreetings__ = json.data.alternate_greetings;
+    if (window.__renderAltGreetings__) window.__renderAltGreetings__();
+  } else {
+    // ★ 导入的卡没有备选开场白时，清空旧数据
+    window.__altGreetings__ = [];
+    if (window.__renderAltGreetings__) window.__renderAltGreetings__();
+  }
+  saveCurrentDraft();
+  debouncedUpdateAndSave();
+};
+
+// ★ 导入卡片时恢复头像（给 PreviewPanel 的 PNG 导入调用）
+window.__setImportedAvatar__ = function(base64) {
+  currentAvatarBase64 = base64;
+  avatarImg.src = base64;
+  avatarImg.style.display = 'block';
+  avatarPlaceholder.style.display = 'none';
+  debouncedUpdateAndSave();
+};
 
     window.__getWorldbookEntries__ = function() {
       return worldbookEntries.map(function(e) {
@@ -312,15 +326,15 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       return result;
     };
 
-    
-    
-    
+    // ============================================================
+    //  AI 配置持久化（含预设）
+    // ============================================================
     function saveAIConfig() {
       localStorage.setItem(AI_KEY, JSON.stringify({
         url:        apiUrl.value.trim(),
         key:        apiKey.value.trim(),
         model:      modelSelect.value,
-        presetList: parsedPresetList,   
+        presetList: parsedPresetList,   // ★ 保存预设列表
       }));
     }
 
@@ -334,7 +348,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
           modelSelect.innerHTML = '<option value="' + c.model + '">' + c.model + '</option>';
           modelSelect.value = c.model;
         }
-        
+        // ★ 恢复预设列表
         if (c.presetList && Array.isArray(c.presetList) && c.presetList.length > 0) {
           parsedPresetList = c.presetList;
           renderPresetList();
@@ -345,9 +359,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
     apiUrl.addEventListener('input', saveAIConfig);
     apiKey.addEventListener('input', saveAIConfig);
     modelSelect.addEventListener('change', saveAIConfig);
-    
-    
-    
+    // ============================================================
+    //  PNG 工具
+    // ============================================================
     var crcTable = [];
     for (var n = 0; n < 256; n++) {
       var c = n;
@@ -366,9 +380,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       ch[ch.length-2]=(cs>>>8)&0xFF; ch[ch.length-1]=cs&0xFF; return ch;
     }
 
-    
-    
-    
+    // ============================================================
+    //  头像
+    // ============================================================
     charImageInput.addEventListener('change', function(e) {
       var file = e.target.files[0]; if (!file) return;
       var reader = new FileReader();
@@ -408,9 +422,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       } catch(err) { alert("❌ 导出失败: " + err.message); }
     });
 
-    
-    
-    
+    // ============================================================
+    //  草稿系统
+    // ============================================================
     function genId() { return 'draft_' + Date.now(); }
     function getAllDrafts() { try { return JSON.parse(localStorage.getItem(DRAFTS_KEY)) || {}; } catch(e) { return {}; } }
 
@@ -441,7 +455,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       currentAvatarBase64 = d.avatarBase64    || '';
       window.__altGreetings__ = d.altGreetings || [];
       if (window.__renderAltGreetings__) window.__renderAltGreetings__();
-      
+      // ★ 恢复状态栏数据
       if (d.statusBarData && window.__loadStatusBarData__) {
         window.__loadStatusBarData__(d.statusBarData);
       }
@@ -467,7 +481,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
         regexScripts:    regexScripts,
         avatarBase64:    currentAvatarBase64,
         altGreetings:    window.__altGreetings__ || [],
-        statusBarData:   window.__getStatusBarData__ ? window.__getStatusBarData__() : null,  
+        statusBarData:   window.__getStatusBarData__ ? window.__getStatusBarData__() : null,  // ★ 保存状态栏
         updatedAt:       new Date().toLocaleTimeString('zh-CN', { hour12: false })
       };
       try {
@@ -490,7 +504,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block';
       window.__altGreetings__ = [];
       if (window.__renderAltGreetings__) window.__renderAltGreetings__();
-      
+      // ★ 新建草稿时重置状态栏
       if (window.__loadStatusBarData__) window.__loadStatusBarData__(null);
       resetWBForm(); saveCurrentDraft(); updateDraftDropdown(); renderEntriesList(); updatePreview();
     });
@@ -511,9 +525,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       autoSaveTimer = setTimeout(function() { updatePreview(); saveCurrentDraft(); }, 500);
     }
 
-    
-    
-    
+    // ============================================================
+    //  预设系统
+    // ============================================================
     function renderPresetList() {
       if (!parsedPresetList.length) {
         presetListContainer.style.display = 'none';
@@ -538,7 +552,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       presetListContainer.querySelectorAll('input[type="checkbox"]').forEach(function(chk) {
         chk.addEventListener('change', function(e) {
           parsedPresetList[parseInt(e.target.getAttribute('data-index'))].enabled = e.target.checked;
-          saveAIConfig();  
+          saveAIConfig();  // ★ 勾选变化时保存
         });
       });
     }
@@ -569,7 +583,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
             });
           }
           renderPresetList();
-          saveAIConfig();  
+          saveAIConfig();  // ★ 导入后立即保存
         } catch(err) {
           presetStatus.innerHTML = "❌ 解析失败: " + err.message;
           presetStatus.style.color = '#ef4444';
@@ -579,9 +593,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       reader.readAsText(file);
     });
 
-    
-    
-    
+    // ============================================================
+    //  工具函数
+    // ============================================================
     function extractJsonObj(text) {
       var m = text.match(/```json\s*([\s\S]*?)\s*```/);
       var o = m ? JSON.parse(m[1]) : JSON.parse(text);
@@ -599,9 +613,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
     }
     function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
-    
-    
-    
+    // ============================================================
+    //  联网搜索
+    // ============================================================
     async function performSearchIfEnabled(userQuery) {
       var sc = window.__searchConfig__;
       if (!sc || !sc.isEnabled()) return { searchText: '', searchResults: null, mode: 'off' };
@@ -632,9 +646,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
         + '如果你不具备联网能力，请忽略此指令，直接基于你的知识库创作。\n';
     }
 
-    
-    
-    
+    // ============================================================
+    //  AI 模型拉取
+    // ============================================================
     btnFetchModels.addEventListener('click', async function() {
       var url = apiUrl.value.replace(/\/$/, '') + '/models';
       var key = apiKey.value.trim();
@@ -657,9 +671,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       finally { btnFetchModels.textContent = '🔄 拉取可用模型'; btnFetchModels.disabled = false; }
     });
 
-    
-    
-    
+    // ============================================================
+    //  AI 一键生成
+    // ============================================================
     btnAiGenerate.addEventListener('click', async function() {
       var url   = apiUrl.value.replace(/\/$/, '') + '/chat/completions';
       var key   = apiKey.value.trim();
@@ -684,7 +698,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
         var presetsStr = getActivePresetsStr();
         var searchInjection = '';
 
-        
+        // 阶段0：联网搜索
         if (searchEnabled) {
           currentStep++;
           if (hacker) { hacker.setPhase('🌐 [阶段 ' + currentStep + '/' + totalSteps + '] 联网搜索资料...'); hacker.setProgress(currentStep, totalSteps); hacker.setDetail('正在扫描互联网数据节点...'); }
@@ -697,7 +711,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
           await sleep(400);
         }
 
-        
+        // 阶段1：生成角色
         currentStep++;
         if (hacker) { hacker.setPhase('🧬 [阶段 ' + currentStep + '/' + totalSteps + '] 构建角色灵魂...'); hacker.setProgress(currentStep, totalSteps); hacker.setDetail(hacker.randomMsg()); }
         aiStatus.textContent = '⏳ [阶段 1] 构思角色设定...'; aiStatus.style.color = '#38bdf8';
@@ -722,7 +736,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
         if (hacker) hacker.setDetail('✅ 角色「' + (charData.charName || '???') + '」锻造完成');
         await sleep(500);
 
-        
+        // 阶段2+：批量生成世界书骨架
         var wbGoal    = wbPrompt.value.trim();
         var remaining = skeletonCount;
         var batchIndex = 0;
@@ -766,7 +780,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
           remaining -= batchSize;
         }
 
-        
+        // 完成
         if (hacker) {
           hacker.stop(); hacker.setPhase('🎉 生成完毕！'); hacker.setProgress(totalSteps, totalSteps);
           var doneMsg = '角色「' + charName.value.trim() + '」+ ' + worldbookEntries.length + ' 条骨架已就绪。';
@@ -784,9 +798,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       } finally { btnAiGenerate.disabled = false; }
     });
 
-    
-    
-    
+    // ============================================================
+    //  AI 单条追加
+    // ============================================================
     async function generateContextAwareWBEntry(customDirection, stepInfo) {
       if (!stepInfo) stepInfo = '';
       var url   = apiUrl.value.replace(/\/$/, '') + '/chat/completions';
@@ -822,9 +836,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       finally { btnAiSingleWb.disabled = false; btnAiSingleWb.textContent = "🎲 生成 1 条"; }
     });
 
-    
-    
-    
+    // ============================================================
+    //  世界书条目管理
+    // ============================================================
     function resetWBForm() {
       editingIndex = -1; entryComment.value = ''; entryContent.value = ''; entryKeys.value = '';
       entryStrategy.value = 'selective'; entryPosition.value = '4'; entryDepth.value = '4';
@@ -893,9 +907,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       resetWBForm(); renderEntriesList(); debouncedUpdateAndSave();
     });
 
-    
-    
-    
+    // ============================================================
+    //  AI 智能整理世界书参数
+    // ============================================================
     var btnAiOrganize    = document.getElementById('btnAiOrganize');
     var organizePreview  = document.getElementById('organizePreview');
     var organizeStatus   = document.getElementById('organizeStatus');
@@ -1007,9 +1021,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       });
     }
 
-    
-    
-    
+    // ============================================================
+    //  JSON 生成
+    // ============================================================
     function generateFullJSON() {
       var fe = worldbookEntries.map(function(e, i) {
         return { id: i, keys: e.keys || [], secondary_keys: [], comment: e.comment, content: e.content, constant: e.strategy === 'constant', selective: e.strategy === 'selective' || e.strategy === 'vectorized', insertion_order: e.order || 100, enabled: true, position: "before_char", use_regex: false, extensions: { position: e.position, exclude_recursion: false, display_index: i, probability: e.prob || 100, useProbability: true, depth: e.depth || 4, selectiveLogic: 0, outlet_name: "", group: "", group_override: false, group_weight: 100, prevent_recursion: false, delay_until_recursion: false, role: e.role || 0, vectorized: e.strategy === 'vectorized' } };
@@ -1022,9 +1036,9 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       return { name: cn, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creatorcomment: creatorNotes.value, avatar: "none", talkativeness: "0.5", fav: false, tags: [], spec: "chara_card_v3", spec_version: "3.0", data: { name: cn, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creator_notes: creatorNotes.value, system_prompt: "", post_history_instructions: "", tags: [], creator: "", character_version: "1.0", alternate_greetings: altG, extensions: ext, character_book: { name: wn, entries: fe } } };
     }
 
-    
-    
-    
+    // ============================================================
+    //  预览 & 联动 & 初始化
+    // ============================================================
     function updatePreview() {
       var fj = generateFullJSON();
       if (window.updatePreviewPanel) window.updatePreviewPanel(fj);
@@ -1042,7 +1056,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       a.click();
     });
 
-    
+    // ★ 初始化顺序很重要：先加载 AI 配置（含预设），再加载草稿
     loadAIConfig();
     var drafts = getAllDrafts();
     var lastId = localStorage.getItem(CURRENT_KEY);

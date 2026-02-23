@@ -12,14 +12,14 @@ const { title } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
-    <script is:inline src="https:
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <!-- 可选：JetBrains Mono 字体 -->
-    <link rel="preconnect" href="https:
-    <link rel="preconnect" href="https:
-    <link href="https:
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
 
     <style is:global>
-      
+      /* ========== 基础重置 ========== */
       *, *::before, *::after {
         box-sizing: border-box;
       }
@@ -33,7 +33,7 @@ const { title } = Astro.props;
         min-height: 100vh;
       }
 
-      
+      /* ========== 主容器布局 ========== */
       .app-container {
         display: grid;
         grid-template-columns: 320px 1fr 380px minmax(400px, 1.5fr);
@@ -45,13 +45,13 @@ const { title } = Astro.props;
         align-items: start;
       }
 
-      
+      /* 区域分配 */
       .area-ai { grid-area: ai; }
       .area-character { grid-area: character; }
       .area-worldbook { grid-area: worldbook; }
       .area-preview { grid-area: preview; }
 
-      
+      /* ========== 响应式 ========== */
       @media (max-width: 1400px) {
         .app-container {
           grid-template-columns: 1fr 1fr;
@@ -76,13 +76,13 @@ const { title } = Astro.props;
         }
       }
 
-      
+      /* ========== 滚动条 ========== */
       ::-webkit-scrollbar { width: 8px; height: 8px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
       ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-      
+      /* ========== 面板通用 ========== */
       .panel {
         background-color: #111827;
         padding: 20px;
@@ -111,7 +111,7 @@ const { title } = Astro.props;
         font-size: 0.95rem;
       }
 
-      
+      /* ========== 表单控件 ========== */
       .form-group {
         margin-bottom: 14px;
       }
@@ -158,13 +158,13 @@ const { title } = Astro.props;
       select {
         cursor: pointer;
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http:
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 10px center;
         padding-right: 32px;
       }
 
-      
+      /* ========== 文件上传 ========== */
       input[type="file"] {
         color: #94a3b8;
         font-size: 0.8rem;
@@ -190,11 +190,11 @@ const { title } = Astro.props;
         color: #d8b4fe;
       }
 
-      
+      /* ========== 网格布局 ========== */
       .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
-      
+      /* ========== 面板主题变体 ========== */
       .ai-panel {
         border-color: rgba(139, 92, 246, 0.3);
         background: linear-gradient(180deg, #111827 0%, #0d0a1a 100%);
@@ -209,7 +209,7 @@ const { title } = Astro.props;
       .sb-panel:hover { border-color: rgba(245, 158, 11, 0.5); }
       .sb-panel h2 { border-color: rgba(245, 158, 11, 0.3); color: #fcd34d; }
 
-      
+      /* ========== 状态文本 ========== */
       .status-text {
         font-size: 0.82rem;
         color: #10b981;
@@ -218,7 +218,7 @@ const { title } = Astro.props;
         font-weight: 600;
       }
 
-      
+      /* ========== 预设上传区 ========== */
       .preset-upload {
         border: 1px dashed rgba(139, 92, 246, 0.4);
         padding: 14px;
@@ -227,7 +227,7 @@ const { title } = Astro.props;
         margin-bottom: 16px;
       }
 
-      
+      /* ========== 草稿管理器 ========== */
       .draft-manager {
         background: rgba(16, 185, 129, 0.06);
         border: 1px solid rgba(16, 185, 129, 0.25);
@@ -245,7 +245,7 @@ const { title } = Astro.props;
         font-size: 0.8rem;
       }
 
-      
+      /* ========== 按钮系统 ========== */
       .btn {
         width: 100%;
         padding: 10px 16px;
@@ -305,7 +305,7 @@ const { title } = Astro.props;
       .btn-img { background-color: #d97706; width: auto; margin: 0; padding: 6px 14px; }
       .btn-img:hover { background-color: #b45309; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3); }
 
-      
+      /* ========== 世界书条目 ========== */
       .entry-item {
         background-color: #1e293b;
         padding: 12px;
@@ -328,7 +328,7 @@ const { title } = Astro.props;
       .entry-info h4 { margin: 0 0 4px 0; font-size: 0.88rem; }
       .entry-info p { margin: 0; font-size: 0.72rem; color: #94a3b8; }
 
-      
+      /* ========== 代码预览窗口 ========== */
       .code-window {
         background-color: #050510;
         border-radius: 14px;
@@ -388,14 +388,14 @@ const { title } = Astro.props;
         word-wrap: break-word;
       }
 
-      
+      /* ========== JSON 语法高亮（兼容旧版，PreviewPanel 用新 class） ========== */
       .json-key { color: #38bdf8; }
       .json-string { color: #a3e635; }
       .json-number { color: #f472b6; }
       .json-boolean { color: #c084fc; font-weight: 600; }
       .json-null { color: #64748b; font-style: italic; }
 
-      
+      /* ========== 预设项 ========== */
       .preset-item {
         display: flex;
         align-items: flex-start;
@@ -428,14 +428,14 @@ const { title } = Astro.props;
         line-height: 1.4;
       }
 
-      
+      /* ========== 分隔线 ========== */
       .divider {
         border: none;
         border-top: 1px dashed #1e293b;
         margin: 20px 0;
       }
 
-      
+      /* ========== 动画辅助 ========== */
       .fade-in {
         animation: fadeIn 0.3s ease-out;
       }
@@ -444,12 +444,12 @@ const { title } = Astro.props;
         to { opacity: 1; transform: translateY(0); }
       }
 
-      
+      /* ========== Tooltip 通用 ========== */
       [title] {
         position: relative;
       }
 
-      
+      /* ========== 编辑态高亮闪烁 ========== */
       .edit-flash {
         animation: editFlash 0.6s ease-out;
       }
@@ -458,7 +458,7 @@ const { title } = Astro.props;
         100% { background-color: transparent; }
       }
 
-      
+      /* ========== 校验状态指示 ========== */
       .field-valid {
         border-left: 2px solid #10b981;
         padding-left: 6px;
@@ -474,7 +474,7 @@ const { title } = Astro.props;
         font-size: 0.75rem;
       }
 
-      
+      /* ========== 代码预览内的注释行样式（全局化，防止 scoped 冲突） ========== */
       .anno-line {
         display: flex;
         align-items: flex-start;
@@ -604,7 +604,7 @@ const { title } = Astro.props;
         color: #f59e0b;
       }
 
-      
+      /* PreviewPanel 语法高亮 class */
       .jk { color: #38bdf8; }
       .js { color: #a3e635; }
       .jn { color: #f472b6; }
@@ -612,7 +612,7 @@ const { title } = Astro.props;
       .jnull { color: #475569; font-style: italic; }
       .jp { color: #475569; }
 
-      
+      /* 校验结果 */
       .valid-ok {
         background: rgba(16, 185, 129, 0.1);
         color: #34d399;
@@ -638,7 +638,7 @@ const { title } = Astro.props;
         color: #fca5a5;
         font-size: 0.75rem;
       }
-            
+            /* ========== AI 智能整理美化 ========== */
       .wb-organize-wrap {
         background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(139, 92, 246, 0.06) 50%, rgba(6, 182, 212, 0.04) 100%);
         border: 1px solid rgba(251, 191, 36, 0.35);
@@ -780,7 +780,7 @@ const { title } = Astro.props;
         border: 1px solid rgba(51, 65, 85, 0.3);
       }
 
-      
+      /* 预览容器 */
       .organize-preview-container {
         background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(8, 12, 28, 0.99));
         border: 1px solid rgba(251, 191, 36, 0.25);

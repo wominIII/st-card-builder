@@ -12,10 +12,16 @@
         <input type="checkbox" id="toggleEditMode" style="width: 14px; height: 14px; accent-color: #f59e0b; cursor: pointer;" />
         <label for="toggleEditMode" style="font-size: 0.72rem; color: #94a3b8; cursor: pointer; white-space: nowrap; margin: 0; font-weight: normal;">编辑</label>
       </div>
+      <!-- ★ 导入按钮 -->
+      <button id="btnImportCard" class="btn btn-fetch" style="padding: 5px 10px; width: auto; margin: 0; font-size: 0.75rem;">📂 导入</button>
+      <input type="file" id="importCardInput" accept=".json,.png" style="display:none;" />
       <button id="btnDownloadJson" class="btn btn-fetch" style="padding: 5px 10px; width: auto; margin: 0; font-size: 0.75rem;">💾 JSON</button>
       <button id="btnExportPNG" class="btn btn-img" style="padding: 5px 10px; width: auto; margin: 0; font-size: 0.75rem;">📸 PNG</button>
     </div>
   </div>
+
+  <!-- 导入状态提示 -->
+  <div id="importStatusBar" style="display:none; padding: 8px 16px; font-size: 0.78rem; border-bottom: 1px solid #1e293b;"></div>
 
   <!-- 校验结果栏 -->
   <div id="validationBar" style="display: none;"></div>
@@ -33,7 +39,6 @@
     var style = document.createElement('style');
     style.id = styleId;
     style.textContent = [
-      
       '.jk { color: #38bdf8; font-weight: 500; }',
       '.js { color: #a3e635; }',
       '.jn { color: #f472b6; }',
@@ -41,45 +46,34 @@
       '.jnull { color: #475569; font-style: italic; }',
       '.jp { color: #6b7280; }',
 
-      
       '.anno-line { display: flex; align-items: flex-start; min-height: 1.7em; line-height: 1.7; position: relative; border-radius: 4px; transition: background 0.15s ease; padding: 0 4px; }',
       '.anno-line:hover { background: rgba(56, 189, 248, 0.04); }',
       '.anno-line.has-error { background: rgba(239, 68, 68, 0.06) !important; }',
       '.anno-line.has-error:hover { background: rgba(239, 68, 68, 0.1) !important; }',
 
-      
       '.anno-code { flex: 1; font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace; font-size: 0.82rem; white-space: pre; color: #e2e8f0; min-width: 0; }',
 
-      
       '.anno-tag { flex-shrink: 0; font-size: 0.62rem; color: #94a3b8; background: rgba(139, 92, 246, 0.08); padding: 1px 6px; border-radius: 4px; margin-right: 6px; white-space: nowrap; align-self: center; cursor: help; border: 1px solid rgba(139, 92, 246, 0.12); transition: all 0.2s ease; max-width: 120px; overflow: hidden; text-overflow: ellipsis; order: -2; }',
       '.anno-tag:hover { color: #c4b5fd; background: rgba(139, 92, 246, 0.18); border-color: rgba(139, 92, 246, 0.35); max-width: 300px; }',
 
-      
       '.anno-tag-placeholder { flex-shrink: 0; width: 0px; margin-right: 0px; order: -2; }',
 
-      
       '.anno-error-tag { flex-shrink: 0; font-size: 0.62rem; color: #fca5a5; background: rgba(239, 68, 68, 0.1); padding: 1px 6px; border-radius: 4px; margin-left: 8px; white-space: nowrap; align-self: center; border: 1px solid rgba(239, 68, 68, 0.2); cursor: help; }',
 
-      
       '.editable-value { border-radius: 3px; padding: 0 2px; transition: all 0.15s ease; }',
       '.edit-mode .editable-value { cursor: text; }',
       '.edit-mode .editable-value:hover { background: rgba(245, 158, 11, 0.12); box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25); }',
 
-      
       '.edit-mode-indicator { position: absolute; top: 8px; right: 12px; font-size: 0.65rem; color: #f59e0b; background: rgba(245,158,11,0.1); padding: 2px 10px; border-radius: 99px; border: 1px solid rgba(245,158,11,0.2); pointer-events: none; z-index: 5; opacity: 0.8; }',
 
-      
       '.inline-edit-input { background: rgba(245, 158, 11, 0.08) !important; border: 1px solid rgba(245, 158, 11, 0.35) !important; border-radius: 3px !important; color: #fcd34d !important; font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace !important; font-size: 0.82rem !important; padding: 0px 3px !important; outline: none !important; min-width: 40px; box-shadow: 0 0 6px rgba(245, 158, 11, 0.15); line-height: 1.7; height: 1.7em; }',
 
-      
       '.line-num { color: #334155; font-size: 0.72rem; min-width: 32px; text-align: right; padding-right: 10px; flex-shrink: 0; user-select: none; font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace; order: -1; }',
 
-      
       '.fold-btn { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #475569; cursor: pointer; border-radius: 3px; flex-shrink: 0; margin-right: 2px; transition: all 0.15s ease; user-select: none; background: transparent; border: none; padding: 0; font-family: monospace; order: 0; }',
       '.fold-btn:hover { color: #38bdf8; background: rgba(56, 189, 248, 0.1); }',
       '.fold-btn.folded { color: #f59e0b; }',
 
-      
       '#validationBar { padding: 10px 16px; font-size: 0.78rem; border-bottom: 1px solid #1e293b; overflow: visible; line-height: 1.5; }',
       '.valid-summary { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 0.82rem; }',
       '.valid-summary.ok { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }',
@@ -91,55 +85,280 @@
     document.head.appendChild(style);
   }
 
-  
-  
-  
-  var annotatedPreview = document.getElementById('annotatedPreview');
+  // ============================================================
+  //  DOM
+  // ============================================================
+  var annotatedPreview  = document.getElementById('annotatedPreview');
   var toggleAnnotations = document.getElementById('toggleAnnotations');
-  var toggleEditMode = document.getElementById('toggleEditMode');
-  var validationBar = document.getElementById('validationBar');
+  var toggleEditMode    = document.getElementById('toggleEditMode');
+  var validationBar     = document.getElementById('validationBar');
+  var importStatusBar   = document.getElementById('importStatusBar');
+  var btnImportCard     = document.getElementById('btnImportCard');
+  var importCardInput   = document.getElementById('importCardInput');
 
   var showAnnotations = true;
-  var editMode = false;
-  var currentJSON = null;
-  var currentErrors = new Map();
-  var foldedSets = new Set();
+  var editMode        = false;
+  var currentJSON     = null;
+  var currentErrors   = new Map();
+  var foldedSets      = new Set();
 
   function getFieldInfo(path) {
     if (window.__fieldDict__) return window.__fieldDict__.getFieldInfo(path);
     return undefined;
   }
-
   function doValidateFullJSON(json) {
     if (window.__fieldDict__) return window.__fieldDict__.validateFullJSON(json);
     return [];
   }
 
-  
-  
-  
+  // ============================================================
+  //  切换注释 / 编辑模式
+  // ============================================================
   toggleAnnotations.addEventListener('change', function() {
     showAnnotations = toggleAnnotations.checked;
     if (currentJSON) renderAnnotatedJSON(currentJSON);
   });
-
   toggleEditMode.addEventListener('change', function() {
     editMode = toggleEditMode.checked;
     if (currentJSON) renderAnnotatedJSON(currentJSON);
   });
 
-  
-  
-  
+  // ============================================================
+  //  ★ 导入卡片（JSON / PNG）
+  // ============================================================
+  btnImportCard.addEventListener('click', function() {
+    importCardInput.value = '';
+    importCardInput.click();
+  });
+
+  importCardInput.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    var ext = file.name.split('.').pop().toLowerCase();
+
+    if (ext === 'json') {
+      importFromJSON(file);
+    } else if (ext === 'png') {
+      importFromPNG(file);
+    } else {
+      showImportStatus('❌ 不支持的文件格式，请选择 .json 或 .png', 'error');
+    }
+  });
+
+  // ── 从 JSON 文件导入 ──────────────────────────────────────
+  function importFromJSON(file) {
+    showImportStatus('⏳ 解析 JSON...', 'info');
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var json = JSON.parse(ev.target.result);
+        applyImportedCard(json, file.name);
+      } catch(err) {
+        showImportStatus('❌ JSON 解析失败：' + err.message, 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ── 从 PNG 文件导入（读取 tEXt chara chunk）────────────────
+  function importFromPNG(file) {
+    showImportStatus('⏳ 解析 PNG 元数据...', 'info');
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var bytes  = new Uint8Array(ev.target.result);
+        var charaB64 = extractPNGCharaChunk(bytes);
+        if (!charaB64) {
+          showImportStatus('❌ 未找到角色数据，该 PNG 可能不是酒馆卡片', 'error');
+          return;
+        }
+        // base64 → JSON
+        var jsonStr = decodeURIComponent(escape(atob(charaB64)));
+        var json    = JSON.parse(jsonStr);
+
+        // 同时把头像也读进去
+        var dataUrl = URL.createObjectURL(file);
+        var img     = new Image();
+        img.onload = function() {
+          var cv  = document.createElement('canvas');
+          cv.width  = img.width;
+          cv.height = img.height;
+          cv.getContext('2d').drawImage(img, 0, 0);
+          var base64 = cv.toDataURL('image/png');
+          URL.revokeObjectURL(dataUrl);
+
+          // 把头像注入到全局状态
+          if (window.__setImportedAvatar__) {
+            window.__setImportedAvatar__(base64);
+          }
+          applyImportedCard(json, file.name);
+        };
+        img.onerror = function() {
+          URL.revokeObjectURL(dataUrl);
+          applyImportedCard(json, file.name);
+        };
+        img.src = dataUrl;
+
+      } catch(err) {
+        showImportStatus('❌ PNG 解析失败：' + err.message, 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ── 解析 PNG tEXt chunk，提取 chara 字段 ─────────────────
+  function extractPNGCharaChunk(bytes) {
+    // PNG 签名 8 字节，之后是 chunk 序列
+    // chunk 结构：4字节长度 + 4字节类型 + N字节数据 + 4字节CRC
+    var i = 8;
+    while (i < bytes.length - 12) {
+      var length =
+        (bytes[i]   << 24 | bytes[i+1] << 16 |
+         bytes[i+2] <<  8 | bytes[i+3]) >>> 0;
+      var type = String.fromCharCode(
+        bytes[i+4], bytes[i+5], bytes[i+6], bytes[i+7]
+      );
+      if (type === 'tEXt') {
+        // tEXt chunk 数据：keyword\0value
+        var dataStart = i + 8;
+        var dataEnd   = i + 8 + length;
+        var data      = bytes.slice(dataStart, dataEnd);
+
+        // 找到 null 分隔符
+        var nullPos = data.indexOf(0);
+        if (nullPos < 0) { i += 12 + length; continue; }
+
+        var keyword = '';
+        for (var k = 0; k < nullPos; k++) {
+          keyword += String.fromCharCode(data[k]);
+        }
+
+        if (keyword === 'chara') {
+          // value 是 base64 编码的 JSON
+          var value = '';
+          for (var v = nullPos + 1; v < data.length; v++) {
+            value += String.fromCharCode(data[v]);
+          }
+          return value;
+        }
+      }
+      // IEND 块，结束
+      if (type === 'IEND') break;
+      i += 12 + length;
+    }
+    return null;
+  }
+
+  // ── 把解析好的 JSON 应用到各面板 ─────────────────────────
+  function applyImportedCard(json, filename) {
+    try {
+      // 兼容 V2（顶层直接是数据）和 V3（有 data 层）
+      var normalized = normalizeCardJSON(json);
+      if (!normalized) {
+        showImportStatus('❌ 无法识别卡片格式，请确认是 V2/V3 角色卡', 'error');
+        return;
+      }
+
+      // 通过 index.astro 的桥接函数应用数据
+      if (window.applyJSONFromEditor) {
+        window.applyJSONFromEditor(normalized);
+      }
+
+      // 更新预览
+      renderAnnotatedJSON(normalized);
+
+      var charName = (normalized.data && normalized.data.name) || normalized.name || '未知角色';
+      showImportStatus(
+        '✅ 已导入「' + charName + '」← ' + filename +
+        '（记得检查各字段后再导出）',
+        'success'
+      );
+    } catch(err) {
+      showImportStatus('❌ 应用失败：' + err.message, 'error');
+    }
+  }
+
+  // ── 兼容 V2 / V3 格式，统一转成 V3 结构 ─────────────────
+  function normalizeCardJSON(json) {
+    // 已经是 V3
+    if (json && json.spec === 'chara_card_v3' && json.data) {
+      return json;
+    }
+    // 已经是 V2（有 data 层但 spec 不同）
+    if (json && json.data && json.data.name) {
+      // 补齐 spec 字段
+      json.spec         = json.spec         || 'chara_card_v3';
+      json.spec_version = json.spec_version || '3.0';
+      return json;
+    }
+    // 纯 V1/V2 顶层格式（没有 data 层）
+    if (json && json.name) {
+      return {
+        name:           json.name || '',
+        description:    json.description || '',
+        personality:    json.personality || '',
+        scenario:       json.scenario || '',
+        first_mes:      json.first_mes || '',
+        mes_example:    json.mes_example || '',
+        creatorcomment: json.creatorcomment || '',
+        avatar:         'none',
+        talkativeness:  '0.5',
+        fav:            false,
+        tags:           json.tags || [],
+        spec:           'chara_card_v3',
+        spec_version:   '3.0',
+        data: {
+          name:                     json.name || '',
+          description:              json.description || '',
+          personality:              json.personality || '',
+          scenario:                 json.scenario || '',
+          first_mes:                json.first_mes || '',
+          mes_example:              json.mes_example || '',
+          creator_notes:            json.creatorcomment || '',
+          system_prompt:            '',
+          post_history_instructions:'',
+          tags:                     json.tags || [],
+          creator:                  '',
+          character_version:        '1.0',
+          alternate_greetings:      json.alternate_greetings || [],
+          extensions: {
+            world: '',
+            regex_scripts: [],
+          },
+          character_book: json.character_book || { name: '', entries: [] },
+        }
+      };
+    }
+    return null;
+  }
+
+  // ── 导入状态提示 ──────────────────────────────────────────
+  function showImportStatus(msg, type) {
+    var colors = {
+      info:    { color: '#38bdf8', bg: 'rgba(56,189,248,0.08)',  border: 'rgba(56,189,248,0.2)'  },
+      success: { color: '#34d399', bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.2)'  },
+      error:   { color: '#fca5a5', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)'   },
+    };
+    var c = colors[type] || colors.info;
+    importStatusBar.style.cssText =
+      'display:block;padding:8px 16px;font-size:0.78rem;border-bottom:1px solid #1e293b;' +
+      'color:' + c.color + ';background:' + c.bg + ';border-left:3px solid ' + c.border + ';';
+    importStatusBar.textContent = msg;
+    if (type === 'success') {
+      setTimeout(function() { importStatusBar.style.display = 'none'; }, 5000);
+    }
+  }
+
+  // ============================================================
+  //  校验
+  // ============================================================
   function runValidation() {
     if (!currentJSON) { validationBar.style.display = 'none'; return; }
-
     var errors = doValidateFullJSON(currentJSON);
     currentErrors.clear();
     errors.forEach(function(e) { currentErrors.set(e.path, e.message); });
-
     var fieldCount = countFields(currentJSON);
-
     if (errors.length === 0) {
       validationBar.innerHTML = '<div class="valid-summary ok">✅ 全部校验通过 · 共检查 ' + fieldCount + ' 个字段</div>';
     } else {
@@ -162,49 +381,33 @@
     return count;
   }
 
-  
-  
-  
-  
-  
-  
-  
-  
+  // ============================================================
+  //  渲染注释 JSON
+  // ============================================================
   function renderAnnotatedJSON(json) {
     currentJSON = json;
     runValidation();
-
     var lines = [];
     buildLines(json, '', 0, true, '', lines);
-
     var html = '';
-
     if (editMode) {
       html += '<div class="edit-mode-indicator">✏️ 编辑模式 · 单击值可修改</div>';
     }
-
     lines.forEach(function(line, idx) {
-      var info = getFieldInfo(line.path);
-      var error = currentErrors.get(line.path);
-      var lineNum = idx + 1;
+      var info       = getFieldInfo(line.path);
+      var error      = currentErrors.get(line.path);
+      var lineNum    = idx + 1;
       var errorClass = error ? ' has-error' : '';
-
-      
-      var tagHTML = '';
+      var tagHTML    = '';
       if (showAnnotations && info) {
         tagHTML = '<span class="anno-tag" title="' + escapeAttr(info.tip) + '">' + escapeHTML(info.label) + '</span>';
       } else if (showAnnotations) {
-        
         tagHTML = '<span class="anno-tag-placeholder"></span>';
       }
-
-      
       var errorHTML = '';
       if (error) {
         errorHTML = '<span class="anno-error-tag" title="' + escapeAttr(error) + '">⚠ ' + escapeHTML(error) + '</span>';
       }
-
-      
       var foldHTML = '';
       if (line.foldable) {
         var isFolded = foldedSets.has(line.foldId);
@@ -212,33 +415,27 @@
       } else {
         foldHTML = '<span style="width:14px;display:inline-block;flex-shrink:0;margin-right:2px;order:0;"></span>';
       }
-
       var isHidden = false;
       if (line.foldGroup) {
         foldedSets.forEach(function(fid) { if (line.foldGroup === fid) isHidden = true; });
       }
-
       html += '<div class="anno-line' + errorClass + '" data-fold-group="' + (line.foldGroup || '') + '"' + (isHidden ? ' style="display:none;"' : '') + '>';
-      html += tagHTML;                                    
-      html += '<span class="line-num">' + lineNum + '</span>';  
-      html += foldHTML;                                   
-      html += '<span class="anno-code">' + line.code + '</span>'; 
-      html += errorHTML;                                  
+      html += tagHTML;
+      html += '<span class="line-num">' + lineNum + '</span>';
+      html += foldHTML;
+      html += '<span class="anno-code">' + line.code + '</span>';
+      html += errorHTML;
       html += '</div>';
     });
-
     annotatedPreview.className = editMode ? 'edit-mode' : '';
     annotatedPreview.innerHTML = html;
 
-    
     annotatedPreview.querySelectorAll('.fold-btn').forEach(function(btn) {
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
         toggleFold(e.currentTarget.getAttribute('data-fold-id'), e.currentTarget);
       });
     });
-
-    
     if (editMode) {
       annotatedPreview.querySelectorAll('.editable-value').forEach(function(el) {
         el.addEventListener('click', function(e) {
@@ -247,137 +444,103 @@
         });
       });
     }
-
-    
     if (typeof gsap !== 'undefined') {
-      gsap.fromTo("#codeContentWrapper",
-        { backgroundColor: "rgba(56,189,248,0.06)" },
-        { backgroundColor: "transparent", duration: 0.35, ease: "power2.out" }
+      gsap.fromTo('#codeContentWrapper',
+        { backgroundColor: 'rgba(56,189,248,0.06)' },
+        { backgroundColor: 'transparent', duration: 0.35, ease: 'power2.out' }
       );
     }
   }
 
-  
-  
-  
+  // ============================================================
+  //  buildLines / buildObjectContent / valueToHtml（原样保留）
+  // ============================================================
   function buildLines(value, path, indent, isLast, parentGroup, lines) {
-    var pad = rep('  ', indent);
+    var pad   = rep('  ', indent);
     var comma = isLast ? '' : '<span class="jp">,</span>';
-
-    if (value === null) {
-      lines.push(mkLine(indent, path, pad + '<span class="jnull">null</span>' + comma, parentGroup));
-      return;
-    }
+    if (value === null) { lines.push(mkLine(indent, path, pad + '<span class="jnull">null</span>' + comma, parentGroup)); return; }
     if (typeof value === 'boolean') {
       var bAttr = editMode ? ' data-path="' + escapeAttr(path) + '" data-type="boolean"' : '';
-      var bCls = editMode ? 'jb editable-value' : 'jb';
-      lines.push(mkLine(indent, path, pad + '<span class="' + bCls + '"' + bAttr + '>' + value + '</span>' + comma, parentGroup));
-      return;
+      var bCls  = editMode ? 'jb editable-value' : 'jb';
+      lines.push(mkLine(indent, path, pad + '<span class="' + bCls + '"' + bAttr + '>' + value + '</span>' + comma, parentGroup)); return;
     }
     if (typeof value === 'number') {
       var nAttr = editMode ? ' data-path="' + escapeAttr(path) + '" data-type="number"' : '';
-      var nCls = editMode ? 'jn editable-value' : 'jn';
-      lines.push(mkLine(indent, path, pad + '<span class="' + nCls + '"' + nAttr + '>' + value + '</span>' + comma, parentGroup));
-      return;
+      var nCls  = editMode ? 'jn editable-value' : 'jn';
+      lines.push(mkLine(indent, path, pad + '<span class="' + nCls + '"' + nAttr + '>' + value + '</span>' + comma, parentGroup)); return;
     }
     if (typeof value === 'string') {
-      var esc = escapeHTML(JSON.stringify(value));
+      var esc   = escapeHTML(JSON.stringify(value));
       var sAttr = ' data-path="' + escapeAttr(path) + '" data-type="string"';
-      var sCls = editMode ? 'js editable-value' : 'js';
-      lines.push(mkLine(indent, path, pad + '<span class="' + sCls + '"' + sAttr + '>' + esc + '</span>' + comma, parentGroup));
-      return;
+      var sCls  = editMode ? 'js editable-value' : 'js';
+      lines.push(mkLine(indent, path, pad + '<span class="' + sCls + '"' + sAttr + '>' + esc + '</span>' + comma, parentGroup)); return;
     }
-
-    var isArr = Array.isArray(value);
-    var keys = isArr ? value : Object.keys(value);
-    var len = isArr ? value.length : keys.length;
-    var open = isArr ? '[' : '{';
-    var close = isArr ? ']' : '}';
+    var isArr  = Array.isArray(value);
+    var keys   = isArr ? value : Object.keys(value);
+    var len    = isArr ? value.length : keys.length;
+    var open   = isArr ? '[' : '{';
+    var close  = isArr ? ']' : '}';
     var foldId = 'f' + path.replace(/[^a-zA-Z0-9]/g, '_') + indent;
-
-    if (len === 0) {
-      lines.push(mkLine(indent, path, pad + '<span class="jp">' + open + close + '</span>' + comma, parentGroup));
-      return;
-    }
-
+    if (len === 0) { lines.push(mkLine(indent, path, pad + '<span class="jp">' + open + close + '</span>' + comma, parentGroup)); return; }
     lines.push(mkFoldLine(indent, path, pad + '<span class="jp">' + open + '</span>', foldId, parentGroup));
-
     if (isArr) {
-      value.forEach(function(item, i) {
-        buildLines(item, path + '.' + i, indent + 1, i === len - 1, foldId, lines);
-      });
+      value.forEach(function(item, i) { buildLines(item, path + '.' + i, indent + 1, i === len - 1, foldId, lines); });
     } else {
       keys.forEach(function(key, i) {
-        var childPath = path ? path + '.' + key : key;
-        var childLast = i === len - 1;
-        var childVal = value[key];
+        var childPath  = path ? path + '.' + key : key;
+        var childLast  = i === len - 1;
+        var childVal   = value[key];
         var childComma = childLast ? '' : '<span class="jp">,</span>';
-        var childPad = rep('  ', indent + 1);
-        var keyHtml = '<span class="jk">"' + escapeHTML(key) + '"</span>';
-
+        var childPad   = rep('  ', indent + 1);
+        var keyHtml    = '<span class="jk">"' + escapeHTML(key) + '"</span>';
         if (childVal === null || typeof childVal !== 'object') {
-          var valHtml = valueToHtml(childVal, childPath);
-          lines.push(mkLine(indent + 1, childPath,
-            childPad + keyHtml + '<span class="jp">: </span>' + valHtml + childComma, foldId));
+          lines.push(mkLine(indent + 1, childPath, childPad + keyHtml + '<span class="jp">: </span>' + valueToHtml(childVal, childPath) + childComma, foldId));
         } else {
           var cIsArr = Array.isArray(childVal);
-          var cLen = cIsArr ? childVal.length : Object.keys(childVal).length;
-          var cOpen = cIsArr ? '[' : '{';
+          var cLen   = cIsArr ? childVal.length : Object.keys(childVal).length;
+          var cOpen  = cIsArr ? '[' : '{';
           var cClose = cIsArr ? ']' : '}';
-
           if (cLen === 0) {
-            lines.push(mkLine(indent + 1, childPath,
-              childPad + keyHtml + '<span class="jp">: ' + cOpen + cClose + '</span>' + childComma, foldId));
+            lines.push(mkLine(indent + 1, childPath, childPad + keyHtml + '<span class="jp">: ' + cOpen + cClose + '</span>' + childComma, foldId));
           } else {
             var childFoldId = 'f' + childPath.replace(/[^a-zA-Z0-9]/g, '_') + (indent + 1);
-            lines.push(mkFoldLine(indent + 1, childPath,
-              childPad + keyHtml + '<span class="jp">: ' + cOpen + '</span>', childFoldId, foldId));
+            lines.push(mkFoldLine(indent + 1, childPath, childPad + keyHtml + '<span class="jp">: ' + cOpen + '</span>', childFoldId, foldId));
             buildObjectContent(childVal, childPath, indent + 2, childFoldId, lines);
-            lines.push(mkLine(indent + 1, childPath,
-              childPad + '<span class="jp">' + cClose + '</span>' + childComma, childFoldId));
+            lines.push(mkLine(indent + 1, childPath, childPad + '<span class="jp">' + cClose + '</span>' + childComma, childFoldId));
           }
         }
       });
     }
-
     lines.push(mkLine(indent, path, pad + '<span class="jp">' + close + '</span>' + comma, foldId));
   }
 
   function buildObjectContent(value, basePath, indent, parentGroup, lines) {
     var isArr = Array.isArray(value);
     if (isArr) {
-      value.forEach(function(item, i) {
-        buildLines(item, basePath + '.' + i, indent, i === value.length - 1, parentGroup, lines);
-      });
+      value.forEach(function(item, i) { buildLines(item, basePath + '.' + i, indent, i === value.length - 1, parentGroup, lines); });
     } else {
       var keys = Object.keys(value);
       keys.forEach(function(key, i) {
-        var kPath = basePath + '.' + key;
-        var kLast = i === keys.length - 1;
-        var kVal = value[key];
-        var kComma = kLast ? '' : '<span class="jp">,</span>';
-        var kPad = rep('  ', indent);
+        var kPath    = basePath + '.' + key;
+        var kLast    = i === keys.length - 1;
+        var kVal     = value[key];
+        var kComma   = kLast ? '' : '<span class="jp">,</span>';
+        var kPad     = rep('  ', indent);
         var kKeyHtml = '<span class="jk">"' + escapeHTML(key) + '"</span>';
-
         if (kVal === null || typeof kVal !== 'object') {
-          lines.push(mkLine(indent, kPath,
-            kPad + kKeyHtml + '<span class="jp">: </span>' + valueToHtml(kVal, kPath) + kComma, parentGroup));
+          lines.push(mkLine(indent, kPath, kPad + kKeyHtml + '<span class="jp">: </span>' + valueToHtml(kVal, kPath) + kComma, parentGroup));
         } else {
           var kIsArr = Array.isArray(kVal);
-          var kLen = kIsArr ? kVal.length : Object.keys(kVal).length;
-          var kOpen = kIsArr ? '[' : '{';
+          var kLen   = kIsArr ? kVal.length : Object.keys(kVal).length;
+          var kOpen  = kIsArr ? '[' : '{';
           var kClose = kIsArr ? ']' : '}';
-
           if (kLen === 0) {
-            lines.push(mkLine(indent, kPath,
-              kPad + kKeyHtml + '<span class="jp">: ' + kOpen + kClose + '</span>' + kComma, parentGroup));
+            lines.push(mkLine(indent, kPath, kPad + kKeyHtml + '<span class="jp">: ' + kOpen + kClose + '</span>' + kComma, parentGroup));
           } else {
             var kFoldId = 'f' + kPath.replace(/[^a-zA-Z0-9]/g, '_') + indent;
-            lines.push(mkFoldLine(indent, kPath,
-              kPad + kKeyHtml + '<span class="jp">: ' + kOpen + '</span>', kFoldId, parentGroup));
+            lines.push(mkFoldLine(indent, kPath, kPad + kKeyHtml + '<span class="jp">: ' + kOpen + '</span>', kFoldId, parentGroup));
             buildObjectContent(kVal, kPath, indent + 1, kFoldId, lines);
-            lines.push(mkLine(indent, kPath,
-              kPad + '<span class="jp">' + kClose + '</span>' + kComma, kFoldId));
+            lines.push(mkLine(indent, kPath, kPad + '<span class="jp">' + kClose + '</span>' + kComma, kFoldId));
           }
         }
       });
@@ -395,7 +558,7 @@
       return '<span class="' + (editMode ? 'jn editable-value' : 'jn') + '"' + nA + '>' + val + '</span>';
     }
     var esc = escapeHTML(JSON.stringify(val));
-    var sA = ' data-path="' + escapeAttr(path) + '" data-type="string"';
+    var sA  = ' data-path="' + escapeAttr(path) + '" data-type="string"';
     return '<span class="' + (editMode ? 'js editable-value' : 'js') + '"' + sA + '>' + esc + '</span>';
   }
 
@@ -406,9 +569,9 @@
     return { indent: indent, path: path, code: code, foldable: true, foldId: foldId, foldGroup: foldGroup || '' };
   }
 
-  
-  
-  
+  // ============================================================
+  //  折叠
+  // ============================================================
   function toggleFold(foldId, btn) {
     if (foldedSets.has(foldId)) {
       foldedSets.delete(foldId); btn.textContent = '▼'; btn.classList.remove('folded');
@@ -424,45 +587,37 @@
     });
   }
 
-  
-  
-  
+  // ============================================================
+  //  行内编辑
+  // ============================================================
   function startInlineEdit(el) {
     var path = el.getAttribute('data-path');
     var type = el.getAttribute('data-type');
     if (!path || el.querySelector('.inline-edit-input')) return;
-
     var currentValue = getValueByPath(currentJSON, path);
-
-    
     if (type === 'boolean') {
       setValueByPath(currentJSON, path, !currentValue);
       if (window.applyJSONFromEditor) window.applyJSONFromEditor(currentJSON);
       renderAnnotatedJSON(currentJSON);
       return;
     }
-
-    var displayValue = type === 'string' ? String(currentValue) : JSON.stringify(currentValue);
+    var displayValue  = type === 'string' ? String(currentValue) : JSON.stringify(currentValue);
     var originalClasses = el.className;
-    var originalHTML = el.innerHTML;
-
+    var originalHTML  = el.innerHTML;
     var input = document.createElement('input');
-    input.type = 'text';
+    input.type      = 'text';
     input.className = 'inline-edit-input';
-    input.value = displayValue;
+    input.value     = displayValue;
     input.style.width = Math.max(40, measureTextWidth(displayValue) + 16) + 'px';
-
     el.innerHTML = '';
     el.appendChild(input);
     el.style.background = 'none';
-    el.style.boxShadow = 'none';
+    el.style.boxShadow  = 'none';
     input.focus();
     input.select();
-
     input.addEventListener('input', function() {
       input.style.width = Math.max(40, measureTextWidth(input.value) + 16) + 'px';
     });
-
     var committed = false;
     function commit() {
       if (committed) return; committed = true;
@@ -478,14 +633,16 @@
       el.className = originalClasses; el.innerHTML = originalHTML;
       el.style.background = ''; el.style.boxShadow = '';
     }
-
     input.addEventListener('blur', commit);
     input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
       if (e.key === 'Escape') { e.preventDefault(); input.removeEventListener('blur', commit); cancel(); }
     });
   }
 
+  // ============================================================
+  //  工具函数
+  // ============================================================
   var measureCanvas = null;
   function measureTextWidth(text) {
     if (!measureCanvas) measureCanvas = document.createElement('canvas');
@@ -493,7 +650,6 @@
     ctx.font = '0.82rem "JetBrains Mono", "Fira Code", "Courier New", monospace';
     return ctx.measureText(text).width;
   }
-
   function getValueByPath(obj, path) {
     var parts = path.split('.'); var cur = obj;
     for (var i = 0; i < parts.length; i++) { if (cur == null) return undefined; cur = cur[parts[i]]; }
@@ -504,12 +660,15 @@
     for (var i = 0; i < parts.length - 1; i++) { if (cur[parts[i]] === undefined) return; cur = cur[parts[i]]; }
     cur[parts[parts.length - 1]] = value;
   }
-
   function escapeHTML(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function escapeAttr(str) { return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function rep(s, n) { var r = ''; for (var i = 0; i < n; i++) r += s; return r; }
 
+  // ============================================================
+  //  对外暴露
+  // ============================================================
   window.updatePreviewPanel = function(json) { renderAnnotatedJSON(json); };
-  window.getPreviewJSON = function() { return currentJSON; };
+  window.getPreviewJSON     = function() { return currentJSON; };
+
 })();
 </script>
