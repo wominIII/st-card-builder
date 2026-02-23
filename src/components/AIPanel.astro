@@ -4,21 +4,21 @@
   <h2>✨ AI 引擎</h2>
 
   <!-- API 配置 -->
-  <div class="grid-2">
-    <div class="form-group">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 16px;">
+    <div class="form-group" style="margin-bottom: 0;">
       <label>API 接口地址</label>
-      <input type="text" id="apiUrl" value="https:
+      <input type="text" id="apiUrl" value="https://api.openai.com/v1" placeholder="https://..." style="width: 100%;" />
     </div>
-    <div class="form-group">
+    <div class="form-group" style="margin-bottom: 0;">
       <label>API 密钥</label>
-      <input type="password" id="apiKey" placeholder="sk-..." />
+      <input type="password" id="apiKey" placeholder="sk-..." style="width: 100%;" />
     </div>
   </div>
 
-  <div class="grid-2" style="margin-bottom: 16px;">
-    <button id="btnFetchModels" class="btn btn-fetch">🔄 拉取可用模型</button>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 16px;">
+    <button id="btnFetchModels" class="btn btn-fetch" style="margin: 0;">🔄 拉取可用模型</button>
     <div class="form-group" style="margin-bottom: 0;">
-      <select id="modelSelect">
+      <select id="modelSelect" style="width: 100%;">
         <option value="">请先获取模型...</option>
       </select>
     </div>
@@ -227,7 +227,7 @@
     word-break: break-all;
   }
 
-  
+  /* 黑客动画 */
   #hackerOverlay {
     position: relative;
     margin-top: 14px;
@@ -326,7 +326,7 @@
   var hackerProgress   = document.getElementById('hackerProgress');
   var hackerDetail     = document.getElementById('hackerDetail');
 
-  
+  // 搜索相关 DOM
   var searchEnable      = document.getElementById('searchEnable');
   var searchConfigBlock = document.getElementById('searchConfigBlock');
   var searchConfigDetail = document.getElementById('searchConfigDetail');
@@ -345,9 +345,9 @@
 
   var SEARCH_CONFIG_KEY = 'st_v3_builder_search_config';
 
-  
-  
-  
+  // ============================================================
+  //  快捷条数按钮
+  // ============================================================
   function updateCountBtnActive() {
     var val = parseInt(wbSkeletonCount.value);
     countBtns.forEach(function(btn) {
@@ -363,9 +363,9 @@
   wbSkeletonCount.addEventListener('input', updateCountBtnActive);
   updateCountBtnActive();
 
-  
-  
-  
+  // ============================================================
+  //  联网搜索 UI 逻辑
+  // ============================================================
   function updateSearchUI() {
     var enabled = searchEnable.checked;
     searchConfigDetail.style.display = enabled ? 'block' : 'none';
@@ -392,7 +392,7 @@
       searchModeBadge.style.border = '1px solid rgba(16,185,129,0.25)';
       searchKeyGroup.style.display = 'block';
       searchKeyLabel.textContent = 'Serper API Key';
-      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https:
+      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https://serper.dev" target="_blank" style="color:#38bdf8;text-decoration:underline;">serper.dev</a> → 注册后在 Dashboard 复制 API Key（免费 2,500 次/月）';
     } else if (engine === 'tavily') {
       searchModeBadge.textContent = 'Tavily · AI 专用';
       searchModeBadge.style.background = 'rgba(245,158,11,0.12)';
@@ -400,7 +400,7 @@
       searchModeBadge.style.border = '1px solid rgba(245,158,11,0.25)';
       searchKeyGroup.style.display = 'block';
       searchKeyLabel.textContent = 'Tavily API Key';
-      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https:
+      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https://tavily.com" target="_blank" style="color:#38bdf8;text-decoration:underline;">tavily.com</a> → 注册后在 API Keys 页复制（免费 1,000 次/月）';
     }
 
     saveSearchConfig();
@@ -412,9 +412,9 @@
   searchResultCount.addEventListener('change', saveSearchConfig);
   searchLang.addEventListener('change', saveSearchConfig);
 
-  
-  
-  
+  // ============================================================
+  //  搜索配置持久化
+  // ============================================================
   function saveSearchConfig() {
     localStorage.setItem(SEARCH_CONFIG_KEY, JSON.stringify({
       enabled:     searchEnable.checked,
@@ -428,13 +428,13 @@
   function loadSearchConfig() {
     try {
       var c = JSON.parse(localStorage.getItem(SEARCH_CONFIG_KEY));
-      
+      // ★ 没有存档时默认关闭
       if (!c) {
         searchEnable.checked = false;
         updateSearchUI();
         return;
       }
-      
+      // ★ 明确读取 enabled，没有记录则默认 false
       searchEnable.checked = c.enabled === true ? true : false;
       if (c.engine)      searchEngine.value      = c.engine;
       if (c.apiKey)      searchApiKey.value       = c.apiKey;
@@ -442,7 +442,7 @@
       if (c.lang)        searchLang.value         = c.lang;
       updateSearchUI();
     } catch(e) {
-      
+      // ★ 出错时也强制关闭
       searchEnable.checked = false;
       updateSearchUI();
     }
@@ -450,9 +450,9 @@
 
   loadSearchConfig();
 
-  
-  
-  
+  // ============================================================
+  //  搜索执行函数
+  // ============================================================
   async function executeSearch(query, count, lang) {
     var engine = searchEngine.value;
     var key    = searchApiKey.value.trim();
@@ -466,7 +466,7 @@
   }
 
   async function searchWithSerper(query, count, lang, key) {
-    var res = await fetch('https:
+    var res = await fetch('https://google.serper.dev/search', {
       method: 'POST',
       headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -492,7 +492,7 @@
   }
 
   async function searchWithTavily(query, count, key) {
-    var res = await fetch('https:
+    var res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ api_key: key, query: query, max_results: count, search_depth: 'basic', include_answer: true })
@@ -545,9 +545,9 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  
-  
-  
+  // ============================================================
+  //  搜索测试按钮
+  // ============================================================
   btnTestSearch.addEventListener('click', async function() {
     var engine = searchEngine.value;
     var query  = searchCustomQuery.value.trim() || document.getElementById('aiPrompt').value.trim();
@@ -592,9 +592,9 @@
     }
   });
 
-  
-  
-  
+  // ============================================================
+  //  黑客风信息流动画
+  // ============================================================
   var hackerChars   = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン{}[]<>/\\|=+-*&^%$#@!~;:,.?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   var hackerAnimId  = null;
   var hackerStreamText = '';
@@ -665,9 +665,9 @@
   ];
   function getRandomHackerMsg() { return hackerMessages[Math.floor(Math.random() * hackerMessages.length)]; }
 
-  
-  
-  
+  // ============================================================
+  //  暴露给 index.astro
+  // ============================================================
   window.__hackerAnim__ = {
     start:    startHackerAnim,
     stop:     stopHackerAnim,
