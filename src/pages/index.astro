@@ -1,585 +1,1054 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
 import AIPanel from '../components/AIPanel.astro';
 import CharacterPanel from '../components/CharacterPanel.astro';
 import WorldbookPanel from '../components/WorldbookPanel.astro';
+import StatusBarPanel from '../components/StatusBarPanel.astro';
 import PreviewPanel from '../components/PreviewPanel.astro';
-import StatusBarPanel from '../components/StatusBarPanel.astro'; 
+import ChatPlayground from '../components/ChatPlayground.astro';
+import WorldbookAuditor from '../components/WorldbookAuditor.astro';
 ---
 
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>酒馆 V3 终极卡片构建器</title>
-    <script is:inline src="https:
+<Layout title="卡片构建器V2">
+  <div class="app-container">
+    <AIPanel />
+    <CharacterPanel />
+    <WorldbookPanel />
+    <PreviewPanel />
+    <ChatPlayground />
+    <StatusBarPanel />
+    <WorldbookAuditor />
+  </div>
+
+  <script is:inline>
     
-    <style is:global>
-      body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; }
-      .container { display: flex; gap: 20px; max-width: 1800px; width: 100%; align-items: flex-start; }
-      ::-webkit-scrollbar { width: 10px; height: 10px; }
-      ::-webkit-scrollbar-track { background: #0f172a; border-radius: 8px; }
-      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; border: 2px solid #0f172a; }
-      ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    
+    
+    var FIELD_DICT = {
+      "name": { label: "角色名", tip: "角色的显示名称", type: "string", required: true },
+      "description": { label: "角色描述(顶层)", tip: "V2兼容字段，与data.description同步", type: "string" },
+      "personality": { label: "性格(顶层)", tip: "V3中通常留空", type: "string" },
+      "scenario": { label: "场景(顶层)", tip: "V3中通常留空", type: "string" },
+      "first_mes": { label: "开场白(顶层)", tip: "角色说的第一句话", type: "string" },
+      "mes_example": { label: "对话示例(顶层)", tip: "示范角色说话风格", type: "string" },
+      "creatorcomment": { label: "作者注释(顶层)", tip: "V2兼容字段", type: "string" },
+      "avatar": { label: "头像标记", tip: "头像文件名或none", type: "string" },
+      "talkativeness": { label: "话痨程度", tip: "0.0~1.0 控制主动发言频率", type: "string" },
+      "fav": { label: "收藏标记", tip: "是否被标记为收藏", type: "boolean" },
+      "tags": { label: "标签(顶层)", tip: "分类标签数组", type: "array" },
+      "spec": { label: "卡片规格", tip: "固定为chara_card_v3", type: "string", required: true, enum: ["chara_card_v3"] },
+      "spec_version": { label: "规格版本", tip: "固定为3.0", type: "string", required: true, enum: ["3.0"] },
+      "data.name": { label: "角色名", tip: "V3主数据层角色名", type: "string", required: true },
+      "data.description": { label: "角色描述", tip: "核心描述：外貌、性格、背景", type: "string", required: true },
+      "data.personality": { label: "性格", tip: "推荐写在description里", type: "string" },
+      "data.scenario": { label: "场景", tip: "推荐用世界书代替", type: "string" },
+      "data.first_mes": { label: "开场白", tip: "首次对话角色发送的第一条消息", type: "string", required: true },
+      "data.mes_example": { label: "对话示例", tip: "格式：<START>\\n{{char}}: ...", type: "string" },
+      "data.creator_notes": { label: "作者注释", tip: "给使用者看的说明，不注入AI", type: "string" },
+      "data.system_prompt": { label: "系统提示词", tip: "最高优先级系统指令，慎用", type: "string" },
+      "data.post_history_instructions": { label: "历史后指令", tip: "Author's Note位置的指令", type: "string" },
+      "data.tags": { label: "标签", tip: "分类标签数组", type: "array" },
+      "data.creator": { label: "创作者", tip: "卡片制作者名字", type: "string" },
+      "data.character_version": { label: "卡片版本", tip: "迭代版本号", type: "string" },
+      "data.alternate_greetings": { label: "备选开场白", tip: "多个可选开场白", type: "array" },
+      "data.extensions": { label: "扩展数据", tip: "V3扩展字段容器", type: "object" },
+      "data.extensions.world": { label: "关联世界书", tip: "关联的世界书名称", type: "string" },
+      "data.extensions.regex_scripts": { label: "正则脚本列表", tip: "嵌入卡片的正则替换脚本", type: "array" },
+      "data.extensions.regex_scripts[].id": { label: "脚本ID", tip: "唯一标识符", type: "string" },
+      "data.extensions.regex_scripts[].scriptName": { label: "脚本名称", tip: "显示名称", type: "string" },
+      "data.extensions.regex_scripts[].findRegex": { label: "匹配正则", tip: "正则表达式字符串", type: "string" },
+      "data.extensions.regex_scripts[].replaceString": { label: "替换内容", tip: "替换HTML，$1引用捕获组", type: "string" },
+      "data.extensions.regex_scripts[].placement": { label: "作用范围", tip: "1=AI输出 2=用户输入", type: "array" },
+      "data.extensions.regex_scripts[].disabled": { label: "是否禁用", tip: "true则不生效", type: "boolean" },
+      "data.extensions.regex_scripts[].runOnEdit": { label: "编辑时执行", tip: "编辑消息时重新执行", type: "boolean" },
+      "data.character_book": { label: "内嵌世界书", tip: "嵌入角色卡的世界书", type: "object" },
+      "data.character_book.name": { label: "世界书名称", tip: "世界书显示名称", type: "string" },
+      "data.character_book.entries": { label: "词条列表", tip: "所有词条数组", type: "array" },
+      "data.character_book.entries[].id": { label: "词条ID", tip: "从0开始的索引", type: "number" },
+      "data.character_book.entries[].keys": { label: "触发词", tip: "出现这些词时激活词条", type: "array", required: true },
+      "data.character_book.entries[].secondary_keys": { label: "次要触发词", tip: "配合selectiveLogic使用", type: "array" },
+      "data.character_book.entries[].comment": { label: "词条标题", tip: "仅管理界面显示，不注入AI", type: "string" },
+      "data.character_book.entries[].content": { label: "词条内容", tip: "触发后注入AI的设定文本", type: "string", required: true },
+      "data.character_book.entries[].constant": { label: "是否常驻", tip: "true=始终注入，无需触发词", type: "boolean" },
+      "data.character_book.entries[].selective": { label: "是否选择性", tip: "true=需要关键词触发", type: "boolean" },
+      "data.character_book.entries[].insertion_order": { label: "插入顺序", tip: "数值越大越先处理", type: "number", range: { min: 0, max: 9999 } },
+      "data.character_book.entries[].enabled": { label: "是否启用", tip: "false则完全不生效", type: "boolean" },
+      "data.character_book.entries[].position": { label: "插入位置(文本)", tip: "V2兼容字段", type: "string" },
+      "data.character_book.entries[].use_regex": { label: "正则匹配", tip: "触发词当作正则表达式", type: "boolean" },
+      "data.character_book.entries[].extensions": { label: "词条扩展参数", tip: "V3高级控制参数", type: "object" },
+      "data.character_book.entries[].extensions.position": { label: "插入位置", tip: "0=角色前 4=按深度(最常用)", type: "number", enum: [0,1,2,3,4,5,6] },
+      "data.character_book.entries[].extensions.probability": { label: "触发概率", tip: "0~100", type: "number", range: { min: 0, max: 100 } },
+      "data.character_book.entries[].extensions.useProbability": { label: "启用概率", tip: "false则忽略概率值", type: "boolean" },
+      "data.character_book.entries[].extensions.depth": { label: "插入深度", tip: "position=4时生效", type: "number", range: { min: 0, max: 999 } },
+      "data.character_book.entries[].extensions.selectiveLogic": { label: "选择逻辑", tip: "0=AND 1=NOT 2=OR", type: "number", enum: [0,1,2,3] },
+      "data.character_book.entries[].extensions.group": { label: "互斥组", tip: "同组只能激活一个", type: "string" },
+      "data.character_book.entries[].extensions.group_weight": { label: "组权重", tip: "互斥组内优先级", type: "number" },
+      "data.character_book.entries[].extensions.role": { label: "深度角色", tip: "0=系统 1=用户 2=助手", type: "number", enum: [0,1,2] },
+      "data.character_book.entries[].extensions.vectorized": { label: "向量化", tip: "true=语义向量匹配", type: "boolean" },
+      "data.character_book.entries[].extensions.display_index": { label: "显示排序", tip: "管理界面排序", type: "number" },
+      "data.character_book.entries[].extensions.exclude_recursion": { label: "排除递归", tip: "内容不触发其他词条", type: "boolean" },
+      "data.character_book.entries[].extensions.prevent_recursion": { label: "阻止递归", tip: "不被递归触发", type: "boolean" },
+      "data.character_book.entries[].extensions.delay_until_recursion": { label: "延迟到递归", tip: "递归扫描阶段才生效", type: "boolean" },
+      "data.character_book.entries[].extensions.group_override": { label: "组覆盖", tip: "可覆盖同组已激活词条", type: "boolean" },
+      "data.character_book.entries[].extensions.outlet_name": { label: "输出通道", tip: "指定注入通道", type: "string" },
+    };
 
-      .panel { background-color: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; flex: 1; min-width: 300px; max-height: calc(100vh - 40px); overflow-y: auto; }
-      .panel h2, .panel h3 { margin-top: 0; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.1rem; }
-      
-      .form-group { margin-bottom: 15px; }
-      .form-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; font-weight: bold; }
-      
-      
-      input[type="text"], input[type="password"], input[type="number"], textarea, select { 
-        width: 100%; background-color: #0f172a; border: 1px solid #475569; color: #f8fafc; 
-        padding: 8px 10px; border-radius: 6px; box-sizing: border-box; font-family: inherit; 
-        font-size: 0.9rem; outline: none; transition: all 0.2s ease; 
+    function getFieldInfo(path) {
+      if (FIELD_DICT[path]) return FIELD_DICT[path];
+      var n1 = path.replace(/\.(\d+)\./g, '[].');
+      if (FIELD_DICT[n1]) return FIELD_DICT[n1];
+      var n2 = path.replace(/\.(\d+)$/g, '[]');
+      if (FIELD_DICT[n2]) return FIELD_DICT[n2];
+      return undefined;
+    }
+    function validateField(path, value) {
+      var info = getFieldInfo(path); if (!info) return null;
+      if (info.required && (value === undefined || value === null || value === '')) return '必填字段不能为空';
+      if (value !== null && value !== undefined && info.type !== 'any') {
+        var t = Array.isArray(value) ? 'array' : typeof value;
+        if (t !== info.type) return '类型错误：期望 ' + info.type + '，实际 ' + t;
       }
-      input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, textarea:focus, select:focus { 
-        border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); 
+      if (info.enum && value !== undefined && value !== null && value !== '' && info.enum.indexOf(value) === -1) return '值不在允许范围';
+      if (info.range && typeof value === 'number') {
+        if (info.range.min !== undefined && value < info.range.min) return '最小值为 ' + info.range.min;
+        if (info.range.max !== undefined && value > info.range.max) return '最大值为 ' + info.range.max;
       }
-      textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+      return null;
+    }
+    function validateFullJSON(obj, pp, errs) {
+      if (!pp) pp = ''; if (!errs) errs = [];
+      if (obj === null || obj === undefined) return errs;
+      if (Array.isArray(obj)) { obj.forEach(function(it, i) { var p = pp+'.'+i; if (typeof it==='object'&&it!==null) validateFullJSON(it,p,errs); else { var e=validateField(p,it); if(e) errs.push({path:p,message:e,value:it}); } }); }
+      else if (typeof obj === 'object') { Object.keys(obj).forEach(function(k) { var fp=pp?pp+'.'+k:k; var v=obj[k]; var e=validateField(fp,v); if(e) errs.push({path:fp,message:e,value:v}); if(typeof v==='object'&&v!==null) validateFullJSON(v,fp,errs); }); }
+      return errs;
+    }
+    window.__fieldDict__ = { getFieldInfo: getFieldInfo, validateFullJSON: validateFullJSON };
 
-      
-      input[type="file"] { color: #94a3b8; font-size: 0.85rem; cursor: pointer; padding: 0; }
-      input[type="file"]::file-selector-button {
-        background-color: #334155; color: #f8fafc; border: 1px solid #475569; padding: 6px 12px; 
-        border-radius: 6px; cursor: pointer; margin-right: 12px; font-weight: bold; 
-        font-family: inherit; font-size: 0.85rem; transition: all 0.2s ease;
+    
+    
+    
+    var apiUrl               = document.getElementById('apiUrl');
+    var apiKey               = document.getElementById('apiKey');
+    var btnFetchModels       = document.getElementById('btnFetchModels');
+    var modelSelect          = document.getElementById('modelSelect');
+    var presetInput          = document.getElementById('presetInput');
+    var presetListContainer  = document.getElementById('presetListContainer');
+    var presetStatus         = document.getElementById('presetStatus');
+    var aiPrompt             = document.getElementById('aiPrompt');
+    var wbPrompt             = document.getElementById('wbPrompt');
+    var btnAiGenerate        = document.getElementById('btnAiGenerate');
+    var aiStatus             = document.getElementById('aiStatus');
+    var wbSinglePrompt       = document.getElementById('wbSinglePrompt');
+    var btnAiSingleWb        = document.getElementById('btnAiSingleWb');
+    var wbIncludeCharData    = document.getElementById('wbIncludeCharData');
+    var draftSelect          = document.getElementById('draftSelect');
+    var btnNewDraft          = document.getElementById('btnNewDraft');
+    var btnDeleteDraft       = document.getElementById('btnDeleteDraft');
+    var saveIndicator        = document.getElementById('saveIndicator');
+    var charImageInput       = document.getElementById('charImageInput');
+    var avatarImg            = document.getElementById('avatarImg');
+    var avatarPlaceholder    = document.getElementById('avatarPlaceholder');
+    var charName             = document.getElementById('charName');
+    var wbName               = document.getElementById('wbName');
+    var charDesc             = document.getElementById('charDesc');
+    var firstMes             = document.getElementById('firstMes');
+    var creatorNotes         = document.getElementById('creatorNotes');
+    var entryComment         = document.getElementById('entryComment');
+    var entryContent         = document.getElementById('entryContent');
+    var entryKeys            = document.getElementById('entryKeys');
+    var entryStrategy        = document.getElementById('entryStrategy');
+    var entryPosition        = document.getElementById('entryPosition');
+    var entryDepth           = document.getElementById('entryDepth');
+    var entryRole            = document.getElementById('entryRole');
+    var entryOrder           = document.getElementById('entryOrder');
+    var entryProb            = document.getElementById('entryProb');
+    var btnAddEntry          = document.getElementById('btnAddEntry');
+    var entriesList          = document.getElementById('entriesList');
+    var btnDownloadJson      = document.getElementById('btnDownloadJson');
+    var btnExportPNG         = document.getElementById('btnExportPNG');
+
+    
+    
+    
+    var worldbookEntries     = [];
+    var regexScripts         = [];
+    var currentAvatarBase64  = "";
+    var currentDraftId       = "";
+    var parsedPresetList     = [];
+    var editingIndex         = -1;
+    var statusBarActive      = true;
+    var cachedSearchResults  = null;
+
+    if (!window.__altGreetings__) window.__altGreetings__ = [];
+
+    var DRAFTS_KEY  = "st_v3_builder_drafts";
+    var CURRENT_KEY = "st_v3_builder_current_id";
+    var AI_KEY      = "st_v3_builder_ai_config";
+
+    
+    
+    
+    window.triggerGlobalUpdate = function() { debouncedUpdateAndSave(); };
+
+    window.injectStatusBarGlobal = function(wbEntry, regexOrArray) {
+      var idx = -1;
+      for (var i = 0; i < worldbookEntries.length; i++) {
+        if (worldbookEntries[i].comment === wbEntry.comment) { idx = i; break; }
       }
-      input[type="file"]::file-selector-button:hover {
-        background-color: #1e293b; border-color: #8b5cf6; color: #d8b4fe; box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
-      }
-      
+      if (idx >= 0) worldbookEntries[idx] = wbEntry; else worldbookEntries.push(wbEntry);
+      regexScripts = Array.isArray(regexOrArray) ? regexOrArray : [regexOrArray];
+      renderEntriesList();
+      debouncedUpdateAndSave();
+    };
 
-      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    window.setStatusBarActiveState = function(active) {
+      statusBarActive = active;
+      debouncedUpdateAndSave();
+    };
 
-      .ai-panel { border-color: #8b5cf6; background: linear-gradient(180deg, #1e293b 0%, #151025 100%); }
-      .ai-panel h2 { border-color: #8b5cf6; color: #d8b4fe; }
-      .status-text { font-size: 0.85rem; color: #10b981; min-height: 20px; margin-top: 10px; font-weight: bold; }
-      .preset-upload { border: 1px dashed #8b5cf6; padding: 10px; border-radius: 8px; background: rgba(139, 92, 246, 0.1); margin-bottom: 15px; }
-
-      .draft-manager { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 12px; border-radius: 8px; margin-bottom: 20px; }
-      .draft-controls { display: flex; gap: 8px; margin-top: 10px; }
-      .draft-controls button { padding: 6px 10px; font-size: 0.8rem; }
-
-      .btn { width: 100%; padding: 10px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.9rem;}
-      .btn:hover { background-color: #2563eb; }
-      .btn-fetch { background-color: #4b5563; margin-top: 5px; }
-      .btn-fetch:hover { background-color: #6b7280; }
-      .btn-ai { background-color: #8b5cf6; font-size: 1rem; padding: 12px; margin-top: 10px; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
-      .btn-ai:hover { background-color: #7c3aed; }
-      .btn-add { background-color: #10b981; }
-      .btn-delete { background-color: #ef4444; width: auto; padding: 4px 8px; font-size: 0.75rem; }
-      .btn-img { background-color: #f59e0b; width: auto; margin: 0; padding: 6px 12px;}
-      .btn-img:hover { background-color: #d97706; }
-      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-      .entry-item { background-color: #334155; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; flex-direction: column; }
-      .entry-item-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-      .entry-info h4 { margin: 0 0 4px 0; font-size: 0.9rem; }
-      .entry-info p { margin: 0; font-size: 0.75rem; color: #cbd5e1; }
-      
-      
-      .code-window { background-color: #05050a; border-radius: 10px; border: 1px solid #334155; display: flex; flex-direction: column; flex: 1.5; min-width: 450px; max-height: calc(100vh - 40px); position: sticky; top: 20px; overflow: hidden; }
-      .code-header { background-color: #1e293b; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
-      .code-content-wrapper { position: relative; flex-grow: 1; overflow: auto; padding: 20px; }
-      .cyber-pre { margin: 0; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; color: #e2e8f0; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;}
-      
-      
-      .json-key { color: #38bdf8; font-weight: bold; }       
-      .json-string { color: #a3e635; }                       
-      .json-number { color: #f472b6; }                       
-      .json-boolean { color: #c084fc; font-weight: bold; }   
-      .json-null { color: #94a3b8; font-style: italic; }
-      
-      :global(.preset-item) { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 0.8rem; background: #334155; padding: 8px; border-radius: 4px; }
-      :global(.preset-item input[type="checkbox"]) { margin-top: 2px; width: 14px; height: 14px; accent-color: #8b5cf6; cursor: pointer; flex-shrink: 0; }
-      :global(.preset-item label) { margin: 0; cursor: pointer; flex: 1; user-select: none; color: #f8fafc; font-weight: normal; line-height: 1.3; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <AIPanel />
-      <div style="display: flex; flex-direction: column; gap: 20px; flex: 1; min-width: 300px;">
-        <CharacterPanel />
-        <StatusBarPanel /> 
-      </div>
-      <WorldbookPanel />
-      <PreviewPanel />
-    </div>
-
-    <script>
-      
-      
-      
-      const apiUrl = document.getElementById('apiUrl');
-      const apiKey = document.getElementById('apiKey');
-      const btnFetchModels = document.getElementById('btnFetchModels');
-      const modelSelect = document.getElementById('modelSelect');
-      const presetInput = document.getElementById('presetInput');
-      const presetListContainer = document.getElementById('presetListContainer');
-      const presetStatus = document.getElementById('presetStatus');
-      const aiPrompt = document.getElementById('aiPrompt');
-      const wbPrompt = document.getElementById('wbPrompt'); 
-      const btnAiGenerate = document.getElementById('btnAiGenerate');
-      const aiStatus = document.getElementById('aiStatus');
-      
-      const wbSinglePrompt = document.getElementById('wbSinglePrompt');
-      const btnAiSingleWb = document.getElementById('btnAiSingleWb');
-      const wbIncludeCharData = document.getElementById('wbIncludeCharData'); 
-
-      const draftSelect = document.getElementById('draftSelect');
-      const btnNewDraft = document.getElementById('btnNewDraft');
-      const btnDeleteDraft = document.getElementById('btnDeleteDraft');
-      const saveIndicator = document.getElementById('saveIndicator');
-
-      const charImageInput = document.getElementById('charImageInput');
-      const avatarImg = document.getElementById('avatarImg');
-      const avatarPlaceholder = document.getElementById('avatarPlaceholder');
-
-      const charName = document.getElementById('charName');
-      const wbName = document.getElementById('wbName');
-      const charDesc = document.getElementById('charDesc');
-      const firstMes = document.getElementById('firstMes');
-      const creatorNotes = document.getElementById('creatorNotes');
-      
-      const entryComment = document.getElementById('entryComment');
-      const entryContent = document.getElementById('entryContent');
-      const entryKeys = document.getElementById('entryKeys');
-      const entryStrategy = document.getElementById('entryStrategy');
-      const entryPosition = document.getElementById('entryPosition');
-      const entryDepth = document.getElementById('entryDepth');
-      const entryRole = document.getElementById('entryRole');
-      const entryOrder = document.getElementById('entryOrder');
-      const entryProb = document.getElementById('entryProb');
-
-      const btnAddEntry = document.getElementById('btnAddEntry');
-      const entriesList = document.getElementById('entriesList');
-      const codePreview = document.getElementById('codePreview');
-      const btnDownloadJson = document.getElementById('btnDownloadJson');
-      const btnExportPNG = document.getElementById('btnExportPNG');
-
-      
-      const sbFields = document.getElementById('sbFields');
-      const sbColor = document.getElementById('sbColor');
-      const sbTitle = document.getElementById('sbTitle');
-      const btnInjectStatusBar = document.getElementById('btnInjectStatusBar');
-      const btnAiStatusBar = document.getElementById('btnAiStatusBar');
-      const sbStatusText = document.getElementById('sbStatusText');
-      const sbEnable = document.getElementById('sbEnable');
-
-      
-      let worldbookEntries = [];
-      let regexScripts = []; 
-      let currentAvatarBase64 = ""; 
-      let currentDraftId = ""; 
-      let parsedPresetList = []; 
-      let editingIndex = -1;
-
-      const DRAFTS_STORAGE_KEY = "st_v3_builder_drafts";
-      const CURRENT_DRAFT_KEY = "st_v3_builder_current_id";
-      const AI_CONFIG_KEY = "st_v3_builder_ai_config";
-
-      
-      
-      
-      if(btnAiStatusBar) {
-        btnAiStatusBar.addEventListener('click', async () => {
-          const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value;
-          if (!model) return alert('请先拉取并选择模型！');
-          if (!charDesc.value.trim()) return alert('请先填写角色描述，AI需要参考背景！');
-          btnAiStatusBar.disabled = true; btnAiStatusBar.textContent = "⏳ 思考中...";
-          const sysPrompt = `你是一个跑团游戏状态栏UI设计大师。请根据角色的背景设定，构思一个契合背景的【状态栏标题】和【4-6个需要监控的属性字段】。
-  格式必须输出纯JSON: { "title": "带emoji的标题", "fields": "字段1, 字段2, 字段3" }`;
-          try {
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: sysPrompt }, { role: "user", content: `角色名：${charName.value}\n设定：${charDesc.value}` } ], temperature: 0.8 }) });
-            const data = extractJsonObj((await res.json()).choices[0].message.content);
-            if (data.title && sbTitle) sbTitle.value = data.title; 
-            if (data.fields && sbFields) sbFields.value = data.fields;
-            debouncedUpdateAndSave();
-          } catch(err) { alert(`生成失败: ${err.message}`); } finally { btnAiStatusBar.disabled = false; btnAiStatusBar.textContent = "🤖 AI 构思标题与字段"; }
+    window.applyJSONFromEditor = function(json) {
+      if (!json || !json.data) return;
+      charName.value     = json.data.name || json.name || '';
+      wbName.value       = (json.data.extensions && json.data.extensions.world) || '';
+      charDesc.value     = json.data.description || '';
+      firstMes.value     = json.data.first_mes || '';
+      creatorNotes.value = json.data.creator_notes || '';
+      if (json.data.character_book && json.data.character_book.entries) {
+        worldbookEntries = json.data.character_book.entries.map(function(e) {
+          return {
+            comment:  e.comment || '',
+            content:  e.content || '',
+            keys:     e.keys || [],
+            strategy: e.constant ? 'constant' : (e.extensions && e.extensions.vectorized ? 'vectorized' : 'selective'),
+            position: (e.extensions && e.extensions.position !== undefined) ? e.extensions.position : 4,
+            depth:    (e.extensions && e.extensions.depth !== undefined) ? e.extensions.depth : 4,
+            role:     (e.extensions && e.extensions.role !== undefined) ? e.extensions.role : 0,
+            order:    e.insertion_order || 100,
+            prob:     (e.extensions && e.extensions.probability !== undefined) ? e.extensions.probability : 100
+          };
         });
+        renderEntriesList();
       }
-
-      if(btnInjectStatusBar) {
-        btnInjectStatusBar.addEventListener('click', () => {
-          if (sbEnable && !sbEnable.checked) return alert("请先勾选『启用状态栏注入』开关！");
-          const fieldsStr = sbFields ? sbFields.value.trim() : ""; 
-          const color = sbColor ? sbColor.value : "#f59e0b"; 
-          const titleStr = sbTitle ? sbTitle.value.trim() : "STATUS REPORT";
-          if (!fieldsStr) return alert("请填写监控字段！");
-
-          
-          const wbTitle = "===系统底层：状态栏约束===";
-          const promptContent = `[System Note: 你的每一次回复【必须】在末尾携带角色的当前状态面板！\n格式要求极其严格，必须原样使用以下 <stablock> 标签包裹：\n<stablock>\n${fieldsStr.split(',').map(f => `${f.trim()}: <具体数值/状态>`).join(' | ')}\n</stablock>\n禁止遗漏任何字段，必须包含在回复的最末尾！]`;
-          
-          const existingIndex = worldbookEntries.findIndex(e => e.comment === wbTitle);
-          const newWbEntry = { comment: wbTitle, content: promptContent, keys: [], strategy: 'constant', position: 4, depth: 0, role: 0, order: 999, prob: 100 };
-          if (existingIndex >= 0) worldbookEntries[existingIndex] = newWbEntry; else worldbookEntries.push(newWbEntry);
-
-          
-          const regexId = "statusbar_" + Date.now();
-          const replacementHTML = `<div style="background: rgba(15, 23, 42, 0.7); border: 1px solid ${color}40; border-left: 4px solid ${color}; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85em; color: #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-top: 15px;"><div style="font-weight:bold; color:${color}; margin-bottom: 6px; border-bottom: 1px dashed ${color}80; padding-bottom: 4px; letter-spacing: 1px;">${titleStr}</div><div style="white-space: pre-wrap; line-height: 1.6;">$1</div></div>`;
-
-          
-          regexScripts = [{
-            id: regexId,
-            scriptName: "状态栏UI美化 (系统生成)",
-            findRegex: "<stablock>([\\s\\S]*?)<\\/stablock>",
-            replaceString: replacementHTML,
-            trimStrings: [],
-            placement: [1, 2], 
-            disabled: false, markdownOnly: false, promptOnly: false, runOnEdit: true, substituteRegex: false, minDepth: null, maxDepth: null
-          }];
-
-          if(sbStatusText) { sbStatusText.textContent = "✅ 注入成功！底层提示词与正则已就绪。"; setTimeout(() => sbStatusText.textContent = "", 3000); }
-          renderEntriesList(); debouncedUpdateAndSave();
-        });
+      if (json.data.extensions && json.data.extensions.regex_scripts) {
+        regexScripts = json.data.extensions.regex_scripts;
       }
-
-      if(sbEnable) sbEnable.addEventListener('change', () => debouncedUpdateAndSave());
-
-      
-      
-      
-      function saveAIConfig() { localStorage.setItem(AI_CONFIG_KEY, JSON.stringify({ url: apiUrl.value.trim(), key: apiKey.value.trim(), model: modelSelect.value })); }
-      function loadAIConfig() {
-        try { const config = JSON.parse(localStorage.getItem(AI_CONFIG_KEY));
-          if (config) { if (config.url) apiUrl.value = config.url; if (config.key) apiKey.value = config.key; if (config.model) { modelSelect.innerHTML = `<option value="${config.model}">${config.model}</option>`; modelSelect.value = config.model; } }
-        } catch (e) {}
+      if (json.data.alternate_greetings && json.data.alternate_greetings.length > 0) {
+        window.__altGreetings__ = json.data.alternate_greetings;
+        if (window.__renderAltGreetings__) window.__renderAltGreetings__();
       }
-      apiUrl.addEventListener('input', saveAIConfig); apiKey.addEventListener('input', saveAIConfig); modelSelect.addEventListener('change', saveAIConfig);
+      saveCurrentDraft();
+    };
 
-      
-      
-      
-      const crcTable = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1)); crcTable[n] = c; }
-      function crc32(arr) { let crc = 0 ^ (-1); for (let i = 0; i < arr.length; i++) crc = (crc >>> 8) ^ crcTable[(crc ^ arr[i]) & 0xFF]; return (crc ^ (-1)) >>> 0; }
-      function createTextChunk(keyword, text) {
-        const base64Text = btoa(unescape(encodeURIComponent(text))); const keywordBytes = new TextEncoder().encode(keyword); const textBytes = new TextEncoder().encode(base64Text);
-        const data = new Uint8Array(keywordBytes.length + 1 + textBytes.length); data.set(keywordBytes, 0); data.set(new Uint8Array([0]), keywordBytes.length); data.set(textBytes, keywordBytes.length + 1);
-        const type = new TextEncoder().encode('tEXt'); const typeAndData = new Uint8Array(4 + data.length); typeAndData.set(type, 0); typeAndData.set(data, 4);
-        const crc = crc32(typeAndData); const chunk = new Uint8Array(4 + 4 + data.length + 4);
-        chunk[0] = (data.length >>> 24) & 0xFF; chunk[1] = (data.length >>> 16) & 0xFF; chunk[2] = (data.length >>> 8) & 0xFF; chunk[3] = data.length & 0xFF;
-        chunk.set(typeAndData, 4); chunk[chunk.length - 4] = (crc >>> 24) & 0xFF; chunk[chunk.length - 3] = (crc >>> 16) & 0xFF; chunk[chunk.length - 2] = (crc >>> 8) & 0xFF; chunk[chunk.length - 1] = crc & 0xFF; return chunk;
-      }
-      charImageInput.addEventListener('change', (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader(); reader.onload = function(event) {
-          const img = new Image(); img.onload = function() {
-            const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
-            canvas.getContext('2d').drawImage(img, 0, 0); currentAvatarBase64 = canvas.toDataURL('image/png');
-            avatarImg.src = currentAvatarBase64; avatarImg.style.display = 'block'; avatarPlaceholder.style.display = 'none'; debouncedUpdateAndSave();
-          }; img.src = event.target.result;
-        }; reader.readAsDataURL(file);
-      });
-      btnExportPNG.addEventListener('click', () => {
-        if (!currentAvatarBase64) return alert("❌ 请先上传头像！");
-        try {
-          const textChunk = createTextChunk('chara', JSON.stringify(generateFullJSON()));
-          const rawStr = atob(currentAvatarBase64.split(',')[1]); const rawBytes = new Uint8Array(rawStr.length);
-          for (let i = 0; i < rawStr.length; i++) rawBytes[i] = rawStr.charCodeAt(i);
-          const iendOffset = rawBytes.length - 12; const beforeIEND = rawBytes.slice(0, iendOffset); const iendChunk = rawBytes.slice(iendOffset);
-          const finalPng = new Uint8Array(beforeIEND.length + textChunk.length + iendChunk.length);
-          finalPng.set(beforeIEND, 0); finalPng.set(textChunk, beforeIEND.length); finalPng.set(iendChunk, beforeIEND.length + textChunk.length);
-          const blob = new Blob([finalPng], { type: 'image/png' }); const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = (charName.value.trim() || 'CharacterCard') + '.png'; a.click(); URL.revokeObjectURL(url);
-        } catch (err) { alert("❌ 导出失败: " + err.message); }
-      });
-
-      
-      
-      
-      const generateUUID = () => 'draft_' + Date.now();
-      function getAllDrafts() { try { return JSON.parse(localStorage.getItem(DRAFTS_STORAGE_KEY)) || {}; } catch(e) { return {}; } }
-      function updateDraftDropdown() {
-        const drafts = getAllDrafts(); draftSelect.innerHTML = ''; const keys = Object.keys(drafts);
-        if (keys.length === 0) { draftSelect.innerHTML = '<option value="">(空草稿箱)</option>'; return; }
-        keys.forEach(id => {
-          const draft = drafts[id]; const option = document.createElement('option'); option.value = id;
-          option.textContent = draft.charName ? `${draft.charName} (${draft.updatedAt})` : `未命名草稿 (${draft.updatedAt})`;
-          if (id === currentDraftId) option.selected = true; draftSelect.appendChild(option);
-        });
-      }
-      function loadDraft(id) {
-        const drafts = getAllDrafts(); if (!drafts[id]) return;
-        currentDraftId = id; localStorage.setItem(CURRENT_DRAFT_KEY, id); const data = drafts[id];
-        charName.value = data.charName || ''; wbName.value = data.wbName || ''; charDesc.value = data.charDesc || ''; firstMes.value = data.firstMes || ''; creatorNotes.value = data.creatorNotes || ''; 
-        worldbookEntries = data.worldbookEntries || [];
-        regexScripts = data.regexScripts || []; 
-        currentAvatarBase64 = data.avatarBase64 || ''; resetWBForm();
-        if (currentAvatarBase64) { avatarImg.src = currentAvatarBase64; avatarImg.style.display = 'block'; avatarPlaceholder.style.display = 'none'; } else { avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block'; }
-        updateDraftDropdown(); renderEntriesList(); updatePreviewAnimated();
-      }
-      function saveCurrentDraft() {
-        if (!currentDraftId) currentDraftId = generateUUID(); const drafts = getAllDrafts();
-        drafts[currentDraftId] = { 
-          charName: charName.value.trim(), wbName: wbName.value.trim(), charDesc: charDesc.value.trim(), firstMes: firstMes.value.trim(), creatorNotes: creatorNotes.value.trim(), 
-          worldbookEntries: worldbookEntries, regexScripts: regexScripts, 
-          avatarBase64: currentAvatarBase64, updatedAt: new Date().toLocaleTimeString('zh-CN', { hour12: false }) 
+    window.__getWorldbookEntries__ = function() {
+      return worldbookEntries.map(function(e) {
+        return {
+          comment:  e.comment || '',
+          content:  e.content || '',
+          keys:     e.keys || [],
+          strategy: e.strategy || 'selective',
+          position: e.position || 4,
+          depth:    e.depth || 4,
+          role:     e.role || 0,
+          order:    e.order || 100,
+          prob:     e.prob || 100
         };
-        try { localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts)); localStorage.setItem(CURRENT_DRAFT_KEY, currentDraftId); if(draftSelect.options[draftSelect.selectedIndex]) draftSelect.options[draftSelect.selectedIndex].textContent = drafts[currentDraftId].charName ? `${drafts[currentDraftId].charName} (${drafts[currentDraftId].updatedAt})` : `未命名 (${drafts[currentDraftId].updatedAt})`; saveIndicator.style.display = 'inline'; setTimeout(() => saveIndicator.style.display = 'none', 1500); } catch (e) {}
-      }
-      btnNewDraft.addEventListener('click', () => {
-        currentDraftId = generateUUID(); charName.value = ''; wbName.value = ''; charDesc.value = ''; firstMes.value = ''; creatorNotes.value = ''; worldbookEntries = []; regexScripts = []; currentAvatarBase64 = ''; charImageInput.value = ''; avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block'; resetWBForm();
-        saveCurrentDraft(); updateDraftDropdown(); renderEntriesList(); updatePreviewAnimated();
       });
-      btnDeleteDraft.addEventListener('click', () => {
-        if (!currentDraftId) return; if (!confirm("确定删除？")) return;
-        const drafts = getAllDrafts(); delete drafts[currentDraftId]; localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
-        const keys = Object.keys(drafts); keys.length > 0 ? loadDraft(keys[0]) : btnNewDraft.click();
-      });
-      draftSelect.addEventListener('change', e => { if (e.target.value) loadDraft(e.target.value); });
-      let autoSaveTimer; function debouncedUpdateAndSave() { clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(() => { updatePreviewAnimated(); saveCurrentDraft(); }, 500); }
+    };
 
-      
-      
-      
-      function renderPresetList() {
-        if(parsedPresetList.length === 0) { presetListContainer.style.display = 'none'; presetStatus.textContent = "未找到可用的文本规则"; return; }
-        presetListContainer.style.display = 'block'; presetStatus.textContent = "✅ 预设载入成功！";
-        presetListContainer.innerHTML = parsedPresetList.map((item, index) => `
-          <div class="preset-item"><input type="checkbox" id="preset_chk_${index}" data-index="${index}" ${item.enabled ? 'checked' : ''} /><label for="preset_chk_${index}">${item.name}</label></div>
-        `).join('');
-        presetListContainer.querySelectorAll('input[type="checkbox"]').forEach(chk => { chk.addEventListener('change', (e) => { parsedPresetList[e.target.getAttribute('data-index')].enabled = e.target.checked; }); });
-      }
-      presetInput.addEventListener('change', (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader(); reader.onload = (event) => {
-          try {
-            const data = JSON.parse(event.target.result); parsedPresetList = [];
-            if (data.prompts) {
-              const activeOrder = (data.prompt_order && data.prompt_order.length > 0) ? data.prompt_order[data.prompt_order.length - 1].order : [];
-              const enabledIds = activeOrder.filter(item => item.enabled).map(item => item.identifier);
-              data.prompts.forEach(p => { if (p.content && !p.marker) parsedPresetList.push({ id: p.identifier, name: p.name || '规则', content: p.content, enabled: activeOrder.length > 0 ? enabledIds.includes(p.identifier) : true }); });
+    window.__getActivePresetsStr__ = function() { return getActivePresetsStr(); };
+
+    window.__getActivePresetMessages__ = function() {
+      var result = [];
+      parsedPresetList.forEach(function(p) {
+        if (!p.enabled) return;
+        var name = (p.name || '').toLowerCase();
+        if (name.indexOf('example') >= 0 || name.indexOf('dialogue') >= 0
+          || name.indexOf('示例') >= 0 || name.indexOf('对话') >= 0
+          || name.indexOf('few-shot') >= 0 || name.indexOf('fewshot') >= 0) {
+          var lines = p.content.split('\n');
+          var currentRole = 'user';
+          var currentContent = [];
+          lines.forEach(function(line) {
+            var trimmed = line.trim();
+            if (!trimmed) return;
+            if (trimmed.match(/^<START>/i)) {
+              if (currentContent.length > 0) {
+                result.push({ role: currentRole, content: currentContent.join('\n').trim() });
+                currentContent = [];
+              }
+              return;
             }
-            renderPresetList();
-          } catch (err) { presetStatus.innerHTML = `❌ 解析失败`; presetStatus.style.color = '#ef4444'; presetListContainer.style.display = 'none'; }
-        }; reader.readAsText(file);
-      });
-
-      function extractJsonObj(text) { 
-        const match = text.match(/```json\s*([\s\S]*?)\s*```/); 
-        let obj = match ? JSON.parse(match[1]) : JSON.parse(text); 
-        return (Array.isArray(obj) && obj.length > 0) ? obj[0] : obj;
-      }
-
-      
-      
-      
-      btnFetchModels.addEventListener('click', async () => { 
-        const url = apiUrl.value.replace(/\/$/, '') + '/models'; const key = apiKey.value.trim(); btnFetchModels.textContent = '⏳...'; btnFetchModels.disabled = true;
-        try { const res = await fetch(url, { headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }}); const result = await res.json();
-          let models = Array.isArray(result.data) ? result.data.map(m => m.id) : Array.isArray(result) ? result.map(m => m.id || m.name) : []; models.sort(); modelSelect.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
-          let savedConfig = {}; try { savedConfig = JSON.parse(localStorage.getItem(AI_CONFIG_KEY)) || {}; } catch(e){}
-          if (savedConfig.model && models.includes(savedConfig.model)) modelSelect.value = savedConfig.model;
-          saveAIConfig(); aiStatus.textContent = `✅ 成功获取 ${models.length} 个模型！`; aiStatus.style.color = '#10b981';
-        } catch (err) { aiStatus.textContent = `❌ ${err.message}`; } finally { btnFetchModels.textContent = '🔄 拉取'; btnFetchModels.disabled = false; }
-      });
-
-      async function generateContextAwareWBEntry(customDirection, stepInfo = "") {
-        const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value; 
-        const existingContext = worldbookEntries.map(e => `[标题:${e.comment}] (策略:${e.strategy}): ${e.content}`).join('\n-----\n');
-        const contextStr = existingContext ? `\n【已有设定参考(不可重复)】：\n${existingContext}` : "\n【当前世界书为空，请你奠定基调】";
-        const activePresetsStr = parsedPresetList.filter(p => p.enabled).map(p => `[规则: ${p.name}]\n${p.content}`).join('\n\n');
-        const presetInjection = activePresetsStr ? `\n\n【文风约束】：\n${activePresetsStr}` : "";
-
-        const includeChar = wbIncludeCharData && wbIncludeCharData.checked;
-        const charDataStr = includeChar ? `\n【当前角色】：名字：${charName.value.trim()} | 描述：${charDesc.value.trim()}\n` : "";
-
-        const systemPrompt = `你是一个酒馆V3世界书词条构建大师。请生成【仅仅1条】最新设定。${stepInfo}${charDataStr}
-${contextStr}
-${presetInjection}
-【输出要求】：必须且仅能输出1个JSON对象，格式：{ "comment": "标题", "content": "详情...", "keys": ["触发词1"], "strategy": "selective 或 constant", "position": 4 }`;
-
-        const userPrompt = customDirection ? `【请着重以下方向】：${customDirection}` : "【请顺着当前世界观自由发挥生成一块拼图，拒绝重复。】";
-        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: systemPrompt }, { role: "user", content: userPrompt } ], temperature: 0.8 }) });
-        if (!res.ok) throw new Error(`请求失败 HTTP ${res.status}`);
-        const entryData = extractJsonObj((await res.json()).choices[0].message.content);
-        
-        worldbookEntries.push({ comment: entryData.comment || '拓展设定', content: entryData.content || '', keys: Array.isArray(entryData.keys) ? entryData.keys : [], strategy: entryData.strategy || 'selective', position: parseInt(entryData.position) || 4, depth: 4, role: 0, order: 100, prob: 100 });
-      }
-
-      btnAiGenerate.addEventListener('click', async () => {
-        const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value; 
-        if (!model) return alert('请先拉取模型！'); if (!aiPrompt.value.trim()) return alert('请填写提示词！');
-        btnAiGenerate.disabled = true;
-
-        try {
-          aiStatus.textContent = '⏳ [阶段 1/2] 构思角色设定...'; aiStatus.style.color = '#38bdf8';
-          const activePresetsStr = parsedPresetList.filter(p => p.enabled).map(p => `[规则: ${p.name}]\n${p.content}`).join('\n');
-          const phase1System = `生成角色基础属性，仅输出JSON对象。格式：{ "charName": "角色名", "wbName": "世界书名", "charDesc": "描述", "firstMes": "开场白", "creatorNotes": "作者注释" }${activePresetsStr ? `\n【文风要求】：\n${activePresetsStr}` : ""}`;
-
-          const res1 = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: phase1System }, { role: "user", content: aiPrompt.value.trim() } ], temperature: 0.85 }) });
-          const charData = extractJsonObj((await res1.json()).choices[0].message.content);
-
-          charName.value = charData.charName || ''; wbName.value = charData.wbName || ''; charDesc.value = charData.charDesc || ''; firstMes.value = charData.firstMes || ''; creatorNotes.value = charData.creatorNotes || '';
-          worldbookEntries = []; debouncedUpdateAndSave();
-
-          const wbGoal = wbPrompt.value.trim();
-          for (let i = 0; i < 3; i++) {
-            aiStatus.textContent = `⏳ [阶段 2/2] 迭代生成第 ${i+1}/3 条世界书...`;
-            await generateContextAwareWBEntry(wbGoal, `当前是第 ${i+1} 步。`);
-            renderEntriesList(); debouncedUpdateAndSave();
+            if (trimmed.match(/^\{\{user\}\}\s*:/i) || trimmed.match(/^用户\s*:/i) || trimmed.match(/^User\s*:/i)) {
+              if (currentContent.length > 0) {
+                result.push({ role: currentRole, content: currentContent.join('\n').trim() });
+                currentContent = [];
+              }
+              currentRole = 'user';
+              var cleaned = trimmed.replace(/^\{\{user\}\}\s*:\s*/i, '').replace(/^用户\s*:\s*/i, '').replace(/^User\s*:\s*/i, '');
+              if (cleaned) currentContent.push(cleaned);
+            } else if (trimmed.match(/^\{\{char\}\}\s*:/i) || trimmed.match(/^角色\s*:/i) || trimmed.match(/^Assistant\s*:/i)) {
+              if (currentContent.length > 0) {
+                result.push({ role: currentRole, content: currentContent.join('\n').trim() });
+                currentContent = [];
+              }
+              currentRole = 'assistant';
+              var cleaned2 = trimmed.replace(/^\{\{char\}\}\s*:\s*/i, '').replace(/^角色\s*:\s*/i, '').replace(/^Assistant\s*:\s*/i, '');
+              if (cleaned2) currentContent.push(cleaned2);
+            } else {
+              currentContent.push(trimmed);
+            }
+          });
+          if (currentContent.length > 0) {
+            result.push({ role: currentRole, content: currentContent.join('\n').trim() });
           }
-          aiStatus.textContent = '✅ 生成完毕！'; aiStatus.style.color = '#10b981';
-        } catch (err) { aiStatus.textContent = `❌ 中止: ${err.message}`; aiStatus.style.color = '#ef4444'; } 
-        finally { btnAiGenerate.disabled = false; }
+        } else if (name.indexOf('jailbreak') >= 0 || name.indexOf('越狱') >= 0
+          || name.indexOf('nsfw') >= 0 || name.indexOf('r18') >= 0
+          || name.indexOf('r-18') >= 0) {
+          result.push({ role: 'system', content: p.content, _isJailbreak: true });
+        } else {
+          result.push({ role: 'system', content: p.content });
+        }
       });
+      return result;
+    };
 
-      btnAiSingleWb.addEventListener('click', async () => {
-        if (!modelSelect.value) return alert('请先选择可用模型！');
-        btnAiSingleWb.disabled = true; btnAiSingleWb.textContent = "⏳ Roll中...";
-        try { await generateContextAwareWBEntry(wbSinglePrompt.value.trim(), "单条补充。"); renderEntriesList(); debouncedUpdateAndSave(); wbSinglePrompt.value = ''; } 
-        catch(err) { alert(`生成失败: ${err.message}`); } finally { btnAiSingleWb.disabled = false; btnAiSingleWb.textContent = "🎲 串联生成 1 条"; }
+    
+    
+    
+    function saveAIConfig() {
+      localStorage.setItem(AI_KEY, JSON.stringify({
+        url:        apiUrl.value.trim(),
+        key:        apiKey.value.trim(),
+        model:      modelSelect.value,
+        presetList: parsedPresetList,   
+      }));
+    }
+
+    function loadAIConfig() {
+      try {
+        var c = JSON.parse(localStorage.getItem(AI_KEY));
+        if (!c) return;
+        if (c.url)   apiUrl.value = c.url;
+        if (c.key)   apiKey.value = c.key;
+        if (c.model) {
+          modelSelect.innerHTML = '<option value="' + c.model + '">' + c.model + '</option>';
+          modelSelect.value = c.model;
+        }
+        
+        if (c.presetList && Array.isArray(c.presetList) && c.presetList.length > 0) {
+          parsedPresetList = c.presetList;
+          renderPresetList();
+        }
+      } catch(e) {}
+    }
+
+    apiUrl.addEventListener('input', saveAIConfig);
+    apiKey.addEventListener('input', saveAIConfig);
+    modelSelect.addEventListener('change', saveAIConfig);
+    
+    
+    
+    var crcTable = [];
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      crcTable[n] = c;
+    }
+    function crc32(arr) { var crc=0^(-1); for(var i=0;i<arr.length;i++) crc=(crc>>>8)^crcTable[(crc^arr[i])&0xFF]; return(crc^(-1))>>>0; }
+    function createTextChunk(kw, text) {
+      var b64=btoa(unescape(encodeURIComponent(text)));
+      var kb=new TextEncoder().encode(kw); var tb=new TextEncoder().encode(b64);
+      var d=new Uint8Array(kb.length+1+tb.length); d.set(kb,0); d[kb.length]=0; d.set(tb,kb.length+1);
+      var ty=new TextEncoder().encode('tEXt'); var td=new Uint8Array(4+d.length); td.set(ty,0); td.set(d,4);
+      var cs=crc32(td); var ch=new Uint8Array(4+4+d.length+4);
+      ch[0]=(d.length>>>24)&0xFF; ch[1]=(d.length>>>16)&0xFF; ch[2]=(d.length>>>8)&0xFF; ch[3]=d.length&0xFF;
+      ch.set(td,4); ch[ch.length-4]=(cs>>>24)&0xFF; ch[ch.length-3]=(cs>>>16)&0xFF;
+      ch[ch.length-2]=(cs>>>8)&0xFF; ch[ch.length-1]=cs&0xFF; return ch;
+    }
+
+    
+    
+    
+    charImageInput.addEventListener('change', function(e) {
+      var file = e.target.files[0]; if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+          var cv = document.createElement('canvas');
+          cv.width = img.width; cv.height = img.height;
+          cv.getContext('2d').drawImage(img, 0, 0);
+          currentAvatarBase64 = cv.toDataURL('image/png');
+          avatarImg.src = currentAvatarBase64;
+          avatarImg.style.display = 'block';
+          avatarPlaceholder.style.display = 'none';
+          debouncedUpdateAndSave();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    btnExportPNG.addEventListener('click', function() {
+      if (!currentAvatarBase64) return alert("❌ 请先上传头像！");
+      try {
+        var ch  = createTextChunk('chara', JSON.stringify(generateFullJSON()));
+        var raw = atob(currentAvatarBase64.split(',')[1]);
+        var bytes = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+        var io  = bytes.length - 12;
+        var bef = bytes.slice(0, io); var ie = bytes.slice(io);
+        var fin = new Uint8Array(bef.length + ch.length + ie.length);
+        fin.set(bef, 0); fin.set(ch, bef.length); fin.set(ie, bef.length + ch.length);
+        var blob = new Blob([fin], { type: 'image/png' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (charName.value.trim() || 'CharacterCard') + '.png';
+        a.click(); URL.revokeObjectURL(a.href);
+      } catch(err) { alert("❌ 导出失败: " + err.message); }
+    });
+
+    
+    
+    
+    function genId() { return 'draft_' + Date.now(); }
+    function getAllDrafts() { try { return JSON.parse(localStorage.getItem(DRAFTS_KEY)) || {}; } catch(e) { return {}; } }
+
+    function updateDraftDropdown() {
+      var dr = getAllDrafts(); draftSelect.innerHTML = '';
+      var ks = Object.keys(dr);
+      if (!ks.length) { draftSelect.innerHTML = '<option value="">(空草稿箱)</option>'; return; }
+      ks.forEach(function(id) {
+        var d = dr[id]; var o = document.createElement('option');
+        o.value = id;
+        o.textContent = d.charName ? (d.charName + ' (' + d.updatedAt + ')') : ('未命名 (' + d.updatedAt + ')');
+        if (id === currentDraftId) o.selected = true;
+        draftSelect.appendChild(o);
       });
+    }
 
+    function loadDraft(id) {
+      var dr = getAllDrafts(); if (!dr[id]) return;
+      currentDraftId = id; localStorage.setItem(CURRENT_KEY, id);
+      var d = dr[id];
+      charName.value     = d.charName     || '';
+      wbName.value       = d.wbName       || '';
+      charDesc.value     = d.charDesc     || '';
+      firstMes.value     = d.firstMes     || '';
+      creatorNotes.value = d.creatorNotes || '';
+      worldbookEntries   = d.worldbookEntries || [];
+      regexScripts       = d.regexScripts     || [];
+      currentAvatarBase64 = d.avatarBase64    || '';
+      window.__altGreetings__ = d.altGreetings || [];
+      if (window.__renderAltGreetings__) window.__renderAltGreetings__();
       
+      if (d.statusBarData && window.__loadStatusBarData__) {
+        window.__loadStatusBarData__(d.statusBarData);
+      }
+      resetWBForm();
+      if (currentAvatarBase64) {
+        avatarImg.src = currentAvatarBase64; avatarImg.style.display = 'block'; avatarPlaceholder.style.display = 'none';
+      } else {
+        avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block';
+      }
+      updateDraftDropdown(); renderEntriesList(); updatePreview();
+    }
+
+    function saveCurrentDraft() {
+      if (!currentDraftId) currentDraftId = genId();
+      var dr = getAllDrafts();
+      dr[currentDraftId] = {
+        charName:        charName.value.trim(),
+        wbName:          wbName.value.trim(),
+        charDesc:        charDesc.value.trim(),
+        firstMes:        firstMes.value.trim(),
+        creatorNotes:    creatorNotes.value.trim(),
+        worldbookEntries: worldbookEntries,
+        regexScripts:    regexScripts,
+        avatarBase64:    currentAvatarBase64,
+        altGreetings:    window.__altGreetings__ || [],
+        statusBarData:   window.__getStatusBarData__ ? window.__getStatusBarData__() : null,  
+        updatedAt:       new Date().toLocaleTimeString('zh-CN', { hour12: false })
+      };
+      try {
+        localStorage.setItem(DRAFTS_KEY, JSON.stringify(dr));
+        localStorage.setItem(CURRENT_KEY, currentDraftId);
+        var o = draftSelect.options[draftSelect.selectedIndex];
+        if (o) {
+          var dd = dr[currentDraftId];
+          o.textContent = dd.charName ? (dd.charName + ' (' + dd.updatedAt + ')') : ('未命名 (' + dd.updatedAt + ')');
+        }
+        saveIndicator.style.display = 'inline';
+        setTimeout(function() { saveIndicator.style.display = 'none'; }, 1500);
+      } catch(e) {}
+    }
+
+    btnNewDraft.addEventListener('click', function() {
+      currentDraftId = genId();
+      charName.value = ''; wbName.value = ''; charDesc.value = ''; firstMes.value = ''; creatorNotes.value = '';
+      worldbookEntries = []; regexScripts = []; currentAvatarBase64 = ''; charImageInput.value = '';
+      avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block';
+      window.__altGreetings__ = [];
+      if (window.__renderAltGreetings__) window.__renderAltGreetings__();
       
-      
-      function resetWBForm() {
-        editingIndex = -1; entryComment.value = ''; entryContent.value = ''; entryKeys.value = '';
-        btnAddEntry.textContent = '➕ 保存到列表'; btnAddEntry.style.backgroundColor = '#10b981';
+      if (window.__loadStatusBarData__) window.__loadStatusBarData__(null);
+      resetWBForm(); saveCurrentDraft(); updateDraftDropdown(); renderEntriesList(); updatePreview();
+    });
+
+    btnDeleteDraft.addEventListener('click', function() {
+      if (!currentDraftId || !confirm("确定删除？")) return;
+      var dr = getAllDrafts(); delete dr[currentDraftId];
+      localStorage.setItem(DRAFTS_KEY, JSON.stringify(dr));
+      var ks = Object.keys(dr);
+      ks.length > 0 ? loadDraft(ks[0]) : btnNewDraft.click();
+    });
+
+    draftSelect.addEventListener('change', function(e) { if (e.target.value) loadDraft(e.target.value); });
+
+    var autoSaveTimer;
+    function debouncedUpdateAndSave() {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(function() { updatePreview(); saveCurrentDraft(); }, 500);
+    }
+
+    
+    
+    
+    function renderPresetList() {
+      if (!parsedPresetList.length) {
+        presetListContainer.style.display = 'none';
+        presetStatus.textContent = "未找到可用规则";
+        return;
       }
+      presetListContainer.style.display = 'block';
+      presetStatus.textContent = "✅ 预设载入成功！已加载 " + parsedPresetList.length + " 条规则";
+      presetListContainer.innerHTML = parsedPresetList.map(function(it, i) {
+        var typeBadge = '';
+        var nm = (it.name || '').toLowerCase();
+        if (nm.indexOf('example') >= 0 || nm.indexOf('dialogue') >= 0 || nm.indexOf('示例') >= 0) {
+          typeBadge = ' <span style="font-size:0.6rem;color:#34d399;background:rgba(16,185,129,0.1);padding:1px 5px;border-radius:4px;">示例对话</span>';
+        } else if (nm.indexOf('jailbreak') >= 0 || nm.indexOf('nsfw') >= 0 || nm.indexOf('越狱') >= 0) {
+          typeBadge = ' <span style="font-size:0.6rem;color:#f59e0b;background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:4px;">JB</span>';
+        } else {
+          typeBadge = ' <span style="font-size:0.6rem;color:#94a3b8;background:rgba(100,116,139,0.1);padding:1px 5px;border-radius:4px;">system</span>';
+        }
+        return '<div class="preset-item"><input type="checkbox" id="preset_chk_' + i + '" data-index="' + i + '"' + (it.enabled ? ' checked' : '') + ' /><label for="preset_chk_' + i + '">' + it.name + typeBadge + '</label></div>';
+      }).join('');
 
-      function editEntry(index) {
-        editingIndex = index; const entry = worldbookEntries[index];
-        entryComment.value = entry.comment || ''; entryContent.value = entry.content || ''; entryKeys.value = entry.keys.join(', ') || '';
-        entryStrategy.value = entry.strategy || 'selective'; entryPosition.value = entry.position || 0; entryDepth.value = entry.depth || 4;
-        entryRole.value = entry.role || 0; entryOrder.value = entry.order || 100; entryProb.value = entry.prob || 100;
-        btnAddEntry.textContent = '💾 确认覆盖原条目'; btnAddEntry.style.backgroundColor = '#f59e0b';
-        btnAddEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-
-      async function aiRewriteSpecificEntry(index, customReq, btnNode) {
-        const url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; const key = apiKey.value.trim(); const model = modelSelect.value; 
-        if (!model) return alert('请先选择模型！');
-        const oldEntry = worldbookEntries[index]; const oldText = btnNode.textContent;
-        btnNode.disabled = true; btnNode.textContent = "⏳ 重铸中...";
-
-        const activePresetsStr = parsedPresetList.filter(p => p.enabled).map(p => `[规则: ${p.name}]\n${p.content}`).join('\n\n');
-        const systemPrompt = `你是一个酒馆V3词条润色大师。你要修改一个【已存在的特定词条】。
-【原词条内容】:
-标题: ${oldEntry.comment} | 策略: ${oldEntry.strategy} | 触发词: ${oldEntry.keys.join(',')}
-内容: ${oldEntry.content}
-${activePresetsStr ? `\n【必须遵循的文风】：\n${activePresetsStr}` : ""}
-【任务要求】：根据用户要求重写内容。必须输出单个JSON对象，格式同上：{ "comment": "标题", "content": "详情...", "keys": ["触发词"], "strategy": "selective 或 constant", "position": ${oldEntry.position} }`;
-
-        try {
-          const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(key && { 'Authorization': `Bearer ${key}` }) }, body: JSON.stringify({ model: model, messages: [ { role: "system", content: systemPrompt }, { role: "user", content: `定向修改要求：${customReq}` } ], temperature: 0.8 }) });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const entryData = extractJsonObj((await res.json()).choices[0].message.content);
-          
-          worldbookEntries[index].comment = entryData.comment || oldEntry.comment;
-          worldbookEntries[index].content = entryData.content || oldEntry.content;
-          if (entryData.keys) worldbookEntries[index].keys = Array.isArray(entryData.keys) ? entryData.keys : [];
-          if (entryData.strategy) worldbookEntries[index].strategy = entryData.strategy;
-          renderEntriesList(); debouncedUpdateAndSave();
-        } catch(err) { alert(`重写失败: ${err.message}`); } finally { btnNode.disabled = false; btnNode.textContent = oldText; }
-      }
-
-      function renderEntriesList() {
-        entriesList.innerHTML = worldbookEntries.length ? '' : '<span style="color: #64748b; font-size: 0.8rem;">暂无条目，快让AI写一条！</span>';
-        const posMap = ["0前", "1后", "2前EM", "3后EM", "4深度", "5前AN", "6后AN"];
-        worldbookEntries.forEach((entry, index) => {
-          const div = document.createElement('div'); div.className = 'entry-item';
-          div.innerHTML = `
-            <div class="entry-item-header">
-              <div class="entry-info">
-                <h4>${entry.comment || '未命名'} <span style="color:#3b82f6;font-size:0.7rem;">[${entry.strategy}]</span></h4>
-                <p>位置: ${posMap[entry.position]} | 顺序: ${entry.order} | 深度: ${entry.depth} | 概率: ${entry.prob}%</p>
-                <p>触发词: ${entry.keys.join(', ') || '无'}</p>
-              </div>
-              <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 160px;">
-                <button class="btn btn-edit" data-index="${index}" style="width:auto; padding:4px 8px; font-size:0.75rem; background-color:#3b82f6;">✏️ 编辑</button>
-                <button class="btn btn-toggle-reroll" data-index="${index}" style="width:auto; padding:4px 8px; font-size:0.75rem; background-color:#8b5cf6;">✨ AI重写</button>
-                <button class="btn btn-delete" data-index="${index}" style="width:auto; padding:4px 8px; font-size:0.75rem;">🗑️ 删除</button>
-              </div>
-            </div>
-            <div id="reroll_area_${index}" style="display: none; width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #475569;">
-              <input type="text" id="reroll_prompt_${index}" placeholder="怎么修改？比如：加上光学迷彩的设定..." style="width:100%; padding:8px; margin-bottom:8px; border-radius:4px; border:1px solid #8b5cf6; background:#0f172a; color:#f8fafc; outline: none;" />
-              <button class="btn btn-submit-reroll" data-index="${index}" style="background-color:#8b5cf6; padding:8px; font-size: 0.85rem;">🎲 确定覆盖重写</button>
-            </div>
-          `;
-          entriesList.appendChild(div);
+      presetListContainer.querySelectorAll('input[type="checkbox"]').forEach(function(chk) {
+        chk.addEventListener('change', function(e) {
+          parsedPresetList[parseInt(e.target.getAttribute('data-index'))].enabled = e.target.checked;
+          saveAIConfig();  
         });
-
-        document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', e => { editEntry(parseInt(e.target.getAttribute('data-index'))); }));
-        document.querySelectorAll('.btn-toggle-reroll').forEach(b => b.addEventListener('click', e => { const area = document.getElementById(`reroll_area_${e.target.getAttribute('data-index')}`); area.style.display = area.style.display === 'none' ? 'block' : 'none'; }));
-        document.querySelectorAll('.btn-submit-reroll').forEach(b => b.addEventListener('click', async e => { const idx = parseInt(e.target.getAttribute('data-index')); const req = document.getElementById(`reroll_prompt_${idx}`).value.trim(); if (!req) return alert('请先填写修改要求！'); await aiRewriteSpecificEntry(idx, req, e.target); }));
-        document.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', e => { const idx = parseInt(e.target.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if(editingIndex === idx) resetWBForm(); renderEntriesList(); debouncedUpdateAndSave(); }));
-      }
-
-      btnAddEntry.addEventListener('click', () => {
-        if (!entryContent.value.trim()) return alert('内容不能为空！');
-        const newEntryObj = { comment: entryComment.value.trim(), content: entryContent.value.trim(), keys: entryKeys.value.split(',').map(k=>k.trim()).filter(k=>k), strategy: entryStrategy.value, position: parseInt(entryPosition.value), depth: parseInt(entryDepth.value)||4, role: parseInt(entryRole.value)||0, order: parseInt(entryOrder.value)||100, prob: parseInt(entryProb.value)||100 };
-        if (editingIndex >= 0) worldbookEntries[editingIndex] = newEntryObj; else worldbookEntries.push(newEntryObj);
-        resetWBForm(); renderEntriesList(); debouncedUpdateAndSave();
       });
+    }
 
-      
-      
-      
-      function generateFullJSON() {
-        const formattedEntries = worldbookEntries.map((entry, idx) => ({
-          id: idx, keys: entry.keys, secondary_keys: [], comment: entry.comment, content: entry.content,
-          constant: entry.strategy === 'constant', selective: entry.strategy === 'selective' || entry.strategy === 'vectorized', insertion_order: entry.order || 100, enabled: true, position: "before_char", use_regex: false,
-          extensions: { position: entry.position, exclude_recursion: false, display_index: idx, probability: entry.prob || 100, useProbability: true, depth: entry.depth || 4, selectiveLogic: 0, outlet_name: "", group: "", group_override: false, group_weight: 100, prevent_recursion: false, delay_until_recursion: false, role: entry.role || 0, vectorized: entry.strategy === 'vectorized' }
-        }));
-        const cName = charName.value.trim() || "无名角色"; const wName = wbName.value.trim() || "无名世界书";
+    presetInput.addEventListener('change', function(e) {
+      var file = e.target.files[0]; if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          var data = JSON.parse(ev.target.result);
+          parsedPresetList = [];
+          if (data.prompts) {
+            var ao = (data.prompt_order && data.prompt_order.length > 0)
+              ? data.prompt_order[data.prompt_order.length - 1].order : [];
+            var ei = ao.filter(function(i) { return i.enabled; }).map(function(i) { return i.identifier; });
+            data.prompts.forEach(function(p) {
+              if (p.content && !p.marker) {
+                parsedPresetList.push({
+                  id:                 p.identifier,
+                  name:               p.name || '规则',
+                  content:            p.content,
+                  role:               p.role || 'system',
+                  injection_position: p.injection_position || 0,
+                  injection_depth:    p.injection_depth || 4,
+                  enabled:            ao.length > 0 ? ei.indexOf(p.identifier) >= 0 : true
+                });
+              }
+            });
+          }
+          renderPresetList();
+          saveAIConfig();  
+        } catch(err) {
+          presetStatus.innerHTML = "❌ 解析失败: " + err.message;
+          presetStatus.style.color = '#ef4444';
+          presetListContainer.style.display = 'none';
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    
+    
+    
+    function extractJsonObj(text) {
+      var m = text.match(/```json\s*([\s\S]*?)\s*```/);
+      var o = m ? JSON.parse(m[1]) : JSON.parse(text);
+      return (Array.isArray(o) && o.length > 0) ? o[0] : o;
+    }
+    function extractJsonArray(text) {
+      var m = text.match(/```json\s*([\s\S]*?)\s*```/);
+      var raw = m ? m[1].trim() : text.trim();
+      var p = JSON.parse(raw);
+      return Array.isArray(p) ? p : [p];
+    }
+    function getActivePresetsStr() {
+      return parsedPresetList.filter(function(p) { return p.enabled; })
+        .map(function(p) { return '[规则: ' + p.name + ']\n' + p.content; }).join('\n\n');
+    }
+    function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+    
+    
+    
+    async function performSearchIfEnabled(userQuery) {
+      var sc = window.__searchConfig__;
+      if (!sc || !sc.isEnabled()) return { searchText: '', searchResults: null, mode: 'off' };
+      var engine = sc.getEngine();
+      var customQuery = sc.getCustomQuery();
+      var query = customQuery || userQuery;
+      var count = sc.getResultCount();
+      var lang  = sc.getLang();
+      if (engine !== 'none') {
+        try {
+          var results = await sc.executeSearch(query, count, lang);
+          if (results && results.length > 0) {
+            cachedSearchResults = results;
+            return { searchText: sc.formatForPrompt(results), searchResults: results, mode: 'engine' };
+          }
+        } catch(err) {
+          return { searchText: buildAINativeSearchPrompt(query), searchResults: null, mode: 'ai_fallback', error: err.message };
+        }
+      }
+      return { searchText: buildAINativeSearchPrompt(query), searchResults: null, mode: 'ai_native' };
+    }
+
+    function buildAINativeSearchPrompt(query) {
+      return '\n\n【🌐 联网搜索指令】：\n'
+        + '请使用你的联网搜索能力，搜索以下关键词相关的资料作为创作参考：\n'
+        + '搜索词：「' + query + '」\n'
+        + '请基于搜索到的真实信息（如果有的话）来丰富你的创作，使设定更加真实、有深度。\n'
+        + '如果你不具备联网能力，请忽略此指令，直接基于你的知识库创作。\n';
+    }
+
+    
+    
+    
+    btnFetchModels.addEventListener('click', async function() {
+      var url = apiUrl.value.replace(/\/$/, '') + '/models';
+      var key = apiKey.value.trim();
+      btnFetchModels.textContent = '⏳...'; btnFetchModels.disabled = true;
+      try {
+        var h = { 'Content-Type': 'application/json' };
+        if (key) h['Authorization'] = 'Bearer ' + key;
+        var res = await fetch(url, { headers: h });
+        var result = await res.json();
+        var models = Array.isArray(result.data)
+          ? result.data.map(function(m) { return m.id; })
+          : Array.isArray(result) ? result.map(function(m) { return m.id || m.name; }) : [];
+        models.sort();
+        modelSelect.innerHTML = models.map(function(m) { return '<option value="' + m + '">' + m + '</option>'; }).join('');
+        var saved = {}; try { saved = JSON.parse(localStorage.getItem(AI_KEY)) || {}; } catch(e) {}
+        if (saved.model && models.indexOf(saved.model) >= 0) modelSelect.value = saved.model;
+        saveAIConfig();
+        aiStatus.textContent = '✅ 成功获取 ' + models.length + ' 个模型！'; aiStatus.style.color = '#10b981';
+      } catch(err) { aiStatus.textContent = '❌ ' + err.message; aiStatus.style.color = '#ef4444'; }
+      finally { btnFetchModels.textContent = '🔄 拉取可用模型'; btnFetchModels.disabled = false; }
+    });
+
+    
+    
+    
+    btnAiGenerate.addEventListener('click', async function() {
+      var url   = apiUrl.value.replace(/\/$/, '') + '/chat/completions';
+      var key   = apiKey.value.trim();
+      var model = modelSelect.value;
+      if (!model) return alert('请先拉取模型！');
+      if (!aiPrompt.value.trim()) return alert('请填写角色设定提示词！');
+
+      var skeletonCount = window.__getSkeletonCount__ ? window.__getSkeletonCount__() : 6;
+      var searchEnabled = window.__searchConfig__ && window.__searchConfig__.isEnabled();
+      var totalSteps    = (searchEnabled ? 1 : 0) + 1 + Math.ceil(skeletonCount / 5);
+      var currentStep   = 0;
+      var hacker        = window.__hackerAnim__;
+
+      btnAiGenerate.disabled = true;
+      cachedSearchResults = null;
+
+      if (hacker) { hacker.start(); hacker.setPhase('⚡ 初始化引擎...'); hacker.setProgress(0, totalSteps); hacker.setDetail(hacker.randomMsg()); }
+
+      try {
+        var headers = { 'Content-Type': 'application/json' };
+        if (key) headers['Authorization'] = 'Bearer ' + key;
+        var presetsStr = getActivePresetsStr();
+        var searchInjection = '';
+
         
-        const extensions = { world: wName };
-        
-        if (sbEnable && sbEnable.checked && regexScripts && regexScripts.length > 0) {
-          extensions.regex_scripts = regexScripts;
+        if (searchEnabled) {
+          currentStep++;
+          if (hacker) { hacker.setPhase('🌐 [阶段 ' + currentStep + '/' + totalSteps + '] 联网搜索资料...'); hacker.setProgress(currentStep, totalSteps); hacker.setDetail('正在扫描互联网数据节点...'); }
+          aiStatus.textContent = '🌐 联网搜索中...'; aiStatus.style.color = '#38bdf8';
+          var searchResult = await performSearchIfEnabled(aiPrompt.value.trim());
+          searchInjection = searchResult.searchText || '';
+          if (searchResult.mode === 'engine') { if (hacker) hacker.setDetail('✅ 搜索完成，获取到 ' + searchResult.searchResults.length + ' 条参考资料'); }
+          else if (searchResult.mode === 'ai_native') { if (hacker) hacker.setDetail('ℹ️ 使用 AI 自带联网能力'); }
+          else if (searchResult.mode === 'ai_fallback') { if (hacker) hacker.setDetail('⚠️ 搜索引擎出错，降级为 AI 联网: ' + (searchResult.error || '')); }
+          await sleep(400);
         }
 
-        return {
-          name: cName, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creatorcomment: creatorNotes.value, avatar: "none", talkativeness: "0.5", fav: false, tags: [], spec: "chara_card_v3", spec_version: "3.0",
-          data: { name: cName, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creator_notes: creatorNotes.value, system_prompt: "", post_history_instructions: "", tags: [], creator: "", character_version: "1.0", alternate_greetings: [], extensions: extensions, character_book: { name: wName, entries: formattedEntries } }
-        };
-      }
+        
+        currentStep++;
+        if (hacker) { hacker.setPhase('🧬 [阶段 ' + currentStep + '/' + totalSteps + '] 构建角色灵魂...'); hacker.setProgress(currentStep, totalSteps); hacker.setDetail(hacker.randomMsg()); }
+        aiStatus.textContent = '⏳ [阶段 1] 构思角色设定...'; aiStatus.style.color = '#38bdf8';
 
-      
-      function syntaxHighlightJSON(jsonStr) {
-        jsonStr = jsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-          let cls = 'json-number';
-          if (/^"/.test(match)) {
-            if (/:$/.test(match)) cls = 'json-key';
-            else cls = 'json-string';
-          } else if (/true|false/.test(match)) {
-            cls = 'json-boolean';
-          } else if (/null/.test(match)) {
-            cls = 'json-null';
+        var p1Sys = '生成角色基础属性，仅输出JSON对象。格式：{ "charName": "角色名", "wbName": "世界书名", "charDesc": "详细的角色描述(至少200字，包含外貌、性格、背景、能力)", "firstMes": "沉浸感强的开场白(至少150字)", "creatorNotes": "给使用者的说明", "altGreetings": ["备选开场白1(不同场景或氛围)", "备选开场白2"] }'
+          + (presetsStr ? '\n【文风要求】：\n' + presetsStr : '')
+          + searchInjection;
+
+        var r1 = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify({ model: model, messages: [{ role: "system", content: p1Sys }, { role: "user", content: aiPrompt.value.trim() }], temperature: 0.85 }) });
+        if (!r1.ok) throw new Error('角色生成失败 HTTP ' + r1.status);
+        var charData = extractJsonObj((await r1.json()).choices[0].message.content);
+
+        charName.value     = charData.charName     || '';
+        wbName.value       = charData.wbName       || '';
+        charDesc.value     = charData.charDesc     || '';
+        firstMes.value     = charData.firstMes     || '';
+        creatorNotes.value = charData.creatorNotes || '';
+        window.__altGreetings__ = (charData.altGreetings && Array.isArray(charData.altGreetings)) ? charData.altGreetings : [];
+        if (window.__renderAltGreetings__) window.__renderAltGreetings__();
+        worldbookEntries = [];
+        debouncedUpdateAndSave();
+        if (hacker) hacker.setDetail('✅ 角色「' + (charData.charName || '???') + '」锻造完成');
+        await sleep(500);
+
+        
+        var wbGoal    = wbPrompt.value.trim();
+        var remaining = skeletonCount;
+        var batchIndex = 0;
+
+        while (remaining > 0) {
+          var batchSize = Math.min(remaining, 5);
+          batchIndex++; currentStep++;
+          if (hacker) { hacker.setPhase('🦴 [阶段 ' + currentStep + '/' + totalSteps + '] 世界书骨架 (批次 ' + batchIndex + ')'); hacker.setProgress(currentStep, totalSteps); hacker.setDetail(hacker.randomMsg()); }
+          aiStatus.textContent = '⏳ 生成世界书骨架... ' + worldbookEntries.length + '/' + skeletonCount;
+
+          var existingTitles = worldbookEntries.map(function(e) { return e.comment; }).join('、');
+          var existingRef    = existingTitles ? '\n【已有条目(禁止重复)】：' + existingTitles : '';
+
+          var skSys = '你是一个酒馆V3世界书骨架生成器。快速产出【' + batchSize + '条】简短骨架。'
+            + '\n每条只需：comment(标题)、content(一句话20-40字)、keys(1-3个触发词)、strategy("selective"或"constant")'
+            + '\n【角色】：' + charName.value.trim() + ' | ' + charDesc.value.trim().substring(0, 300)
+            + existingRef
+            + (wbGoal ? '\n【方向】：' + wbGoal : '')
+            + (presetsStr ? '\n【文风】：' + presetsStr.substring(0, 200) : '')
+            + searchInjection
+            + '\n【输出】：JSON数组 [{ "comment":"===标题===", "content":"一句话", "keys":["词"], "strategy":"selective" }, ...]'
+            + '\n要求：极简、不重复、覆盖多维度（地点/人物/组织/物品/事件/规则）';
+
+          try {
+            var r2 = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify({ model: model, messages: [{ role: "system", content: skSys }, { role: "user", content: '生成' + batchSize + '条骨架' }], temperature: 0.9 }) });
+            if (!r2.ok) throw new Error('HTTP ' + r2.status);
+            var rawC = (await r2.json()).choices[0].message.content;
+            var skeletons;
+            try { skeletons = extractJsonArray(rawC); } catch(pe) { try { skeletons = [extractJsonObj(rawC)]; } catch(e2) { throw new Error('返回格式异常'); } }
+            skeletons.forEach(function(sk) {
+              if (!sk || !sk.comment) return;
+              worldbookEntries.push({ comment: sk.comment || '未命名', content: sk.content || '(待展开)', keys: Array.isArray(sk.keys) ? sk.keys : [], strategy: sk.strategy || 'selective', position: 4, depth: 4, role: 0, order: 100, prob: 100 });
+            });
+            renderEntriesList(); debouncedUpdateAndSave();
+            if (hacker) hacker.setDetail('✅ 批次 ' + batchIndex + ' 完成，已 ' + worldbookEntries.length + ' 条');
+            await sleep(300);
+          } catch(bErr) {
+            if (hacker) hacker.setDetail('⚠️ 批次 ' + batchIndex + ': ' + bErr.message);
+            await sleep(500);
           }
-          return '<span class="' + cls + '">' + match + '</span>';
+          remaining -= batchSize;
+        }
+
+        
+        if (hacker) {
+          hacker.stop(); hacker.setPhase('🎉 生成完毕！'); hacker.setProgress(totalSteps, totalSteps);
+          var doneMsg = '角色「' + charName.value.trim() + '」+ ' + worldbookEntries.length + ' 条骨架已就绪。';
+          if (searchEnabled && cachedSearchResults) doneMsg += ' (参考了 ' + cachedSearchResults.length + ' 条搜索结果)';
+          doneMsg += ' 请用「✨ AI重写」逐条展开。';
+          hacker.setDetail(doneMsg);
+          setTimeout(function() { if (hacker) hacker.hide(); }, 5000);
+        }
+        aiStatus.textContent = '✅ 完毕！' + worldbookEntries.length + ' 条骨架' + (searchEnabled ? ' (已联网)' : '') + '。请逐条展开。';
+        aiStatus.style.color = '#10b981';
+
+      } catch(err) {
+        if (hacker) { hacker.stop(); hacker.setPhase('❌ 中止'); hacker.setDetail(err.message); setTimeout(function() { hacker.hide(); }, 3000); }
+        aiStatus.textContent = '❌ 中止: ' + err.message; aiStatus.style.color = '#ef4444';
+      } finally { btnAiGenerate.disabled = false; }
+    });
+
+    
+    
+    
+    async function generateContextAwareWBEntry(customDirection, stepInfo) {
+      if (!stepInfo) stepInfo = '';
+      var url   = apiUrl.value.replace(/\/$/, '') + '/chat/completions';
+      var key   = apiKey.value.trim();
+      var model = modelSelect.value;
+      var searchInjection = '';
+      if (window.__searchConfig__ && window.__searchConfig__.isEnabled()) {
+        var sq = customDirection || charName.value.trim() + ' ' + charDesc.value.trim().substring(0, 100);
+        var sr = await performSearchIfEnabled(sq);
+        searchInjection = sr.searchText || '';
+      }
+      var existingCtx = worldbookEntries.map(function(e) { return '[标题:' + e.comment + '] (策略:' + e.strategy + '): ' + e.content; }).join('\n-----\n');
+      var ctxStr      = existingCtx ? '\n【已有设定(不可重复)】：\n' + existingCtx : '\n【当前世界书为空】';
+      var presetsStr  = getActivePresetsStr();
+      var presetBlock = presetsStr ? '\n\n【文风约束】：\n' + presetsStr : '';
+      var includeChar = wbIncludeCharData && wbIncludeCharData.checked;
+      var charBlock   = includeChar ? '\n【角色】：' + charName.value.trim() + ' | ' + charDesc.value.trim() + '\n' : '';
+      var sysPrompt   = '你是一个酒馆V3世界书词条构建大师。请生成【仅仅1条】详细完整的设定。' + stepInfo + charBlock + '\n' + ctxStr + '\n' + presetBlock + searchInjection + '\n【输出】：1个JSON对象 { "comment": "标题", "content": "详细设定(至少100字)", "keys": ["触发词"], "strategy": "selective 或 constant", "position": 4 }';
+      var userPrompt  = customDirection ? '【方向】：' + customDirection : '【自由发挥，拒绝重复】';
+      var headers     = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = 'Bearer ' + key;
+      var res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify({ model: model, messages: [{ role: "system", content: sysPrompt }, { role: "user", content: userPrompt }], temperature: 0.8 }) });
+      if (!res.ok) throw new Error('请求失败 HTTP ' + res.status);
+      var entry = extractJsonObj((await res.json()).choices[0].message.content);
+      worldbookEntries.push({ comment: entry.comment || '拓展设定', content: entry.content || '', keys: Array.isArray(entry.keys) ? entry.keys : [], strategy: entry.strategy || 'selective', position: parseInt(entry.position) || 4, depth: 4, role: 0, order: 100, prob: 100 });
+    }
+
+    btnAiSingleWb.addEventListener('click', async function() {
+      if (!modelSelect.value) return alert('请先选择模型！');
+      btnAiSingleWb.disabled = true; btnAiSingleWb.textContent = "⏳ Roll中...";
+      try { await generateContextAwareWBEntry(wbSinglePrompt.value.trim(), "单条补充。"); renderEntriesList(); debouncedUpdateAndSave(); wbSinglePrompt.value = ''; }
+      catch(err) { alert('生成失败: ' + err.message); }
+      finally { btnAiSingleWb.disabled = false; btnAiSingleWb.textContent = "🎲 生成 1 条"; }
+    });
+
+    
+    
+    
+    function resetWBForm() {
+      editingIndex = -1; entryComment.value = ''; entryContent.value = ''; entryKeys.value = '';
+      entryStrategy.value = 'selective'; entryPosition.value = '4'; entryDepth.value = '4';
+      entryRole.value = '0'; entryOrder.value = '100'; entryProb.value = '100';
+      btnAddEntry.textContent = '➕ 保存到列表'; btnAddEntry.style.backgroundColor = '#059669';
+    }
+
+    function editEntry(index) {
+      editingIndex = index; var e = worldbookEntries[index];
+      entryComment.value = e.comment || ''; entryContent.value = e.content || '';
+      entryKeys.value = (e.keys || []).join(', '); entryStrategy.value = e.strategy || 'selective';
+      entryPosition.value = String(e.position || 4); entryDepth.value = String(e.depth || 4);
+      entryRole.value = String(e.role || 0); entryOrder.value = String(e.order || 100); entryProb.value = String(e.prob || 100);
+      btnAddEntry.textContent = '💾 确认覆盖'; btnAddEntry.style.backgroundColor = '#d97706';
+      btnAddEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function aiRewriteEntry(index, req, btn) {
+      var url = apiUrl.value.replace(/\/$/, '') + '/chat/completions'; var key = apiKey.value.trim(); var model = modelSelect.value;
+      if (!model) return alert('请先选择模型！');
+      var old = worldbookEntries[index]; var oldText = btn.textContent; btn.disabled = true; btn.textContent = "⏳ 重铸中...";
+      var presetsStr = getActivePresetsStr();
+      var isSkeleton = old.content.length < 60;
+      var expandHint = isSkeleton ? '\n\n【重要】：原条目是骨架概要，请展开为完整详细的世界书设定词条（至少150字），保留方向但大幅扩充。' : '';
+      var searchInjection = '';
+      if (window.__searchConfig__ && window.__searchConfig__.isEnabled()) {
+        var sq = old.comment + ' ' + (req || '');
+        var sr = await performSearchIfEnabled(sq);
+        searchInjection = sr.searchText || '';
+      }
+      var sys = '你是一个酒馆V3词条润色大师。修改一个【已存在的词条】。\n【原词条】: 标题: ' + old.comment + ' | 策略: ' + old.strategy + ' | 触发词: ' + old.keys.join(',') + '\n内容: ' + old.content + (presetsStr ? '\n【文风】：\n' + presetsStr : '') + expandHint + searchInjection + '\n【任务】：重写。输出JSON：{ "comment": "标题", "content": "详细设定", "keys": ["触发词"], "strategy": "selective 或 constant", "position": ' + old.position + ' }';
+      try {
+        var h = { 'Content-Type': 'application/json' }; if (key) h['Authorization'] = 'Bearer ' + key;
+        var res = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify({ model: model, messages: [{ role: "system", content: sys }, { role: "user", content: isSkeleton ? '将骨架展开为完整设定。' + (req ? ' 额外要求：' + req : '') : '修改要求：' + req }], temperature: 0.8 }) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var ed = extractJsonObj((await res.json()).choices[0].message.content);
+        worldbookEntries[index].comment = ed.comment || old.comment;
+        worldbookEntries[index].content = ed.content || old.content;
+        if (ed.keys) worldbookEntries[index].keys = Array.isArray(ed.keys) ? ed.keys : [];
+        if (ed.strategy) worldbookEntries[index].strategy = ed.strategy;
+        renderEntriesList(); debouncedUpdateAndSave();
+      } catch(err) { alert('重写失败: ' + err.message); }
+      finally { btn.disabled = false; btn.textContent = oldText || '✨ AI重写'; }
+    }
+
+    function renderEntriesList() {
+      entriesList.innerHTML = worldbookEntries.length ? '' : '<span style="color:#475569;font-size:0.8rem;">暂无条目</span>';
+      var posMap = ["0前","1后","2前EM","3后EM","4深度","5前AN","6后AN"];
+      worldbookEntries.forEach(function(entry, index) {
+        var isSk = entry.content.length < 60;
+        var skBadge = isSk ? '<span style="font-size:0.6rem;background:rgba(245,158,11,0.15);color:#f59e0b;padding:1px 6px;border-radius:99px;margin-left:6px;border:1px solid rgba(245,158,11,0.25);">🦴 骨架</span>' : '';
+        var div = document.createElement('div'); div.className = 'entry-item fade-in';
+        div.innerHTML = '<div class="entry-item-header"><div class="entry-info"><h4>' + (entry.comment || '未命名') + ' <span style="color:#8b5cf6;font-size:0.7rem;opacity:0.8;">[' + entry.strategy + ']</span>' + skBadge + '</h4><p>位置: ' + (posMap[entry.position] || entry.position) + ' | 顺序: ' + entry.order + ' | 深度: ' + entry.depth + ' | 概率: ' + entry.prob + '%</p><p>触发词: ' + ((entry.keys || []).join(', ') || '无') + '</p>' + (isSk ? '<p style="color:#f59e0b;font-size:0.7rem;margin-top:4px;">💡 点击「✨ AI重写」展开为完整设定</p>' : '') + '</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:160px;"><button class="btn btn-edit" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;background-color:#3b82f6;">✏️ 编辑</button><button class="btn btn-toggle-reroll" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;background:linear-gradient(135deg,#8b5cf6,#6d28d9);">✨ AI重写</button><button class="btn btn-delete" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;">🗑️</button></div></div><div id="reroll_area_' + index + '" style="display:none;width:100%;margin-top:12px;padding-top:12px;border-top:1px dashed #334155;"><input type="text" id="reroll_prompt_' + index + '" placeholder="' + (isSk ? '可留空直接展开，或输入额外要求...' : '怎么修改？') + '" style="width:100%;padding:8px;margin-bottom:8px;" /><button class="btn btn-submit-reroll" data-index="' + index + '" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);padding:8px;font-size:0.85rem;">' + (isSk ? '🦴→📖 展开为完整设定' : '🎲 确定覆盖重写') + '</button></div>';
+        entriesList.appendChild(div);
+      });
+      document.querySelectorAll('.btn-edit').forEach(function(b) { b.addEventListener('click', function(e) { editEntry(parseInt(e.currentTarget.getAttribute('data-index'))); }); });
+      document.querySelectorAll('.btn-toggle-reroll').forEach(function(b) { b.addEventListener('click', function(e) { var a = document.getElementById('reroll_area_' + e.currentTarget.getAttribute('data-index')); a.style.display = a.style.display === 'none' ? 'block' : 'none'; }); });
+      document.querySelectorAll('.btn-submit-reroll').forEach(function(b) { b.addEventListener('click', async function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); var req = document.getElementById('reroll_prompt_' + idx).value.trim(); var isSk = worldbookEntries[idx].content.length < 60; if (!isSk && !req) return alert('请填写修改要求！'); await aiRewriteEntry(idx, req, e.currentTarget); }); });
+      document.querySelectorAll('.btn-delete').forEach(function(b) { b.addEventListener('click', function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if (editingIndex === idx) resetWBForm(); renderEntriesList(); debouncedUpdateAndSave(); }); });
+    }
+
+    btnAddEntry.addEventListener('click', function() {
+      if (!entryContent.value.trim()) return alert('内容不能为空！');
+      var ne = { comment: entryComment.value.trim(), content: entryContent.value.trim(), keys: entryKeys.value.split(',').map(function(k) { return k.trim(); }).filter(function(k) { return k; }), strategy: entryStrategy.value, position: parseInt(entryPosition.value), depth: parseInt(entryDepth.value) || 4, role: parseInt(entryRole.value) || 0, order: parseInt(entryOrder.value) || 100, prob: parseInt(entryProb.value) || 100 };
+      if (editingIndex >= 0) worldbookEntries[editingIndex] = ne; else worldbookEntries.push(ne);
+      resetWBForm(); renderEntriesList(); debouncedUpdateAndSave();
+    });
+
+    
+    
+    
+    var btnAiOrganize    = document.getElementById('btnAiOrganize');
+    var organizePreview  = document.getElementById('organizePreview');
+    var organizeStatus   = document.getElementById('organizeStatus');
+    var pendingOrganizeData = null;
+
+    btnAiOrganize.addEventListener('click', async function() {
+      if (worldbookEntries.length === 0) return alert('世界书为空，没有可整理的条目！');
+      var url = apiUrl.value.replace(/\/$/, '') + '/chat/completions';
+      var key = apiKey.value.trim(); var model = modelSelect.value;
+      if (!model) return alert('请先选择 AI 模型！');
+      btnAiOrganize.disabled = true; btnAiOrganize.textContent = '⏳ AI 分析中...';
+      organizeStatus.textContent = '🔍 正在分析 ' + worldbookEntries.length + ' 条世界书条目...';
+      organizeStatus.style.color = '#38bdf8';
+      organizePreview.style.display = 'none'; pendingOrganizeData = null;
+
+      var entrySummaries = worldbookEntries.map(function(e, i) {
+        return { index: i, title: e.comment || '未命名', content_preview: (e.content || '').substring(0, 150), strategy: e.strategy, keys: (e.keys || []).join(', '), current_depth: e.depth, current_order: e.order, current_prob: e.prob };
+      });
+
+      var sysPrompt = '你是 SillyTavern 世界书参数优化专家。请根据每个条目的内容类型和重要性，为它们分配最佳的 depth（深度）、order（插入顺序）和 probability（触发概率）。\n\n【参数说明】：\n• depth（深度 0-999）：数值越小越靠近最新对话。核心设定 depth=1-2，重要设定 depth=3-4，背景设定 depth=5-8，冷门/彩蛋 depth=8-15\n• order（插入顺序 0-999）：同深度时的优先级，数值越大越先处理。核心规则 order=900-1000，重要 order=500-800，普通 order=100-400，低优先 order=10-99\n• probability（触发概率 1-100）：常驻条目建议100%，普通触发条目80-100%，氛围/随机事件50-80%，彩蛋/稀有事件10-40%\n\n【分类参考】：\n- 核心世界观/规则/系统 → depth=1, order=900+, prob=100\n- 主要角色/重要NPC → depth=2-3, order=600-800, prob=100\n- 地点/组织/势力 → depth=3-5, order=300-500, prob=90-100\n- 物品/技能/道具 → depth=4-6, order=200-400, prob=80-100\n- 事件/剧情/任务 → depth=4-6, order=200-400, prob=70-90\n- 背景知识/历史 → depth=6-10, order=100-200, prob=80-100\n- 氛围/天气/随机 → depth=5-8, order=50-150, prob=40-70\n- 彩蛋/隐藏内容 → depth=8-15, order=10-50, prob=10-30\n\n【输出格式】：JSON 数组，每个元素：\n{ "index": 条目序号, "depth": 新深度, "order": 新顺序, "prob": 新概率, "reason": "一句话理由" }\n\n仅输出 JSON 数组，不要其他文字。';
+      var userPrompt = '以下是 ' + worldbookEntries.length + ' 条世界书条目，请分析并优化参数：\n\n' + JSON.stringify(entrySummaries, null, 2);
+
+      try {
+        var headers = { 'Content-Type': 'application/json' };
+        if (key) headers['Authorization'] = 'Bearer ' + key;
+        var res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify({ model: model, messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userPrompt }], temperature: 0.3 }) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var rawContent = (await res.json()).choices[0].message.content;
+        var suggestions;
+        try { suggestions = extractJsonArray(rawContent); } catch(pe) { suggestions = [extractJsonObj(rawContent)]; }
+        if (!Array.isArray(suggestions) || suggestions.length === 0) throw new Error('AI 返回格式异常');
+        pendingOrganizeData = suggestions;
+        renderOrganizePreview(suggestions);
+        organizeStatus.textContent = '✅ 分析完成！请检查下方预览，确认后点击「应用」';
+        organizeStatus.style.color = '#34d399';
+      } catch(err) {
+        organizeStatus.textContent = '❌ 整理失败: ' + err.message;
+        organizeStatus.style.color = '#fca5a5';
+        organizePreview.style.display = 'none';
+      } finally {
+        btnAiOrganize.disabled = false;
+        btnAiOrganize.textContent = '⚡ 一键整理';
+      }
+    });
+
+    function renderOrganizePreview(suggestions) {
+      var changeCount = 0;
+      suggestions.forEach(function(s) {
+        var idx = s.index;
+        if (idx === undefined || idx < 0 || idx >= worldbookEntries.length) return;
+        var e = worldbookEntries[idx];
+        if (e.depth !== s.depth || e.order !== s.order || e.prob !== s.prob) changeCount++;
+      });
+
+      var html = '<div class="organize-preview-header">';
+      html += '<span class="preview-header-title">📊 参数优化预览</span>';
+      html += '<span class="preview-header-badge">共 ' + suggestions.length + ' 条</span>';
+      html += '</div>';
+      html += '<div class="organize-table-wrap"><table class="organize-table">';
+      html += '<thead><tr><th>条目</th><th>深度</th><th>顺序</th><th>概率</th><th>AI 建议</th></tr></thead>';
+      html += '<tbody>';
+      suggestions.forEach(function(s) {
+        var idx = s.index;
+        if (idx === undefined || idx < 0 || idx >= worldbookEntries.length) return;
+        var e = worldbookEntries[idx];
+        var dC = e.depth !== s.depth, oC = e.order !== s.order, pC = e.prob !== s.prob;
+        html += '<tr>';
+        html += '<td class="org-name-cell" title="' + (e.comment || '').replace(/"/g, '&quot;') + '">' + (e.comment || '未命名') + '</td>';
+        html += '<td class="org-value-cell">' + (dC ? '<span class="org-old">' + e.depth + '</span><span class="org-changed">' + s.depth + '</span>' : e.depth) + '</td>';
+        html += '<td class="org-value-cell">' + (oC ? '<span class="org-old">' + e.order + '</span><span class="org-changed">' + s.order + '</span>' : e.order) + '</td>';
+        html += '<td class="org-value-cell">' + (pC ? '<span class="org-old">' + e.prob + '%</span><span class="org-changed">' + s.prob + '%</span>' : e.prob + '%') + '</td>';
+        html += '<td class="org-reason-cell">' + (s.reason || '—') + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+      html += '<div class="organize-footer">';
+      html += '<span class="organize-stats">发现 <strong>' + changeCount + '</strong> 处可优化参数</span>';
+      html += '<div class="organize-actions">';
+      html += '<button class="btn-org-cancel" id="btnOrgCancel">取消</button>';
+      html += '<button class="btn-org-apply" id="btnOrgApply">✅ 应用优化</button>';
+      html += '</div></div>';
+
+      organizePreview.innerHTML = html;
+      organizePreview.style.display = 'block';
+
+      document.getElementById('btnOrgApply').addEventListener('click', function() {
+        if (!pendingOrganizeData) return;
+        var applied = 0;
+        pendingOrganizeData.forEach(function(s) {
+          var idx = s.index;
+          if (idx === undefined || idx < 0 || idx >= worldbookEntries.length) return;
+          var changed = false;
+          if (s.depth !== undefined && s.depth !== worldbookEntries[idx].depth) { worldbookEntries[idx].depth = s.depth; changed = true; }
+          if (s.order !== undefined && s.order !== worldbookEntries[idx].order) { worldbookEntries[idx].order = s.order; changed = true; }
+          if (s.prob  !== undefined && s.prob  !== worldbookEntries[idx].prob)  { worldbookEntries[idx].prob  = s.prob;  changed = true; }
+          if (changed) applied++;
         });
-      }
+        renderEntriesList(); debouncedUpdateAndSave();
+        organizePreview.style.display = 'none'; pendingOrganizeData = null;
+        organizeStatus.innerHTML = '🎉 已应用 <strong>' + applied + '</strong> 处优化！';
+        organizeStatus.style.color = '#34d399';
+        setTimeout(function() { organizeStatus.innerHTML = ''; }, 3000);
+      });
 
-      function updatePreviewAnimated() {
-        const fullJson = generateFullJSON();
-        const jsonString = JSON.stringify(fullJson, null, 2);
-        
-        
-        codePreview.innerHTML = syntaxHighlightJSON(jsonString);
+      document.getElementById('btnOrgCancel').addEventListener('click', function() {
+        organizePreview.style.display = 'none'; pendingOrganizeData = null;
+        organizeStatus.innerHTML = '已取消'; organizeStatus.style.color = '#64748b';
+        setTimeout(function() { organizeStatus.innerHTML = ''; }, 2000);
+      });
+    }
 
-        
-        gsap.fromTo("#codeContentWrapper", 
-          { backgroundColor: "rgba(56,189,248,0.15)" }, 
-          { backgroundColor: "transparent", duration: 0.4, ease: "power2.out" }
-        );
-      }
+    
+    
+    
+    function generateFullJSON() {
+      var fe = worldbookEntries.map(function(e, i) {
+        return { id: i, keys: e.keys || [], secondary_keys: [], comment: e.comment, content: e.content, constant: e.strategy === 'constant', selective: e.strategy === 'selective' || e.strategy === 'vectorized', insertion_order: e.order || 100, enabled: true, position: "before_char", use_regex: false, extensions: { position: e.position, exclude_recursion: false, display_index: i, probability: e.prob || 100, useProbability: true, depth: e.depth || 4, selectiveLogic: 0, outlet_name: "", group: "", group_override: false, group_weight: 100, prevent_recursion: false, delay_until_recursion: false, role: e.role || 0, vectorized: e.strategy === 'vectorized' } };
+      });
+      var cn  = charName.value.trim() || "无名角色";
+      var wn  = wbName.value.trim()   || "无名世界书";
+      var ext = { world: wn };
+      if (statusBarActive && regexScripts && regexScripts.length > 0) ext.regex_scripts = regexScripts;
+      var altG = (window.__altGreetings__ || []).filter(function(g) { return g && g.trim(); });
+      return { name: cn, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creatorcomment: creatorNotes.value, avatar: "none", talkativeness: "0.5", fav: false, tags: [], spec: "chara_card_v3", spec_version: "3.0", data: { name: cn, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creator_notes: creatorNotes.value, system_prompt: "", post_history_instructions: "", tags: [], creator: "", character_version: "1.0", alternate_greetings: altG, extensions: ext, character_book: { name: wn, entries: fe } } };
+    }
 
-      [charName, wbName, charDesc, firstMes, creatorNotes].forEach(el => el.addEventListener('input', debouncedUpdateAndSave));
-      btnDownloadJson.addEventListener('click', () => { const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(generateFullJSON(), null, 2)); a.download = (charName.value || "card") + ".json"; a.click(); });
+    
+    
+    
+    function updatePreview() {
+      var fj = generateFullJSON();
+      if (window.updatePreviewPanel) window.updatePreviewPanel(fj);
+    }
 
-      
-      loadAIConfig();
-      const drafts = getAllDrafts(); const lastId = localStorage.getItem(CURRENT_DRAFT_KEY);
-      if (lastId && drafts[lastId]) loadDraft(lastId); else if (Object.keys(drafts).length > 0) loadDraft(Object.keys(drafts)[0]); else btnNewDraft.click();
+    [charName, wbName, charDesc, firstMes, creatorNotes].forEach(function(el) {
+      el.addEventListener('input', debouncedUpdateAndSave);
+    });
 
-    </script>
-  </body>
-</html>
+    btnDownloadJson.addEventListener('click', function() {
+      var j = JSON.stringify(generateFullJSON(), null, 2);
+      var a = document.createElement('a');
+      a.href = "data:text/json;charset=utf-8," + encodeURIComponent(j);
+      a.download = (charName.value || "card") + ".json";
+      a.click();
+    });
+
+    
+    loadAIConfig();
+    var drafts = getAllDrafts();
+    var lastId = localStorage.getItem(CURRENT_KEY);
+    if (lastId && drafts[lastId]) loadDraft(lastId);
+    else if (Object.keys(drafts).length > 0) loadDraft(Object.keys(drafts)[0]);
+    else btnNewDraft.click();
+
+  </script>
+</Layout>

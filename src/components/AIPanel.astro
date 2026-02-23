@@ -1,61 +1,699 @@
 ---
-
 ---
-<div class="panel ai-panel">
+<div class="panel ai-panel area-ai">
   <h2>✨ AI 引擎</h2>
-  
+
+  <!-- API 配置 -->
   <div class="grid-2">
     <div class="form-group">
-      <label>API 接口地址 (URL)</label>
+      <label>API 接口地址</label>
       <input type="text" id="apiUrl" value="https:
     </div>
     <div class="form-group">
-      <label>API 密钥 (API Key)</label>
+      <label>API 密钥</label>
       <input type="password" id="apiKey" placeholder="sk-..." />
     </div>
   </div>
-  
-  <div class="grid-2">
-    <button id="btnFetchModels" class="btn btn-fetch" style="margin-top: 0; height: 100%;">🔄 拉取可用模型</button>
+
+  <div class="grid-2" style="margin-bottom: 16px;">
+    <button id="btnFetchModels" class="btn btn-fetch">🔄 拉取可用模型</button>
     <div class="form-group" style="margin-bottom: 0;">
-      <select id="modelSelect" style="height: 100%;">
+      <select id="modelSelect">
         <option value="">请先获取模型...</option>
       </select>
     </div>
   </div>
 
-  <div style="margin-top: 20px; border-top: 1px dashed #6b7280; padding-top: 20px;">
-    
-    <div class="form-group preset-upload">
-      <label style="color: #d8b4fe;">📂 导入酒馆原生预设 (.json)</label>
-      <input type="file" id="presetInput" accept=".json" style="padding: 5px; font-size: 0.8rem;" />
-      
-      <div id="presetListContainer" style="display: none; max-height: 180px; overflow-y: auto; margin-top: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 8px;">
+  <hr class="divider" />
+
+  <!-- 联网搜索配置 -->
+  <div id="searchConfigBlock" style="margin-bottom: 16px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="searchEnable" style="width: 16px; height: 16px; accent-color: #38bdf8; cursor: pointer;" />
+        <label for="searchEnable" style="margin: 0; color: #38bdf8; cursor: pointer; font-weight: 700; font-size: 0.88rem;">🌐 联网搜索增强</label>
+      </div>
+      <span id="searchModeBadge" style="font-size: 0.62rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; display: none;"></span>
+    </div>
+
+    <!-- 折叠区：搜索详细配置 -->
+    <div id="searchConfigDetail" style="display: none;">
+      <p style="font-size: 0.7rem; color: #64748b; margin: 0 0 12px 0; line-height: 1.5;">
+        开启后，AI 生成角色/世界书前会先搜索相关资料作为参考。<br/>
+        <span style="color: #94a3b8;">• 不填搜索 Key → 依赖 AI 模型自带联网能力（Gemini/Perplexity 等）</span><br/>
+        <span style="color: #94a3b8;">• 填写搜索 Key → 独立搜索引擎，结果更可靠</span>
+      </p>
+
+      <!-- 搜索引擎选择 -->
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>搜索引擎</label>
+        <select id="searchEngine">
+          <option value="none" selected>不使用独立搜索（靠 AI 自身联网）</option>
+          <option value="serper">Serper.dev（Google 结果 · 免费 2500次/月）</option>
+          <option value="tavily">Tavily（AI 专用 · 免费 1000次/月）</option>
+        </select>
+      </div>
+
+      <!-- 搜索 API Key（动态显示） -->
+      <div id="searchKeyGroup" style="display: none;">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label id="searchKeyLabel">搜索 API Key</label>
+          <input type="password" id="searchApiKey" placeholder="填入搜索引擎的 API Key..." />
         </div>
-      
-      <div id="presetStatus" style="font-size: 0.75rem; margin-top: 8px; color: #94a3b8;">
-        导入预设后，可勾选要注入的文风和规则
+        <div id="searchRegisterHint" style="font-size: 0.68rem; color: #64748b; margin-bottom: 10px; line-height: 1.5;"></div>
+      </div>
+
+      <!-- 搜索选项 -->
+      <div class="grid-2" style="margin-bottom: 10px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>搜索结果数量</label>
+          <select id="searchResultCount">
+            <option value="3">3 条（快速）</option>
+            <option value="5" selected>5 条（推荐）</option>
+            <option value="8">8 条（详细）</option>
+            <option value="12">12 条（深度）</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>搜索语言</label>
+          <select id="searchLang">
+            <option value="zh-CN" selected>中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="auto">自动检测</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 自定义搜索关键词 -->
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>自定义搜索词 <span style="font-weight: normal; color: #475569;">（留空则自动从提示词提取）</span></label>
+        <input type="text" id="searchCustomQuery" placeholder="例如：赛博朋克 世界观 设定集..." />
+      </div>
+
+      <!-- 搜索测试 -->
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="btnTestSearch" class="btn btn-fetch" style="width: auto; padding: 6px 14px; font-size: 0.78rem; margin: 0;">🔍 测试搜索</button>
+        <span id="searchTestStatus" style="font-size: 0.72rem; color: #64748b;"></span>
+      </div>
+
+      <!-- 搜索结果预览 -->
+      <div id="searchPreview" style="display: none; margin-top: 10px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; font-size: 0.72rem;"></div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- 预设导入 -->
+  <div class="preset-upload">
+    <label style="color: #c4b5fd; margin-bottom: 8px; display: block; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">📂 导入酒馆原生预设 (.json)</label>
+    <input type="file" id="presetInput" accept=".json" />
+    <div id="presetListContainer" style="display: none; max-height: 180px; overflow-y: auto; margin-top: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px;"></div>
+    <div id="presetStatus" style="font-size: 0.75rem; margin-top: 8px; color: #64748b;">
+      导入预设后，可勾选要注入的文风和规则
+    </div>
+  </div>
+
+  <!-- 生成提示词 -->
+  <div class="form-group">
+    <label style="color: #38bdf8;">📝 [阶段1] 角色设定提示词</label>
+    <textarea id="aiPrompt" placeholder="例如：一个在赛博朋克世界中靠捡垃圾为生的边缘黑客少女..." style="min-height: 80px;"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label style="color: #34d399;">🌍 [阶段2] 世界书骨架提示词</label>
+    <textarea id="wbPrompt" placeholder="例如：围绕赛博废土展开，包含武器、势力、地点、NPC..." style="min-height: 60px; border-color: rgba(16, 185, 129, 0.3);"></textarea>
+  </div>
+
+  <!-- 世界书条数设置 -->
+  <div style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="flex: 1;">
+        <label style="color: #34d399; font-size: 0.78rem; font-weight: 600; margin: 0 0 4px 0; display: block;">🦴 骨架模式</label>
+        <p style="font-size: 0.68rem; color: #64748b; margin: 0; line-height: 1.4;">
+          一键生成时只产出简短骨架。后续用「✨ AI重写」逐条展开。
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <label style="color: #94a3b8; font-size: 0.75rem; white-space: nowrap; margin: 0;">生成</label>
+        <input type="number" id="wbSkeletonCount" value="6" min="1" max="30" style="width: 52px; text-align: center; padding: 6px 4px; font-size: 0.9rem; font-weight: 700; border-color: rgba(16,185,129,0.3);" />
+        <label style="color: #94a3b8; font-size: 0.75rem; white-space: nowrap; margin: 0;">条</label>
       </div>
     </div>
-
-    <div class="form-group">
-      <label style="color: #38bdf8; font-size: 0.9rem;">📝 [阶段1] 角色设定提示词</label>
-      <textarea id="aiPrompt" placeholder="例如：一个在赛博朋克世界中靠捡垃圾为生的边缘黑客少女..." style="min-height: 80px;"></textarea>
+    <div style="display: flex; gap: 6px; margin-top: 10px;">
+      <button class="wb-count-btn" data-count="3" style="flex:1;">3条</button>
+      <button class="wb-count-btn" data-count="6" style="flex:1;">6条</button>
+      <button class="wb-count-btn" data-count="10" style="flex:1;">10条</button>
+      <button class="wb-count-btn" data-count="15" style="flex:1;">15条</button>
+      <button class="wb-count-btn" data-count="20" style="flex:1;">20条</button>
     </div>
-
-    <div class="form-group">
-      <label style="color: #10b981; font-size: 0.9rem;">🌍 [阶段2] 世界书扩展提示词</label>
-      <textarea id="wbPrompt" placeholder="例如：生成1个常驻(constant)的赛博废土世界观；再生成3个关键词触发(selective)的特殊武器词条..." style="min-height: 80px; border-color: #10b981;"></textarea>
-    </div>
-
-    <button id="btnAiGenerate" class="btn btn-ai">🚀 生成(角色+世界书)</button>
-    <div id="aiStatus" class="status-text"></div>
   </div>
+
+  <button id="btnAiGenerate" class="btn btn-ai">🚀 一键生成（角色 + 世界书骨架）</button>
+
+  <!-- 黑客风动画区域 -->
+  <div id="hackerOverlay" style="display: none;">
+    <div id="hackerCanvas"></div>
+    <div id="hackerStatus">
+      <div id="hackerPhase"></div>
+      <div id="hackerProgress"></div>
+      <div id="hackerDetail"></div>
+    </div>
+  </div>
+
+  <div id="aiStatus" class="status-text"></div>
 </div>
 
 <style>
+  .wb-count-btn {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    padding: 4px 0;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .wb-count-btn:hover {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #a7f3d0;
+    transform: translateY(-1px);
+  }
+  .wb-count-btn.active {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+    color: #ecfdf5;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+  }
+
+  #searchConfigBlock {
+    background: rgba(56, 189, 248, 0.04);
+    border: 1px solid rgba(56, 189, 248, 0.15);
+    border-radius: 10px;
+    padding: 14px;
+    transition: all 0.3s ease;
+  }
+  #searchConfigBlock.active {
+    border-color: rgba(56, 189, 248, 0.35);
+    background: rgba(56, 189, 248, 0.08);
+  }
+
+  .search-result-item {
+    padding: 8px;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+    transition: background 0.15s ease;
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: rgba(56, 189, 248, 0.06); }
+  .search-result-title {
+    color: #38bdf8;
+    font-weight: 600;
+    font-size: 0.75rem;
+    margin-bottom: 3px;
+  }
+  .search-result-snippet {
+    color: #94a3b8;
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+  .search-result-url {
+    color: #475569;
+    font-size: 0.62rem;
+    margin-top: 2px;
+    word-break: break-all;
+  }
+
   
-  :global(.preset-item) { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 0.8rem; background: #334155; padding: 8px; border-radius: 4px; }
-  :global(.preset-item input[type="checkbox"]) { margin-top: 2px; width: 14px; height: 14px; accent-color: #8b5cf6; cursor: pointer; flex-shrink: 0; }
-  :global(.preset-item label) { margin: 0; cursor: pointer; flex: 1; user-select: none; color: #f8fafc; font-weight: normal; line-height: 1.3; }
+  #hackerOverlay {
+    position: relative;
+    margin-top: 14px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    background: #050510;
+    min-height: 160px;
+  }
+  #hackerCanvas {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.65rem;
+    line-height: 1.2;
+    color: rgba(139, 92, 246, 0.15);
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding: 8px;
+    pointer-events: none;
+  }
+  #hackerStatus {
+    position: relative;
+    z-index: 2;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    gap: 12px;
+  }
+  #hackerPhase {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #c4b5fd;
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    text-align: center;
+    animation: hackerGlow 1.5s ease-in-out infinite;
+  }
+  #hackerProgress {
+    width: 80%;
+    max-width: 260px;
+    height: 4px;
+    background: rgba(139, 92, 246, 0.15);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+  }
+  #hackerProgress::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: var(--progress, 0%);
+    background: linear-gradient(90deg, #8b5cf6, #c084fc, #8b5cf6);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  }
+  #hackerDetail {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 1.2em;
+  }
+  @keyframes hackerGlow {
+    0%, 100% { text-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
+    50% { text-shadow: 0 0 40px rgba(139, 92, 246, 0.8), 0 0 80px rgba(139, 92, 246, 0.3); }
+  }
+  #hackerOverlay::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.5), transparent);
+    animation: hackerScan 2s linear infinite;
+    pointer-events: none;
+    z-index: 3;
+  }
+  @keyframes hackerScan {
+    0% { top: 0; opacity: 1; }
+    100% { top: 100%; opacity: 0.2; }
+  }
 </style>
+
+<script is:inline>
+(function() {
+  var wbSkeletonCount  = document.getElementById('wbSkeletonCount');
+  var countBtns        = document.querySelectorAll('.wb-count-btn');
+  var hackerOverlay    = document.getElementById('hackerOverlay');
+  var hackerCanvas     = document.getElementById('hackerCanvas');
+  var hackerPhase      = document.getElementById('hackerPhase');
+  var hackerProgress   = document.getElementById('hackerProgress');
+  var hackerDetail     = document.getElementById('hackerDetail');
+
+  
+  var searchEnable      = document.getElementById('searchEnable');
+  var searchConfigBlock = document.getElementById('searchConfigBlock');
+  var searchConfigDetail = document.getElementById('searchConfigDetail');
+  var searchModeBadge   = document.getElementById('searchModeBadge');
+  var searchEngine      = document.getElementById('searchEngine');
+  var searchKeyGroup    = document.getElementById('searchKeyGroup');
+  var searchKeyLabel    = document.getElementById('searchKeyLabel');
+  var searchApiKey      = document.getElementById('searchApiKey');
+  var searchRegisterHint = document.getElementById('searchRegisterHint');
+  var searchResultCount = document.getElementById('searchResultCount');
+  var searchLang        = document.getElementById('searchLang');
+  var searchCustomQuery = document.getElementById('searchCustomQuery');
+  var btnTestSearch     = document.getElementById('btnTestSearch');
+  var searchTestStatus  = document.getElementById('searchTestStatus');
+  var searchPreview     = document.getElementById('searchPreview');
+
+  var SEARCH_CONFIG_KEY = 'st_v3_builder_search_config';
+
+  
+  
+  
+  function updateCountBtnActive() {
+    var val = parseInt(wbSkeletonCount.value);
+    countBtns.forEach(function(btn) {
+      btn.classList.toggle('active', parseInt(btn.getAttribute('data-count')) === val);
+    });
+  }
+  countBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      wbSkeletonCount.value = btn.getAttribute('data-count');
+      updateCountBtnActive();
+    });
+  });
+  wbSkeletonCount.addEventListener('input', updateCountBtnActive);
+  updateCountBtnActive();
+
+  
+  
+  
+  function updateSearchUI() {
+    var enabled = searchEnable.checked;
+    searchConfigDetail.style.display = enabled ? 'block' : 'none';
+    searchConfigBlock.classList.toggle('active', enabled);
+
+    if (!enabled) {
+      searchModeBadge.style.display = 'none';
+      return;
+    }
+
+    var engine = searchEngine.value;
+    searchModeBadge.style.display = 'inline';
+
+    if (engine === 'none') {
+      searchModeBadge.textContent = 'AI 自带联网';
+      searchModeBadge.style.background = 'rgba(56,189,248,0.12)';
+      searchModeBadge.style.color = '#38bdf8';
+      searchModeBadge.style.border = '1px solid rgba(56,189,248,0.25)';
+      searchKeyGroup.style.display = 'none';
+    } else if (engine === 'serper') {
+      searchModeBadge.textContent = 'Serper · Google';
+      searchModeBadge.style.background = 'rgba(16,185,129,0.12)';
+      searchModeBadge.style.color = '#34d399';
+      searchModeBadge.style.border = '1px solid rgba(16,185,129,0.25)';
+      searchKeyGroup.style.display = 'block';
+      searchKeyLabel.textContent = 'Serper API Key';
+      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https:
+    } else if (engine === 'tavily') {
+      searchModeBadge.textContent = 'Tavily · AI 专用';
+      searchModeBadge.style.background = 'rgba(245,158,11,0.12)';
+      searchModeBadge.style.color = '#fbbf24';
+      searchModeBadge.style.border = '1px solid rgba(245,158,11,0.25)';
+      searchKeyGroup.style.display = 'block';
+      searchKeyLabel.textContent = 'Tavily API Key';
+      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https:
+    }
+
+    saveSearchConfig();
+  }
+
+  searchEnable.addEventListener('change', updateSearchUI);
+  searchEngine.addEventListener('change', updateSearchUI);
+  searchApiKey.addEventListener('input', saveSearchConfig);
+  searchResultCount.addEventListener('change', saveSearchConfig);
+  searchLang.addEventListener('change', saveSearchConfig);
+
+  
+  
+  
+  function saveSearchConfig() {
+    localStorage.setItem(SEARCH_CONFIG_KEY, JSON.stringify({
+      enabled:     searchEnable.checked,
+      engine:      searchEngine.value,
+      apiKey:      searchApiKey.value.trim(),
+      resultCount: parseInt(searchResultCount.value),
+      lang:        searchLang.value,
+    }));
+  }
+
+  function loadSearchConfig() {
+    try {
+      var c = JSON.parse(localStorage.getItem(SEARCH_CONFIG_KEY));
+      
+      if (!c) {
+        searchEnable.checked = false;
+        updateSearchUI();
+        return;
+      }
+      
+      searchEnable.checked = c.enabled === true ? true : false;
+      if (c.engine)      searchEngine.value      = c.engine;
+      if (c.apiKey)      searchApiKey.value       = c.apiKey;
+      if (c.resultCount) searchResultCount.value  = c.resultCount;
+      if (c.lang)        searchLang.value         = c.lang;
+      updateSearchUI();
+    } catch(e) {
+      
+      searchEnable.checked = false;
+      updateSearchUI();
+    }
+  }
+
+  loadSearchConfig();
+
+  
+  
+  
+  async function executeSearch(query, count, lang) {
+    var engine = searchEngine.value;
+    var key    = searchApiKey.value.trim();
+    if (engine === 'serper' && key) {
+      return await searchWithSerper(query, count, lang, key);
+    } else if (engine === 'tavily' && key) {
+      return await searchWithTavily(query, count, key);
+    } else {
+      return null;
+    }
+  }
+
+  async function searchWithSerper(query, count, lang, key) {
+    var res = await fetch('https:
+      method: 'POST',
+      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q:   query,
+        num: count,
+        gl:  lang === 'zh-CN' ? 'cn' : (lang === 'ja' ? 'jp' : 'us'),
+        hl:  lang === 'auto' ? 'zh-CN' : lang
+      })
+    });
+    if (!res.ok) throw new Error('Serper 搜索失败 HTTP ' + res.status);
+    var data = await res.json();
+    var results = [];
+    if (data.organic) {
+      data.organic.forEach(function(item) {
+        results.push({ title: item.title || '', snippet: item.snippet || '', url: item.link || '' });
+      });
+    }
+    if (data.knowledgeGraph) {
+      var kg = data.knowledgeGraph;
+      results.unshift({ title: '[知识面板] ' + (kg.title || ''), snippet: kg.description || '', url: kg.descriptionLink || '' });
+    }
+    return results.slice(0, count);
+  }
+
+  async function searchWithTavily(query, count, key) {
+    var res = await fetch('https:
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: key, query: query, max_results: count, search_depth: 'basic', include_answer: true })
+    });
+    if (!res.ok) throw new Error('Tavily 搜索失败 HTTP ' + res.status);
+    var data = await res.json();
+    var results = [];
+    if (data.answer) {
+      results.push({ title: '[AI 总结]', snippet: data.answer, url: '' });
+    }
+    if (data.results) {
+      data.results.forEach(function(item) {
+        results.push({ title: item.title || '', snippet: item.content || '', url: item.url || '' });
+      });
+    }
+    return results.slice(0, count + 1);
+  }
+
+  function formatSearchResultsForPrompt(results) {
+    if (!results || results.length === 0) return '';
+    var text = '\n\n【🌐 联网搜索参考资料】：\n';
+    text += '以下是从互联网搜索到的相关资料，请参考这些真实信息来丰富你的创作，但不要照搬：\n';
+    text += '─────────────────\n';
+    results.forEach(function(r, i) {
+      text += '📄 [' + (i + 1) + '] ' + r.title + '\n';
+      text += '   ' + r.snippet + '\n';
+      if (r.url) text += '   🔗 ' + r.url + '\n';
+      text += '\n';
+    });
+    text += '─────────────────\n';
+    text += '请基于以上参考资料，结合用户的创意要求进行创作。可以借鉴但不要照搬原文。\n';
+    return text;
+  }
+
+  function renderSearchPreview(results) {
+    if (!results || results.length === 0) { searchPreview.style.display = 'none'; return; }
+    var html = '';
+    results.forEach(function(r) {
+      html += '<div class="search-result-item">';
+      html += '<div class="search-result-title">'   + escapeHTMLSimple(r.title)                        + '</div>';
+      html += '<div class="search-result-snippet">' + escapeHTMLSimple(r.snippet).substring(0, 200)    + '</div>';
+      if (r.url) html += '<div class="search-result-url">' + escapeHTMLSimple(r.url) + '</div>';
+      html += '</div>';
+    });
+    searchPreview.innerHTML = html;
+    searchPreview.style.display = 'block';
+  }
+
+  function escapeHTMLSimple(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  
+  
+  
+  btnTestSearch.addEventListener('click', async function() {
+    var engine = searchEngine.value;
+    var query  = searchCustomQuery.value.trim() || document.getElementById('aiPrompt').value.trim();
+    if (!query) {
+      searchTestStatus.textContent = '❌ 请先填写提示词或搜索词';
+      searchTestStatus.style.color = '#fca5a5';
+      return;
+    }
+    if (engine === 'none') {
+      searchTestStatus.textContent = 'ℹ️ 当前为 AI 自带联网模式，无需测试';
+      searchTestStatus.style.color = '#38bdf8';
+      searchPreview.style.display = 'none';
+      return;
+    }
+    if (!searchApiKey.value.trim()) {
+      searchTestStatus.textContent = '❌ 请先填写搜索 API Key';
+      searchTestStatus.style.color = '#fca5a5';
+      return;
+    }
+    btnTestSearch.disabled = true;
+    searchTestStatus.textContent = '🔍 搜索中...';
+    searchTestStatus.style.color = '#38bdf8';
+    try {
+      var count   = parseInt(searchResultCount.value) || 5;
+      var lang    = searchLang.value;
+      var results = await executeSearch(query, count, lang);
+      if (results && results.length > 0) {
+        searchTestStatus.textContent = '✅ 找到 ' + results.length + ' 条结果';
+        searchTestStatus.style.color = '#34d399';
+        renderSearchPreview(results);
+      } else {
+        searchTestStatus.textContent = '⚠️ 未找到结果';
+        searchTestStatus.style.color = '#fbbf24';
+        searchPreview.style.display = 'none';
+      }
+    } catch(err) {
+      searchTestStatus.textContent = '❌ ' + err.message;
+      searchTestStatus.style.color = '#fca5a5';
+      searchPreview.style.display = 'none';
+    } finally {
+      btnTestSearch.disabled = false;
+    }
+  });
+
+  
+  
+  
+  var hackerChars   = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン{}[]<>/\\|=+-*&^%$#@!~;:,.?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var hackerAnimId  = null;
+  var hackerStreamText = '';
+
+  function startHackerAnim() {
+    hackerOverlay.style.display = 'block';
+    hackerStreamText = '';
+    hackerCanvas.textContent = '';
+    for (var i = 0; i < 800; i++) {
+      hackerStreamText += hackerChars[Math.floor(Math.random() * hackerChars.length)];
+      if (Math.random() < 0.08) hackerStreamText += '\n';
+    }
+    hackerCanvas.textContent = hackerStreamText;
+    var frameCount = 0;
+    function tick() {
+      frameCount++;
+      if (frameCount % 2 === 0) {
+        var arr     = hackerStreamText.split('');
+        var changes = 15 + Math.floor(Math.random() * 25);
+        for (var c = 0; c < changes; c++) {
+          var pos = Math.floor(Math.random() * arr.length);
+          if (arr[pos] !== '\n') arr[pos] = hackerChars[Math.floor(Math.random() * hackerChars.length)];
+        }
+        var newLine = '';
+        for (var n = 0; n < 20; n++) newLine += hackerChars[Math.floor(Math.random() * hackerChars.length)];
+        arr.push('\n');
+        for (var nn = 0; nn < newLine.length; nn++) arr.push(newLine[nn]);
+        if (arr.length > 1200) arr.splice(0, arr.length - 1200);
+        hackerStreamText = arr.join('');
+        hackerCanvas.textContent = hackerStreamText;
+        hackerCanvas.scrollTop = hackerCanvas.scrollHeight;
+      }
+      hackerAnimId = requestAnimationFrame(tick);
+    }
+    hackerAnimId = requestAnimationFrame(tick);
+  }
+
+  function stopHackerAnim()  { if (hackerAnimId) { cancelAnimationFrame(hackerAnimId); hackerAnimId = null; } }
+  function hideHackerOverlay() { hackerOverlay.style.display = 'none'; }
+  function setHackerPhase(text)  { hackerPhase.textContent = text; }
+  function setHackerProgress(current, total) {
+    var pct = total > 0 ? Math.round((current / total) * 100) : 0;
+    hackerProgress.style.setProperty('--progress', pct + '%');
+  }
+  function setHackerDetail(text) { hackerDetail.textContent = text; }
+
+  var hackerMessages = [
+    '正在编译神经语言矩阵...',
+    '量子纠缠通道已建立...',
+    '解码亚空间设定碎片...',
+    '注入虚构现实坐标...',
+    '扫描平行世界线...',
+    '同步角色灵魂数据...',
+    '重构叙事因果链...',
+    '加载世界观拓扑结构...',
+    '校准角色人格向量...',
+    '编织命运之线...',
+    '提取设定基因序列...',
+    '渲染角色全息投影...',
+    '建立世界书索引节点...',
+    '激活深层叙事引擎...',
+    '解析角色潜意识层...',
+    '构建虚拟存在证明...',
+    '折叠多维设定空间...',
+    '初始化故事奇点...',
+    '拦截跨维度信息流...',
+    '解锁叙事量子态...',
+  ];
+  function getRandomHackerMsg() { return hackerMessages[Math.floor(Math.random() * hackerMessages.length)]; }
+
+  
+  
+  
+  window.__hackerAnim__ = {
+    start:    startHackerAnim,
+    stop:     stopHackerAnim,
+    hide:     hideHackerOverlay,
+    setPhase: setHackerPhase,
+    setProgress: setHackerProgress,
+    setDetail:   setHackerDetail,
+    randomMsg:   getRandomHackerMsg,
+  };
+
+  window.__getSkeletonCount__ = function() {
+    var v = parseInt(wbSkeletonCount.value);
+    if (isNaN(v) || v < 1) return 6;
+    if (v > 30) return 30;
+    return v;
+  };
+
+  window.__searchConfig__ = {
+    isEnabled:     function() { return searchEnable.checked; },
+    getEngine:     function() { return searchEngine.value; },
+    getCustomQuery: function() { return searchCustomQuery.value.trim(); },
+    getResultCount: function() { return parseInt(searchResultCount.value) || 5; },
+    getLang:        function() { return searchLang.value; },
+    executeSearch:  executeSearch,
+    formatForPrompt: formatSearchResultsForPrompt,
+  };
+
+})();
+</script>

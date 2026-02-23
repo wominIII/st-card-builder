@@ -1,0 +1,757 @@
+---
+---
+<div class="panel wb-auditor area-auditor">
+  <h2>🔍 世界书审计官</h2>
+
+  <!-- 控制栏：竖排按钮 + 简要说明 -->
+  <div class="auditor-intro">
+    <p class="auditor-desc">分析世界书的完整度、触发词设计、内容质量等维度，找出潜在问题并给出改进建议。</p>
+    <div class="auditor-btn-group">
+      <button id="btnQuickCheck" class="btn btn-audit-quick">⚡ 快速自检</button>
+      <button id="btnRunAudit" class="btn btn-audit-run">🧠 AI 深度审计</button>
+    </div>
+  </div>
+
+  <!-- AI 审计状态 -->
+  <div id="auditStatus" class="audit-status"></div>
+
+  <!-- 快速自检结果 -->
+  <div id="quickCheckResult" class="audit-section" style="display: none;"></div>
+
+  <!-- AI 审计报告 -->
+  <div id="auditReport" class="audit-section" style="display: none;">
+    <!-- 总评分 -->
+    <div id="auditScoreCard" class="audit-score-card">
+      <div class="audit-score-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="score-bg" cx="50" cy="50" r="42" />
+          <circle class="score-fill" id="scoreCircle" cx="50" cy="50" r="42" />
+        </svg>
+        <div class="score-number" id="scoreNumber">0</div>
+      </div>
+      <div class="audit-score-info">
+        <div class="score-grade" id="scoreGrade">--</div>
+        <div class="score-summary" id="scoreSummary">等待审计...</div>
+      </div>
+    </div>
+
+    <!-- 维度分析 -->
+    <div id="auditDimensions" class="audit-dimensions"></div>
+
+    <!-- 详细问题列表 -->
+    <div id="auditIssues" class="audit-issues"></div>
+
+    <!-- AI 建议 -->
+    <div id="auditSuggestions" class="audit-suggestions"></div>
+  </div>
+</div>
+
+<style>
+  .wb-auditor {
+    display: flex;
+    flex-direction: column;
+  }
+
+  
+  .auditor-intro {
+    margin-bottom: 14px;
+  }
+  .auditor-desc {
+    font-size: 0.72rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .auditor-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .btn-audit-quick {
+    width: 100%;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .btn-audit-quick:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.35);
+    box-shadow: 0 2px 12px rgba(56, 189, 248, 0.12);
+  }
+  .btn-audit-run {
+    width: 100%;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+  .btn-audit-run:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  }
+  .btn-audit-run:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  
+  .audit-status {
+    font-size: 0.78rem;
+    min-height: 0;
+    margin-bottom: 4px;
+    transition: all 0.3s ease;
+  }
+  .audit-status:empty {
+    display: none;
+  }
+
+  
+  .audit-section {
+    animation: auditFadeIn 0.4s ease;
+  }
+  @keyframes auditFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  
+  .audit-score-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .audit-score-ring {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+  }
+  .audit-score-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .score-bg {
+    fill: none;
+    stroke: rgba(139, 92, 246, 0.1);
+    stroke-width: 6;
+  }
+  .score-fill {
+    fill: none;
+    stroke: #8b5cf6;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 264;
+    stroke-dashoffset: 264;
+    transition: stroke-dashoffset 1.5s ease, stroke 0.5s ease;
+  }
+  .score-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #c4b5fd;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .audit-score-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .score-grade {
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 3px;
+  }
+  .score-summary {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  
+  .audit-dimensions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .dim-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 8px;
+    padding: 10px 12px;
+    transition: all 0.2s ease;
+  }
+  .dim-card:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+    background: rgba(30, 41, 59, 0.7);
+  }
+  .dim-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+  .dim-name {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+  .dim-status {
+    font-size: 0.62rem;
+    padding: 1px 7px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+  .dim-status.good {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+  .dim-status.warn {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+  .dim-status.bad {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+  }
+  .dim-status.none {
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748b;
+    border: 1px solid rgba(100, 116, 139, 0.25);
+  }
+  .dim-bar {
+    height: 4px;
+    background: rgba(51, 65, 85, 0.5);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .dim-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 1s ease;
+  }
+  .dim-detail {
+    font-size: 0.65rem;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  
+  .audit-issues {
+    margin-bottom: 12px;
+  }
+  .audit-issues-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 8px;
+  }
+  .issue-item {
+    display: flex;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(30, 41, 59, 0.4);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border-left: 3px solid transparent;
+    animation: issueIn 0.3s ease both;
+  }
+  @keyframes issueIn {
+    0% { opacity: 0; transform: translateX(-8px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  .issue-item.critical { border-left-color: #ef4444; }
+  .issue-item.warning  { border-left-color: #f59e0b; }
+  .issue-item.info     { border-left-color: #38bdf8; }
+  .issue-item.tip      { border-left-color: #34d399; }
+  .issue-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .issue-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .issue-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 2px;
+  }
+  .issue-desc {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  
+  .audit-suggestions {
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .suggestions-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #c4b5fd;
+    margin-bottom: 10px;
+  }
+  .suggestion-item {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+  }
+  .suggestion-item:last-child { margin-bottom: 0; }
+  .suggestion-num {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  
+  .qc-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .qc-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(51, 65, 85, 0.4);
+  }
+  .qc-stat-num {
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 28px;
+    text-align: right;
+  }
+  .qc-stat-label {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    line-height: 1.3;
+  }
+
+  
+  .qc-dim-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .qc-dim-tag {
+    font-size: 0.62rem;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  
+  .qc-issue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  
+  .qc-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+</style>
+
+<script is:inline>
+(function() {
+  
+  
+  
+  var btnRunAudit = document.getElementById('btnRunAudit');
+  var btnQuickCheck = document.getElementById('btnQuickCheck');
+  var quickCheckResult = document.getElementById('quickCheckResult');
+  var auditStatus = document.getElementById('auditStatus');
+  var auditReport = document.getElementById('auditReport');
+  var auditScoreCard = document.getElementById('auditScoreCard');
+  var scoreCircle = document.getElementById('scoreCircle');
+  var scoreNumber = document.getElementById('scoreNumber');
+  var scoreGrade = document.getElementById('scoreGrade');
+  var scoreSummary = document.getElementById('scoreSummary');
+  var auditDimensions = document.getElementById('auditDimensions');
+  var auditIssues = document.getElementById('auditIssues');
+  var auditSuggestions = document.getElementById('auditSuggestions');
+
+  
+  
+  
+  function getCharData() {
+    return {
+      name: (document.getElementById('charName') || {}).value || '',
+      description: (document.getElementById('charDesc') || {}).value || '',
+      firstMes: (document.getElementById('firstMes') || {}).value || '',
+    };
+  }
+
+  function getEntries() {
+    if (window.__getWorldbookEntries__) return window.__getWorldbookEntries__();
+    return [];
+  }
+
+  
+  
+  
+  btnQuickCheck.addEventListener('click', function() {
+    var entries = getEntries();
+    var char = getCharData();
+    var issues = [];
+
+    var totalEntries = entries.length;
+    var constantCount = entries.filter(function(e) { return e.strategy === 'constant'; }).length;
+    var selectiveCount = entries.filter(function(e) { return e.strategy === 'selective'; }).length;
+    var skeletonCount = entries.filter(function(e) { return (e.content || '').length < 60; }).length;
+    var noKeysCount = entries.filter(function(e) { return e.strategy === 'selective' && (!e.keys || e.keys.length === 0); }).length;
+    var emptyContentCount = entries.filter(function(e) { return !e.content || e.content.trim().length < 5; }).length;
+    var totalContentLen = entries.reduce(function(s, e) { return s + (e.content || '').length; }, 0);
+
+    if (totalEntries === 0) {
+      issues.push({ level: 'critical', icon: '🚫', title: '世界书为空', desc: '还没有任何条目，请先生成或手动添加。' });
+    }
+    if (skeletonCount > 0) {
+      issues.push({ level: 'warning', icon: '🦴', title: skeletonCount + ' 条骨架未展开', desc: '内容过短（<60字），建议用「✨ AI重写」展开为完整设定。' });
+    }
+    if (noKeysCount > 0) {
+      issues.push({ level: 'critical', icon: '🔑', title: noKeysCount + ' 条缺少触发词', desc: '策略为 selective 但没有触发词，这些条目永远不会被激活！' });
+    }
+    if (emptyContentCount > 0) {
+      issues.push({ level: 'critical', icon: '📭', title: emptyContentCount + ' 条内容为空', desc: '这些条目几乎没有内容，注入也没有意义。' });
+    }
+    if (constantCount > 5) {
+      issues.push({ level: 'warning', icon: '📌', title: '常驻条目过多 (' + constantCount + ')', desc: '太多常驻条目占用大量 token，建议控制在 3-5 条。' });
+    }
+
+    
+    var allKeys = {};
+    entries.forEach(function(e, idx) {
+      (e.keys || []).forEach(function(k) {
+        var lk = k.toLowerCase().trim();
+        if (!lk) return;
+        if (!allKeys[lk]) allKeys[lk] = [];
+        allKeys[lk].push(e.comment || '条目' + idx);
+      });
+    });
+    var dupKeys = Object.keys(allKeys).filter(function(k) { return allKeys[k].length > 1; });
+    if (dupKeys.length > 0) {
+      issues.push({ level: 'warning', icon: '🔄', title: dupKeys.length + ' 个触发词重复', desc: dupKeys.slice(0, 3).map(function(k) { return '「' + k + '」→ ' + allKeys[k].join(', '); }).join('；') });
+    }
+
+    
+    if (char.name && totalEntries > 0) {
+      var nameInKeys = entries.some(function(e) {
+        return (e.keys || []).some(function(k) { return k.toLowerCase().indexOf(char.name.toLowerCase()) >= 0; });
+      });
+      if (!nameInKeys) {
+        issues.push({ level: 'info', icon: '💡', title: '角色名未作为触发词', desc: '「' + char.name + '」不在任何触发词中，考虑添加核心设定条目。' });
+      }
+    }
+
+    if (totalEntries > 0 && totalContentLen < 200) {
+      issues.push({ level: 'warning', icon: '📏', title: '总内容量偏少', desc: '所有条目仅 ' + totalContentLen + ' 字，可能不足以支撑世界观。' });
+    }
+
+    if (issues.length === 0) {
+      issues.push({ level: 'tip', icon: '✅', title: '快速自检通过', desc: '没有明显问题！可进行 AI 深度审计获取更详细建议。' });
+    }
+
+    var dimensions = detectDimensionCoverage(entries);
+
+    
+    quickCheckResult.style.display = 'block';
+
+    var statsHtml = '<div class="qc-section-title">📊 基础统计</div>'
+      + '<div class="qc-stats">'
+      + statCard(totalEntries, '总条目', '#c4b5fd')
+      + statCard(constantCount, '常驻', '#34d399')
+      + statCard(selectiveCount, '触发式', '#38bdf8')
+      + statCard(skeletonCount, '骨架', '#f59e0b')
+      + statCard(Math.round(totalContentLen / 1000 * 10) / 10 + 'k', '总字数', '#94a3b8')
+      + statCard(issues.length, '问题', issues[0].level === 'tip' ? '#34d399' : '#ef4444')
+      + '</div>';
+
+    var dimHtml = '<div class="qc-section-title">🧭 维度覆盖</div>'
+      + '<div class="qc-dim-tags">' + renderDimTags(dimensions) + '</div>';
+
+    var issuesHtml = '<div class="qc-section-title">🔎 检查结果</div>'
+      + '<div class="qc-issue-list">'
+      + issues.map(function(iss, i) {
+        return '<div class="issue-item ' + iss.level + '" style="animation-delay:' + (i * 0.06) + 's;">'
+          + '<span class="issue-icon">' + iss.icon + '</span>'
+          + '<div class="issue-body"><div class="issue-title">' + iss.title + '</div><div class="issue-desc">' + iss.desc + '</div></div></div>';
+      }).join('')
+      + '</div>';
+
+    quickCheckResult.innerHTML = statsHtml + dimHtml + issuesHtml;
+  });
+
+  function statCard(num, label, color) {
+    return '<div class="qc-stat"><div class="qc-stat-num" style="color:' + color + ';">' + num + '</div><div class="qc-stat-label">' + label + '</div></div>';
+  }
+
+  
+  
+  
+  var DIMENSION_KEYWORDS = {
+    '🗺️ 地点': ['地点', '城市', '村庄', '建筑', '区域', '领地', '世界', '国家', '城堡', '森林', '山脉', '海洋', '街道', '酒馆', '学院', '废墟', 'location', 'city', 'place'],
+    '👥 人物': ['人物', 'NPC', '角色', '同伴', '敌人', '领袖', '商人', '老师', '朋友', '家人', '师傅', '国王', '女王', 'character', 'person'],
+    '⚔️ 势力': ['组织', '势力', '帮派', '公会', '军团', '教会', '政府', '企业', '家族', '联盟', '阵营', 'faction', 'guild', 'organization'],
+    '🔮 物品': ['物品', '武器', '装备', '道具', '药水', '宝物', '魔法', '科技', '材料', '货币', 'item', 'weapon', 'equipment'],
+    '📜 规则': ['规则', '系统', '法则', '魔法体系', '等级', '技能', '属性', '机制', '禁忌', '法律', 'rule', 'system', 'magic'],
+    '📖 历史': ['历史', '事件', '战争', '传说', '起源', '灾难', '革命', '预言', '纪元', '过去', 'history', 'event', 'lore'],
+    '🌍 文化': ['文化', '风俗', '语言', '宗教', '信仰', '节日', '习俗', '种族', '民族', '传统', 'culture', 'religion', 'tradition'],
+    '🎭 关系': ['关系', '社交', '恋爱', '友谊', '仇恨', '忠诚', '背叛', '秘密', '情感', 'relationship', 'social'],
+  };
+
+  function detectDimensionCoverage(entries) {
+    var allText = entries.map(function(e) {
+      return (e.comment || '') + ' ' + (e.content || '') + ' ' + (e.keys || []).join(' ');
+    }).join(' ').toLowerCase();
+
+    var results = {};
+    Object.keys(DIMENSION_KEYWORDS).forEach(function(dim) {
+      var keywords = DIMENSION_KEYWORDS[dim];
+      var matchCount = 0;
+      keywords.forEach(function(kw) {
+        if (allText.indexOf(kw.toLowerCase()) >= 0) matchCount++;
+      });
+      results[dim] = Math.min(100, Math.round((matchCount / Math.min(keywords.length, 5)) * 100));
+    });
+    return results;
+  }
+
+  function renderDimTags(dimensions) {
+    return Object.keys(dimensions).map(function(dim) {
+      var cov = dimensions[dim];
+      var color, bg;
+      if (cov >= 60)      { color = '#34d399'; bg = 'rgba(16,185,129,0.1)'; }
+      else if (cov >= 30) { color = '#fbbf24'; bg = 'rgba(245,158,11,0.1)'; }
+      else if (cov > 0)   { color = '#fca5a5'; bg = 'rgba(239,68,68,0.1)'; }
+      else                { color = '#475569'; bg = 'rgba(51,65,85,0.2)'; }
+      return '<span class="qc-dim-tag" style="color:' + color + ';background:' + bg + ';border:1px solid ' + color + '22;">' + dim + ' ' + cov + '%</span>';
+    }).join('');
+  }
+
+  
+  
+  
+  btnRunAudit.addEventListener('click', async function() {
+    var entries = getEntries();
+    var char = getCharData();
+
+    if (entries.length === 0) {
+      auditStatus.textContent = '❌ 世界书为空，无法审计';
+      auditStatus.style.color = '#ef4444';
+      return;
+    }
+
+    var apiUrlEl = document.getElementById('apiUrl');
+    var apiKeyEl = document.getElementById('apiKey');
+    var modelEl = document.getElementById('modelSelect');
+    var url = (apiUrlEl.value || '').replace(/\/$/, '') + '/chat/completions';
+    var key = (apiKeyEl.value || '').trim();
+    var model = (modelEl.value || '');
+    if (!model) return alert('请先在 AI 引擎中选择模型！');
+
+    btnRunAudit.disabled = true;
+    btnRunAudit.textContent = '🧠 审计中...';
+    auditStatus.textContent = '⏳ AI 正在分析你的世界书...';
+    auditStatus.style.color = '#c4b5fd';
+    auditReport.style.display = 'none';
+
+    var wbSummary = entries.map(function(e, i) {
+      return '[' + i + '] 标题: ' + (e.comment || '未命名')
+        + ' | 策略: ' + (e.strategy || '?')
+        + ' | 触发词: ' + ((e.keys || []).join(', ') || '无')
+        + ' | 内容(' + (e.content || '').length + '字): ' + (e.content || '').substring(0, 150) + (((e.content || '').length > 150) ? '...' : '');
+    }).join('\n');
+
+    var charInfo = '角色名: ' + (char.name || '未设置') + '\n角色描述: ' + (char.description || '未设置').substring(0, 300);
+
+    var sysPrompt = '你是一个专业的酒馆(SillyTavern) V3 角色卡世界书审计专家。请对以下世界书进行全面审计分析。\n\n'
+      + '【角色信息】\n' + charInfo + '\n\n'
+      + '【世界书条目 (共' + entries.length + '条)】\n' + wbSummary + '\n\n'
+      + '【输出要求】必须输出一个JSON对象，格式如下：\n'
+      + '{\n'
+      + '  "score": 75,\n'
+      + '  "grade": "B+",\n'
+      + '  "summary": "一句话总评",\n'
+      + '  "dimensions": [\n'
+      + '    { "name": "维度名", "score": 80, "status": "good|warn|bad|none", "detail": "说明" }\n'
+      + '  ],\n'
+      + '  "issues": [\n'
+      + '    { "level": "critical|warning|info|tip", "title": "问题标题", "desc": "详细说明", "entries": [0,1] }\n'
+      + '  ],\n'
+      + '  "suggestions": ["建议1", "建议2", "建议3"]\n'
+      + '}\n\n'
+      + '审计维度必须包括：\n'
+      + '1. 覆盖完整度 2. 内容质量 3. 触发词设计 4. 策略配置\n'
+      + '5. 内部一致性 6. 与角色契合度 7. Token 效率 8. 可玩性\n';
+
+    try {
+      var headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = 'Bearer ' + key;
+
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: sysPrompt },
+            { role: 'user', content: '请对这个世界书进行全面审计，给出评分和改进建议。' }
+          ],
+          temperature: 0.6
+        })
+      });
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var raw = (await res.json()).choices[0].message.content;
+
+      var match = raw.match(/```json\s*([\s\S]*?)\s*```/);
+      var report = JSON.parse(match ? match[1] : raw);
+
+      renderAuditReport(report);
+      auditStatus.textContent = '✅ 审计完成！';
+      auditStatus.style.color = '#10b981';
+
+    } catch(err) {
+      auditStatus.textContent = '❌ 审计失败: ' + err.message;
+      auditStatus.style.color = '#ef4444';
+    } finally {
+      btnRunAudit.disabled = false;
+      btnRunAudit.textContent = '🧠 AI 深度审计';
+    }
+  });
+
+  
+  
+  
+  function renderAuditReport(report) {
+    auditReport.style.display = 'block';
+
+    var score = Math.max(0, Math.min(100, report.score || 0));
+    var offset = 264 - (264 * score / 100);
+    var scoreColor = score >= 80 ? '#34d399' : (score >= 60 ? '#fbbf24' : (score >= 40 ? '#fb923c' : '#ef4444'));
+
+    setTimeout(function() {
+      scoreCircle.style.strokeDashoffset = offset;
+      scoreCircle.style.stroke = scoreColor;
+    }, 100);
+
+    var currentNum = 0;
+    var numInterval = setInterval(function() {
+      currentNum += Math.ceil(score / 30);
+      if (currentNum >= score) { currentNum = score; clearInterval(numInterval); }
+      scoreNumber.textContent = currentNum;
+      scoreNumber.style.color = scoreColor;
+    }, 40);
+
+    var gradeColors = { 'S': '#c084fc', 'A+': '#34d399', 'A': '#34d399', 'B+': '#38bdf8', 'B': '#38bdf8', 'C+': '#fbbf24', 'C': '#fbbf24', 'D': '#fb923c', 'F': '#ef4444' };
+    scoreGrade.textContent = '🏆 ' + (report.grade || '?');
+    scoreGrade.style.color = gradeColors[report.grade] || '#94a3b8';
+    scoreSummary.textContent = report.summary || '';
+
+    
+    if (report.dimensions && report.dimensions.length > 0) {
+      auditDimensions.innerHTML = report.dimensions.map(function(dim) {
+        var barColor = dim.status === 'good' ? '#34d399' : (dim.status === 'warn' ? '#fbbf24' : (dim.status === 'bad' ? '#ef4444' : '#475569'));
+        var dimScore = dim.score || 0;
+        return '<div class="dim-card">'
+          + '<div class="dim-header"><span class="dim-name">' + escapeHTML(dim.name) + '</span><span class="dim-status ' + (dim.status || 'none') + '">' + dimScore + '%</span></div>'
+          + '<div class="dim-bar"><div class="dim-bar-fill" style="width:' + dimScore + '%;background:' + barColor + ';"></div></div>'
+          + '<div class="dim-detail">' + escapeHTML(dim.detail || '') + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    
+    if (report.issues && report.issues.length > 0) {
+      var iconMap = { critical: '🚨', warning: '⚠️', info: '💡', tip: '✅' };
+      auditIssues.innerHTML = '<div class="audit-issues-title">📋 发现 ' + report.issues.length + ' 个问题</div>'
+        + report.issues.map(function(iss, i) {
+          return '<div class="issue-item ' + (iss.level || 'info') + '" style="animation-delay:' + (i * 0.08) + 's;">'
+            + '<span class="issue-icon">' + (iconMap[iss.level] || '📌') + '</span>'
+            + '<div class="issue-body"><div class="issue-title">' + escapeHTML(iss.title || '') + '</div>'
+            + '<div class="issue-desc">' + escapeHTML(iss.desc || '')
+            + (iss.entries && iss.entries.length > 0 ? ' <span style="color:#8b5cf6;">[条目: ' + iss.entries.join(', ') + ']</span>' : '')
+            + '</div></div></div>';
+        }).join('');
+    } else {
+      auditIssues.innerHTML = '<div class="issue-item tip"><span class="issue-icon">✅</span><div class="issue-body"><div class="issue-title">未发现严重问题</div><div class="issue-desc">世界书结构良好！</div></div></div>';
+    }
+
+    
+    if (report.suggestions && report.suggestions.length > 0) {
+      auditSuggestions.innerHTML = '<div class="suggestions-title">💡 改进建议</div>'
+        + report.suggestions.map(function(s, i) {
+          return '<div class="suggestion-item"><span class="suggestion-num">' + (i + 1) + '</span><span>' + escapeHTML(s) + '</span></div>';
+        }).join('');
+    }
+  }
+
+  function escapeHTML(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+})();
+</script>

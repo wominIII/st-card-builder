@@ -1,37 +1,257 @@
 ---
-
 ---
 <div class="panel">
+  <!-- 草稿管理 -->
   <div class="draft-manager">
-    <label style="color: #10b981; font-size: 0.9rem; margin-bottom: 8px; display: flex; justify-content: space-between;">
+    <label style="color: #34d399; font-size: 0.85rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
       <span>💾 多卡片草稿箱</span>
-      <span id="saveIndicator" style="color: #3b82f6; font-size: 0.75rem; display: none;">✔️ 已自动保存</span>
+      <span id="saveIndicator" style="color: #3b82f6; font-size: 0.75rem; display: none; font-weight: 600;">✔️ 已保存</span>
     </label>
-    <select id="draftSelect" style="background-color: #1e293b; color: white; border: 1px solid #10b981; padding: 5px; width: 100%; border-radius: 4px; outline: none;"></select>
+    <select id="draftSelect"></select>
     <div class="draft-controls">
-      <button id="btnNewDraft" class="btn btn-add" style="flex: 1;">📄 新建空白卡</button>
-      <button id="btnDeleteDraft" class="btn btn-delete" style="flex: 1;">🗑️ 删除当前卡</button>
+      <button id="btnNewDraft" class="btn btn-add" style="flex: 1;">📄 新建</button>
+      <button id="btnDeleteDraft" class="btn btn-delete" style="flex: 1; width: 100%;">🗑️ 删除</button>
     </div>
   </div>
 
   <h2>🧑‍🎤 角色设定</h2>
-  
-  <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center;">
-    <div style="width: 60px; height: 60px; border-radius: 8px; background: #0f172a; border: 1px dashed #475569; overflow: hidden; display: flex; justify-content: center; align-items: center;">
-      <span id="avatarPlaceholder" style="font-size: 0.7rem; color: #64748b;">无图</span>
-      <img id="avatarImg" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+
+  <!-- 头像上传 -->
+  <div style="display: flex; gap: 14px; margin-bottom: 16px; align-items: center;">
+    <div style="width: 56px; height: 56px; border-radius: 10px; background: #0a0f1e; border: 1px dashed #334155; overflow: hidden; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+      <span id="avatarPlaceholder" style="font-size: 0.65rem; color: #475569;">无图</span>
+      <img id="avatarImg" style="width: 100%; height: 100%; object-fit: cover; display: none;" alt="avatar" />
     </div>
-    <div style="flex: 1;">
-      <label style="font-size: 0.8rem;">上传头像 (将被隐写并生成新卡片)</label>
-      <input type="file" id="charImageInput" accept="image/*" style="padding: 4px; font-size: 0.75rem;" />
+    <div style="flex: 1; min-width: 0;">
+      <label style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px; display: block;">上传头像（将嵌入 PNG 卡片）</label>
+      <input type="file" id="charImageInput" accept="image/*" />
     </div>
   </div>
 
+  <!-- 基础信息 -->
   <div class="grid-2">
-    <div class="form-group"><label>角色名 (Name)</label><input type="text" id="charName" placeholder="Name" /></div>
-    <div class="form-group"><label>世界书名 (Worldbook)</label><input type="text" id="wbName" placeholder="Worldbook" /></div>
+    <div class="form-group">
+      <label>角色名 (Name)</label>
+      <input type="text" id="charName" placeholder="角色名称" />
+    </div>
+    <div class="form-group">
+      <label>世界书名 (Worldbook)</label>
+      <input type="text" id="wbName" placeholder="世界书名称" />
+    </div>
   </div>
-  <div class="form-group"><label>角色描述 (Description)</label><textarea id="charDesc" style="min-height: 120px;"></textarea></div>
-  <div class="form-group"><label>第一条消息 (First Message)</label><textarea id="firstMes" style="min-height: 120px;"></textarea></div>
-  <div class="form-group"><label>作者注释 (Creator Notes)</label><textarea id="creatorNotes"></textarea></div>
+
+  <div class="form-group">
+    <label>角色描述 (Description)</label>
+    <textarea id="charDesc" style="min-height: 130px;" placeholder="角色的外貌、性格、背景故事..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>第一条消息 (First Message)</label>
+    <textarea id="firstMes" style="min-height: 130px;" placeholder="角色的开场白..."></textarea>
+  </div>
+
+  <!-- ★ 备选开场白 -->
+  <div class="alt-greetings-section">
+    <div class="alt-greetings-header">
+      <label style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">
+        备选开场白 (Alternate Greetings)
+      </label>
+      <button id="btnAddGreeting" class="btn-alt-add" title="添加备选开场白">＋</button>
+    </div>
+    <p class="alt-greetings-tip">酒馆中用户可在多个开场白之间切换选择</p>
+    <div id="altGreetingsList"></div>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="form-group">
+    <label>作者注释 (Creator Notes)</label>
+    <textarea id="creatorNotes" placeholder="给使用者的说明..."></textarea>
+  </div>
 </div>
+
+<style>
+  
+  .alt-greetings-section {
+    margin-bottom: 14px;
+  }
+  .alt-greetings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .alt-greetings-tip {
+    font-size: 0.68rem;
+    color: #475569;
+    margin: 0 0 10px 0;
+  }
+  .btn-alt-add {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px dashed #334155;
+    background: rgba(16, 185, 129, 0.06);
+    color: #34d399;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    line-height: 1;
+    padding: 0;
+  }
+  .btn-alt-add:hover {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #34d399;
+    transform: scale(1.1);
+  }
+
+  .alt-greeting-item {
+    position: relative;
+    margin-bottom: 8px;
+    animation: altIn 0.25s ease;
+  }
+  @keyframes altIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .alt-greeting-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .alt-greeting-label {
+    font-size: 0.72rem;
+    color: #8b5cf6;
+    font-weight: 600;
+  }
+  .alt-greeting-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .btn-alt-action {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    border: 1px solid #1e293b;
+    background: #111827;
+    color: #64748b;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    padding: 0;
+  }
+  .btn-alt-action:hover {
+    border-color: #475569;
+    color: #e2e8f0;
+    background: #1e293b;
+  }
+  .btn-alt-action.btn-alt-del:hover {
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.08);
+  }
+  .alt-greeting-item textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+  }
+  .alt-greetings-empty {
+    text-align: center;
+    padding: 16px;
+    border: 1px dashed #1e293b;
+    border-radius: 8px;
+    color: #334155;
+    font-size: 0.75rem;
+  }
+</style>
+
+<script is:inline>
+(function() {
+  var btnAdd = document.getElementById('btnAddGreeting');
+  var listEl = document.getElementById('altGreetingsList');
+
+  
+  if (!window.__altGreetings__) window.__altGreetings__ = [];
+
+  function render() {
+    var greetings = window.__altGreetings__;
+    if (!greetings.length) {
+      listEl.innerHTML = '<div class="alt-greetings-empty">暂无备选开场白，点击右上角 ＋ 添加</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    greetings.forEach(function(text, i) {
+      var item = document.createElement('div');
+      item.className = 'alt-greeting-item';
+      item.innerHTML =
+        '<div class="alt-greeting-bar">' +
+          '<span class="alt-greeting-label">开场白 #' + (i + 2) + '</span>' +
+          '<div class="alt-greeting-actions">' +
+            (i > 0 ? '<button class="btn-alt-action" data-action="up" data-idx="' + i + '" title="上移">↑</button>' : '') +
+            (i < greetings.length - 1 ? '<button class="btn-alt-action" data-action="down" data-idx="' + i + '" title="下移">↓</button>' : '') +
+            '<button class="btn-alt-action btn-alt-del" data-action="del" data-idx="' + i + '" title="删除">✕</button>' +
+          '</div>' +
+        '</div>' +
+        '<textarea class="alt-greeting-ta" data-idx="' + i + '" placeholder="备选开场白 #' + (i + 2) + ' 的内容...">' + escapeHTML(text) + '</textarea>';
+      listEl.appendChild(item);
+    });
+
+    
+    listEl.querySelectorAll('.alt-greeting-ta').forEach(function(ta) {
+      ta.addEventListener('input', function(e) {
+        var idx = parseInt(e.target.getAttribute('data-idx'));
+        window.__altGreetings__[idx] = e.target.value;
+        notifyChange();
+      });
+    });
+    listEl.querySelectorAll('.btn-alt-action').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        var action = e.currentTarget.getAttribute('data-action');
+        var idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+        var g = window.__altGreetings__;
+        if (action === 'del') {
+          g.splice(idx, 1);
+        } else if (action === 'up' && idx > 0) {
+          var tmp = g[idx]; g[idx] = g[idx - 1]; g[idx - 1] = tmp;
+        } else if (action === 'down' && idx < g.length - 1) {
+          var tmp2 = g[idx]; g[idx] = g[idx + 1]; g[idx + 1] = tmp2;
+        }
+        render();
+        notifyChange();
+      });
+    });
+  }
+
+  btnAdd.addEventListener('click', function() {
+    window.__altGreetings__.push('');
+    render();
+    
+    var tas = listEl.querySelectorAll('.alt-greeting-ta');
+    if (tas.length) tas[tas.length - 1].focus();
+    notifyChange();
+  });
+
+  function notifyChange() {
+    if (window.triggerGlobalUpdate) window.triggerGlobalUpdate();
+  }
+
+  function escapeHTML(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  
+  window.__renderAltGreetings__ = render;
+
+  
+  render();
+})();
+</script>

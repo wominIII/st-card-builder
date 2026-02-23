@@ -1,146 +1,589 @@
 ---
-
-
 ---
-<div class="panel" style="border-color: #f59e0b; background: rgba(245, 158, 11, 0.05);">
-  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #d97706; padding-bottom: 10px; margin-bottom: 15px;">
-    <h2 style="margin:0; border:none; padding:0; color: #fcd34d;">📊 动态状态栏 (半AI注入)</h2>
+<div class="panel sb-panel area-statusbar">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.3); padding-bottom: 12px; margin-bottom: 16px;">
+    <h2 style="margin: 0; border: none; padding: 0; color: #fcd34d; font-size: 1.05rem;">📊 动态状态栏</h2>
     <div style="display: flex; align-items: center; gap: 6px;">
-      <input type="checkbox" id="sbEnable" style="width: 18px; height: 18px; accent-color: #f59e0b; cursor: pointer;" checked />
-      <label for="sbEnable" style="margin: 0; color: #fcd34d; cursor: pointer; font-weight: bold; font-size: 0.9rem;">启用状态栏</label>
+      <input type="checkbox" id="sbEnable" style="width: 16px; height: 16px; accent-color: #f59e0b; cursor: pointer;" checked />
+      <label for="sbEnable" style="margin: 0; color: #fcd34d; cursor: pointer; font-weight: 600; font-size: 0.82rem;">启用</label>
     </div>
   </div>
-  <p style="font-size: 0.75rem; color: #94a3b8; margin: 0 0 15px 0;">开启后，导出时将自动挂载【底层高优输出指令】和【正则UI拦截器】。</p>
+
+  <p style="font-size: 0.72rem; color: #64748b; margin: 0 0 16px 0;">每轮回复末尾自动追加状态栏，所有字段每轮强制更新。</p>
 
   <div class="form-group">
-    <label>UI 抬头标题 (Title)</label>
+    <label>状态栏标题</label>
     <input type="text" id="sbTitle" value="📊 STATUS REPORT" />
   </div>
-  <div class="form-group">
-    <label>需要监控的字段 (Fields - 逗号隔开)</label>
-    <input type="text" id="sbFields" value="生命值, 精神状态, 当前位置, 天气, 情绪" />
-  </div>
+
   <div class="grid-2">
     <div class="form-group" style="margin-bottom: 0;">
-      <label>UI 主题风格颜色</label>
+      <label>颜色主题</label>
       <select id="sbColor">
-        <option value="#8b5cf6">赛博紫 (#8b5cf6)</option>
-        <option value="#38bdf8">深空蓝 (#38bdf8)</option>
-        <option value="#10b981">荧光绿 (#10b981)</option>
-        <option value="#f59e0b" selected>警示橙 (#f59e0b)</option>
-        <option value="#ef4444">危险红 (#ef4444)</option>
-        <option value="#f472b6">猛男粉 (#f472b6)</option>
+        <option value="#f59e0b">🟠 警示橙</option>
+        <option value="#8b5cf6">🟣 赛博紫</option>
+        <option value="#38bdf8">🔵 深空蓝</option>
+        <option value="#10b981">🟢 荧光绿</option>
+        <option value="#ef4444">🔴 危险红</option>
+        <option value="#f472b6">🩷 猛男粉</option>
+        <option value="#fb923c">🟧 烈焰橙</option>
+        <option value="#a3e635">🟩 酸性绿</option>
+        <option value="#e879f9">🟪 魔法紫</option>
+        <option value="#67e8f9">🩵 冰川蓝</option>
+        <option value="#fbbf24">🌟 金色</option>
+        <option value="#f8fafc">⬜ 纯白</option>
       </select>
     </div>
-    <button id="btnAiStatusBar" class="btn" style="background-color: #d97706; margin-top: 22px; padding: 8px; font-size:0.85rem;">🤖 AI 智能匹配字段</button>
+    <div class="form-group" style="margin-bottom: 0;">
+      <label>布局方式</label>
+      <select id="sbLayout">
+        <option value="grid2">▦ 双列网格</option>
+        <option value="grid3">▦ 三列网格</option>
+        <option value="list">☰ 竖列清单</option>
+        <option value="compact">▬ 紧凑横排</option>
+        <option value="card">🃏 大卡片</option>
+      </select>
+    </div>
   </div>
-  
-  <button id="btnInjectStatusBar" class="btn" style="width: 100%; margin-top: 15px; background-color: #f59e0b; color: #fff;">✨ 将配置注入到卡片中</button>
+
+  <div class="grid-2" style="margin-top: 12px;">
+    <div class="form-group" style="margin-bottom: 0;">
+      <label>动画风格</label>
+      <select id="sbAnim">
+        <option value="cyber">⚡ 赛博朋克</option>
+        <option value="magic">✨ 魔法水晶</option>
+        <option value="military">🎖️ 军事终端</option>
+        <option value="neon">🌃 霓虹都市</option>
+        <option value="minimal">◻️ 极简风</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom: 0;">
+      <label>特效</label>
+      <select id="sbFx">
+        <option value="all">扫描线 + 呼吸灯</option>
+        <option value="glow">仅呼吸灯</option>
+        <option value="scan">仅扫描线</option>
+        <option value="none">无特效</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 字段列表 -->
+  <div style="margin-top: 18px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <label style="margin: 0; font-size: 0.82rem; color: #94a3b8; font-weight: 600;">📋 监控字段</label>
+      <button id="btnAddField" class="btn" style="padding: 4px 12px; font-size: 0.75rem; background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4); color: #34d399;">＋ 添加字段</button>
+    </div>
+    <div id="sbFieldList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+  </div>
+
+  <!-- 注入参数 -->
+  <div style="margin-top: 16px; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px;">
+    <h4 style="margin: 0 0 10px 0; color: #34d399; font-size: 0.8rem;">⚙️ 注入参数</h4>
+    <div class="grid-2">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>注入深度 (depth)</label>
+        <input type="number" id="sbDepth" value="1" min="0" max="20" />
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>注入顺序 (order)</label>
+        <input type="number" id="sbOrder" value="999" min="0" max="9999" />
+      </div>
+    </div>
+    <p style="font-size: 0.68rem; color: #64748b; margin: 8px 0 0 0;">depth=1 表示插入在最后一条对话之前，AI 必然看到。</p>
+  </div>
+
+  <button id="btnInjectStatusBar" class="btn" style="width: 100%; margin-top: 16px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;">✨ 注入到卡片</button>
   <div id="sbStatusText" class="status-text" style="color: #10b981;"></div>
+
+  <!-- 预览区 -->
+  <div id="sbPreviewArea" style="margin-top: 16px; display: none;">
+    <label style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px; display: block; font-weight: 600;">👁️ 效果预览</label>
+    <div id="sbPreviewContent" style="border-radius: 8px; overflow: hidden;"></div>
+  </div>
 </div>
 
 <script is:inline>
-  
-  const btnAiStatusBar = document.getElementById('btnAiStatusBar');
-  const sbTitle = document.getElementById('sbTitle');
-  const sbFields = document.getElementById('sbFields');
-  const sbColor = document.getElementById('sbColor');
-  const btnInjectStatusBar = document.getElementById('btnInjectStatusBar');
-  const sbEnable = document.getElementById('sbEnable');
-  const sbStatusText = document.getElementById('sbStatusText');
+(function () {
 
   
-  function extractJsonObjSafe(text) { 
-    const match = text.match(/```json\s*([\s\S]*?)\s*```/); 
-    let obj = match ? JSON.parse(match[1]) : JSON.parse(text); 
-    return (Array.isArray(obj) && obj.length > 0) ? obj[0] : obj;
+  
+  
+  const sbTitle            = document.getElementById('sbTitle');
+  const sbColor            = document.getElementById('sbColor');
+  const sbLayout           = document.getElementById('sbLayout');
+  const sbAnim             = document.getElementById('sbAnim');
+  const sbFx               = document.getElementById('sbFx');
+  const sbDepth            = document.getElementById('sbDepth');
+  const sbOrder            = document.getElementById('sbOrder');
+  const sbEnable           = document.getElementById('sbEnable');
+  const sbStatusText       = document.getElementById('sbStatusText');
+  const sbFieldList        = document.getElementById('sbFieldList');
+  const btnAddField        = document.getElementById('btnAddField');
+  const btnInjectStatusBar = document.getElementById('btnInjectStatusBar');
+  const sbPreviewArea      = document.getElementById('sbPreviewArea');
+  const sbPreviewContent   = document.getElementById('sbPreviewContent');
+
+  
+  
+  
+  let fields = [
+    { name: '生命值',   desc: '主角的身体完整度，最高100%，受伤降低，治疗恢复' },
+    { name: '精神状态', desc: '主角当前的心理状态，如：清醒、疲惫、崩溃边缘' },
+    { name: '当前位置', desc: '主角所在的具体地点' },
+    { name: '情绪',     desc: '主角此刻的情绪倾向' },
+  ];
+
+  
+  
+  
+  function renderFieldList() {
+    sbFieldList.innerHTML = '';
+    fields.forEach((f, i) => {
+      const row = document.createElement('div');
+      row.style.cssText =
+        'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);' +
+        'border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;position:relative;';
+
+      row.innerHTML =
+        `<div style="display:flex;gap:8px;align-items:center;">` +
+          `<input type="text" placeholder="字段名称" value="${escHtml(f.name)}" data-i="${i}" data-key="name"` +
+          ` style="flex:0 0 120px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);` +
+          `border-radius:6px;padding:5px 8px;color:#e2e8f0;font-size:0.82rem;" />` +
+          `<input type="text" placeholder="字段定义（告诉AI这个字段代表什么、取值范围等）" value="${escHtml(f.desc)}" data-i="${i}" data-key="desc"` +
+          ` style="flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);` +
+          `border-radius:6px;padding:5px 8px;color:#94a3b8;font-size:0.78rem;" />` +
+          `<button data-del="${i}" style="flex-shrink:0;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);` +
+          `color:#f87171;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.75rem;">✕</button>` +
+        `</div>`;
+
+      row.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('input', e => {
+          fields[+e.target.dataset.i][e.target.dataset.key] = e.target.value;
+          updatePreview();
+        });
+      });
+
+      row.querySelector('[data-del]').addEventListener('click', e => {
+        fields.splice(+e.target.dataset.del, 1);
+        renderFieldList();
+        updatePreview();
+      });
+
+      sbFieldList.appendChild(row);
+    });
+    updatePreview();
+  }
+
+  btnAddField.addEventListener('click', () => {
+    fields.push({ name: '', desc: '' });
+    renderFieldList();
+    const inputs = sbFieldList.querySelectorAll('input[data-key="name"]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   
-  btnAiStatusBar.addEventListener('click', async () => {
-    
-    const apiUrl = document.getElementById('apiUrl')?.value.replace(/\/$/, '') + '/chat/completions';
-    const apiKey = document.getElementById('apiKey')?.value.trim();
-    const model = document.getElementById('modelSelect')?.value;
-    
-    const charName = document.getElementById('charName')?.value || '未知';
-    const charDesc = document.getElementById('charDesc')?.value || '未知';
+  
+  
+  function hexToRgb(hex) {
+    return [
+      parseInt(hex.slice(1,3),16),
+      parseInt(hex.slice(3,5),16),
+      parseInt(hex.slice(5,7),16)
+    ].join(',');
+  }
 
-    if (!model) return alert('请先在左侧 AI 引擎面板拉取并选择模型！');
-    if (!charDesc || charDesc === '未知') return alert('请先在角色设定中填写角色描述，AI需要根据背景推断状态栏字段！');
+  function getStyle(anim, color, rgb) {
+    const map = {
+      cyber:    { bg:'rgba(5,5,20,0.95)',   border:`rgba(${rgb},0.3)`,  labelC:`rgba(${rgb},0.6)`,  valueC:'#e2e8f0', accent:color },
+      magic:    { bg:'rgba(15,5,30,0.95)',  border:`rgba(${rgb},0.3)`,  labelC:`rgba(${rgb},0.55)`, valueC:'#f0e6ff', accent:color },
+      military: { bg:'rgba(5,12,5,0.95)',   border:`rgba(${rgb},0.3)`,  labelC:`rgba(${rgb},0.55)`, valueC:'#d1fae5', accent:color },
+      neon:     { bg:'rgba(5,0,20,0.95)',   border:`rgba(${rgb},0.3)`,  labelC:`rgba(${rgb},0.6)`,  valueC:'#fdf2f8', accent:color },
+      minimal:  { bg:'rgba(15,23,42,0.92)', border:`rgba(${rgb},0.25)`, labelC:`rgba(${rgb},0.7)`,  valueC:'#e2e8f0', accent:color },
+    };
+    return map[anim] || map.cyber;
+  }
 
-    btnAiStatusBar.disabled = true;
-    btnAiStatusBar.textContent = "⏳ AI 思考中...";
-
-    const sysPrompt = `你是一个跑团游戏状态栏UI设计大师。请根据用户的角色设定，构思一个契合背景的【状态栏标题】和【4-6个需要监控的状态字段】。
-比如：赛博朋克角色可以是"义体完整度, 污染指数, 电池余量"；魔法角色可以是"魔力值, 理智值, 魔法护盾"。
-必须且仅输出纯JSON对象：
-{
-  "title": "符合设定的UI标题，可带一个emoji，例如 🔮 MAGIC STATUS",
-  "fields": "字段1, 字段2, 字段3, 字段4"
-}`;
-
-    try {
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(apiKey && { 'Authorization': `Bearer ${apiKey}` }) },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: "system", content: sysPrompt },
-            { role: "user", content: `角色名：${charName}\n角色设定：${charDesc}\n请为该角色生成匹配的状态栏配置。` }
-          ],
-          temperature: 0.8
-        })
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = extractJsonObjSafe((await res.json()).choices[0].message.content);
-      
-      if (data.title) sbTitle.value = data.title;
-      if (data.fields) sbFields.value = data.fields;
-      
-      
-      if (window.triggerGlobalUpdate) window.triggerGlobalUpdate();
-      
-    } catch(err) {
-      alert(`生成失败: ${err.message}`);
-    } finally {
-      btnAiStatusBar.disabled = false;
-      btnAiStatusBar.textContent = "🤖 AI 智能匹配字段";
+  
+  
+  
+  function makeCard(name, val, layout, S, rgb, glowCSS) {
+    if (layout === 'grid2' || layout === 'grid3') {
+      return (
+        `<div style="display:flex;flex-direction:column;background:rgba(${rgb},0.06);` +
+        `border:1px solid rgba(${rgb},0.2);border-radius:8px;padding:10px 12px;">` +
+        `<span style="font-size:0.62em;color:${S.labelC};text-transform:uppercase;` +
+        `letter-spacing:0.8px;margin-bottom:5px;font-weight:600;">${name}</span>` +
+        `<span style="font-size:1em;font-weight:700;color:${S.valueC};${glowCSS}">${val}</span>` +
+        `</div>`
+      );
+    } else if (layout === 'list') {
+      return (
+        `<div style="display:flex;justify-content:space-between;align-items:center;` +
+        `padding:7px 10px;border-bottom:1px solid rgba(${rgb},0.1);">` +
+        `<span style="font-size:0.8em;color:${S.labelC};font-weight:600;">${name}</span>` +
+        `<span style="font-weight:700;color:${S.valueC};${glowCSS}">${val}</span>` +
+        `</div>`
+      );
+    } else if (layout === 'compact') {
+      return (
+        `<div style="display:inline-flex;align-items:center;gap:6px;` +
+        `background:rgba(${rgb},0.08);border:1px solid rgba(${rgb},0.2);` +
+        `border-radius:99px;padding:4px 12px;white-space:nowrap;">` +
+        `<span style="font-size:0.7em;color:${S.labelC};font-weight:600;">${name}</span>` +
+        `<span style="font-size:0.85em;font-weight:700;color:${S.valueC};${glowCSS}">${val}</span>` +
+        `</div>`
+      );
+    } else if (layout === 'card') {
+      return (
+        `<div style="background:rgba(${rgb},0.07);border:1px solid rgba(${rgb},0.22);` +
+        `border-left:3px solid ${S.accent};border-radius:8px;padding:12px 14px;` +
+        `display:flex;justify-content:space-between;align-items:center;">` +
+        `<div>` +
+        `<div style="font-size:0.68em;color:${S.labelC};text-transform:uppercase;` +
+        `letter-spacing:0.8px;margin-bottom:3px;font-weight:600;">${name}</div>` +
+        `<div style="font-size:1.05em;font-weight:700;color:${S.valueC};${glowCSS}">${val}</div>` +
+        `</div>` +
+        `<span style="font-size:1.4em;opacity:0.15;">◈</span>` +
+        `</div>`
+      );
     }
-  });
+    return '';
+  }
 
+  
+  
+  
+  function makeWrapper(title, layout, S, rgb, color, glowCSS, uid, fx, innerHtml) {
+    const useGlow = fx === 'all' || fx === 'glow';
+    const useScan = fx === 'all' || fx === 'scan';
+
+    let animCSS = '';
+    if (useScan) {
+      animCSS +=
+        `.${uid}w::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;` +
+        `background:repeating-linear-gradient(0deg,transparent,transparent 2px,` +
+        `rgba(${rgb},0.02) 2px,rgba(${rgb},0.02) 4px);` +
+        `pointer-events:none;border-radius:10px;z-index:0;}`;
+    }
+    if (useGlow) {
+      animCSS +=
+        `@keyframes ${uid}b{0%,100%{opacity:1}50%{opacity:0.25}}` +
+        `.${uid}d{animation:${uid}b 2.5s ease-in-out infinite;}`;
+    }
+
+    const innerStyle =
+      layout === 'grid2'     ? `display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px 14px;`
+      : layout === 'grid3'   ? `display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 14px;`
+      : layout === 'compact' ? `display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px;`
+      : layout === 'card'    ? `display:flex;flex-direction:column;gap:8px;padding:12px 14px;`
+      :                        `display:flex;flex-direction:column;padding:8px 4px;`;
+
+    const dotHtml = useGlow
+      ? `<span class="${uid}d" style="width:8px;height:8px;border-radius:50%;background:${color};` +
+        `box-shadow:0 0 10px rgba(${rgb},0.9);display:inline-block;flex-shrink:0;"></span>`
+      : `<span style="width:8px;height:8px;border-radius:50%;background:${color};` +
+        `display:inline-block;flex-shrink:0;"></span>`;
+
+    return (
+      `<style>` +
+      `.${uid}w{background:${S.bg};border:1px solid ${S.border};border-radius:10px;` +
+      `font-family:'Courier New',monospace;font-size:0.85em;color:#cbd5e1;` +
+      `box-shadow:0 8px 32px rgba(0,0,0,0.5);margin-top:16px;overflow:hidden;position:relative;}` +
+      animCSS +
+      `</style>` +
+      `<div class="${uid}w">` +
+        `<div style="background:linear-gradient(90deg,rgba(${rgb},0.18),rgba(${rgb},0.04));` +
+        `padding:10px 14px;border-bottom:1px solid rgba(${rgb},0.15);` +
+        `display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;">` +
+          `<div style="display:flex;align-items:center;gap:8px;">${dotHtml}` +
+          `<span style="font-weight:700;color:${color};letter-spacing:1.5px;${glowCSS}">${title}</span>` +
+          `</div>` +
+          `<span style="font-size:0.6em;color:rgba(${rgb},0.4);letter-spacing:1px;">LIVE</span>` +
+        `</div>` +
+        `<div style="${innerStyle}position:relative;z-index:1;">${innerHtml}</div>` +
+      `</div>`
+    );
+  }
+
+  
+  
+  
+  function updatePreview() {
+    const validFields = fields.filter(f => f.name.trim());
+    if (!validFields.length) { sbPreviewArea.style.display = 'none'; return; }
+
+    const color   = sbColor.value;
+    const rgb     = hexToRgb(color);
+    const layout  = sbLayout.value;
+    const anim    = sbAnim.value;
+    const fx      = sbFx.value;
+    const title   = sbTitle.value.trim() || 'STATUS REPORT';
+    const useGlow = fx === 'all' || fx === 'glow';
+    const glowCSS = useGlow ? `text-shadow:0 0 8px rgba(${rgb},0.7);` : '';
+    const S       = getStyle(anim, color, rgb);
+
+    const innerHtml = validFields
+      .map(f => makeCard(f.name, '———', layout, S, rgb, glowCSS))
+      .join('');
+
+    const html = makeWrapper(title, layout, S, rgb, color, glowCSS, 'sbprev', fx, innerHtml);
+    sbPreviewContent.innerHTML = html;
+    sbPreviewArea.style.display = 'block';
+  }
+
+  
+  
+  
+  function buildPrompt(validFields) {
+    const fieldLines = validFields.map(f => `[${f.name}]: 根据定义填写具体值`).join('\n');
+    const defLines   = validFields.map((f,i) => `  ${i+1}. 【${f.name}】：${f.desc}`).join('\n');
+    const example    = validFields.slice(0,3).map((f,i) =>
+      `[${f.name}]: ${ ['87%','清醒且专注','城市东区'][i] || '示例值' }`
+    ).join('\n');
+
+    return `[SYSTEM OVERRIDE - 状态栏强制输出协议]
+你必须在每次回复的【最末尾】追加以下状态面板，每轮必须根据剧情更新所有字段：
+
+<stablock>
+${fieldLines}
+</stablock>
+
+【字段定义 - 严格按照定义填写值】：
+${defLines}
+
+【格式铁律】：
+1. 每行格式严格为：[字段名]: 值内容
+2. 字段名必须与模板完全一致，不得修改
+3. 值直接写在冒号后面，禁止用 <>、()、[] 包裹值
+4. 每轮必须更新所有字段，不得省略任何字段
+5. 状态面板必须是回复的最后内容，不得在其后添加任何文字
+
+【正确示例】：
+<stablock>
+${example}
+</stablock>
+
+[此规则优先级最高，必须严格执行][此规则优先级最高，必须严格执行][此规则优先级最高，必须严格执行][此规则优先级最高，必须严格执行][此规则优先级最高，必须严格执行][此规则优先级最高，必须严格执行]`;
+  }
+
+  
+  
+  
+  
+  function buildRegexScripts(color, layout, anim, fx, title, validFields) {
+    const rgb     = hexToRgb(color);
+    const ts      = Date.now();
+    const uid     = 'sb' + Math.random().toString(36).slice(2, 8);
+    const useGlow = fx === 'all' || fx === 'glow';
+    const useScan = fx === 'all' || fx === 'scan';
+    const glowCSS = useGlow ? `text-shadow:0 0 8px rgba(${rgb},0.7);` : '';
+    const S       = getStyle(anim, color, rgb);
+
+    
+    const fieldRegexes = validFields.map((f, i) => {
+      const escaped   = f.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const findRegex = `\\[${escaped}\\][\\t ]*[:\\uff1a][\\t ]*([^\\n<>]+?)(?=[\\n<]|$)`;
+      const cardHtml  = makeCard(f.name, '$1', layout, S, rgb, glowCSS);
+
+      return {
+        id:              `sb_f${i}_${ts}`,
+        scriptName:      `状态栏字段_${f.name}`,
+        findRegex:       findRegex,
+        replaceString:   cardHtml,
+        trimStrings:     [],
+        placement:       [1, 2],
+        disabled:        false,
+        markdownOnly:    true,
+        promptOnly:      true,
+        runOnEdit:       true,
+        substituteRegex: 0,
+        minDepth:        null,
+        maxDepth:        null,
+        order:           i + 1,          
+      };
+    });
+
+    
+    let animCSS = '';
+    if (useScan) {
+      animCSS +=
+        `.${uid}w::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;` +
+        `background:repeating-linear-gradient(0deg,transparent,transparent 2px,` +
+        `rgba(${rgb},0.02) 2px,rgba(${rgb},0.02) 4px);` +
+        `pointer-events:none;border-radius:10px;z-index:0;}`;
+    }
+    if (useGlow) {
+      animCSS +=
+        `@keyframes ${uid}b{0%,100%{opacity:1}50%{opacity:0.25}}` +
+        `.${uid}d{animation:${uid}b 2.5s ease-in-out infinite;}`;
+    }
+
+    const innerStyle =
+      layout === 'grid2'     ? `display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px 14px;`
+      : layout === 'grid3'   ? `display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 14px;`
+      : layout === 'compact' ? `display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px;`
+      : layout === 'card'    ? `display:flex;flex-direction:column;gap:8px;padding:12px 14px;`
+      :                        `display:flex;flex-direction:column;padding:8px 4px;`;
+
+    const dotHtml = useGlow
+      ? `<span class="${uid}d" style="width:8px;height:8px;border-radius:50%;background:${color};` +
+        `box-shadow:0 0 10px rgba(${rgb},0.9);display:inline-block;flex-shrink:0;"></span>`
+      : `<span style="width:8px;height:8px;border-radius:50%;background:${color};` +
+        `display:inline-block;flex-shrink:0;"></span>`;
+
+    const containerHtml =
+      `<style>` +
+      `.${uid}w{background:${S.bg};border:1px solid ${S.border};border-radius:10px;` +
+      `font-family:'Courier New',monospace;font-size:0.85em;color:#cbd5e1;` +
+      `box-shadow:0 8px 32px rgba(0,0,0,0.5);margin-top:16px;overflow:hidden;position:relative;}` +
+      animCSS +
+      `</style>` +
+      `<div class="${uid}w">` +
+        `<div style="background:linear-gradient(90deg,rgba(${rgb},0.18),rgba(${rgb},0.04));` +
+        `padding:10px 14px;border-bottom:1px solid rgba(${rgb},0.15);` +
+        `display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;">` +
+          `<div style="display:flex;align-items:center;gap:8px;">${dotHtml}` +
+          `<span style="font-weight:700;color:${color};letter-spacing:1.5px;${glowCSS}">${title}</span>` +
+          `</div>` +
+          `<span style="font-size:0.6em;color:rgba(${rgb},0.4);letter-spacing:1px;">LIVE</span>` +
+        `</div>` +
+        `<div style="${innerStyle}position:relative;z-index:1;">$1</div>` +
+      `</div>`;
+
+    const containerRegex = {
+      id:              `sb_wrap_${ts}`,
+      scriptName:      '状态栏容器',
+      findRegex:       `<[sS][tT][aA][bB][lL][oO][cC][kK]>([\\s\\S]*?)<\\/[sS][tT][aA][bB][lL][oO][cC][kK]>`,
+      replaceString:   containerHtml,
+      trimStrings:     [],
+      placement:       [1, 2],
+      disabled:        false,
+      markdownOnly:    true,
+      promptOnly:      true,
+      runOnEdit:       true,
+      substituteRegex: 0,
+      minDepth:        null,
+      maxDepth:        null,
+      order:           validFields.length + 10,  
+    };
+
+    return [...fieldRegexes, containerRegex];
+  }
+
+  
+  
   
   btnInjectStatusBar.addEventListener('click', () => {
-    if (!sbEnable.checked) return alert("请先在右上角勾选『启用状态栏』！");
-    const fieldsStr = sbFields.value.trim();
-    const color = sbColor.value;
-    const title = sbTitle.value.trim() || "STATUS REPORT";
-    if (!fieldsStr) return alert("请填写监控字段！");
+    if (!sbEnable.checked) return alert('请先勾选「启用」！');
+    const validFields = fields.filter(f => f.name.trim());
+    if (!validFields.length) return alert('请至少添加一个字段！');
 
-    
-    const wbTitle = "===系统底层：状态栏约束===";
-    const promptContent = `[System Note: 你的每一次回复【必须】在末尾携带角色的当前状态面板！\n格式要求极其严格，必须原样使用以下 <stablock> 标签包裹：\n<stablock>\n${fieldsStr.split(',').map(f => `${f.trim()}: <具体数值/状态>`).join(' | ')}\n</stablock>\n禁止遗漏任何字段，必须包含在回复的最末尾！]`;
-    
-    const newWbEntry = { comment: wbTitle, content: promptContent, keys: [], strategy: 'constant', position: 4, depth: 0, role: 0, order: 999, prob: 100 };
+    const color  = sbColor.value;
+    const title  = sbTitle.value.trim() || 'STATUS REPORT';
+    const layout = sbLayout.value;
+    const anim   = sbAnim.value;
+    const fx     = sbFx.value;
+    const depth  = parseInt(sbDepth.value) || 1;
+    const order  = parseInt(sbOrder.value) || 999;
 
-    
-    const replacementHTML = `<div style="background: rgba(15, 23, 42, 0.7); border: 1px solid ${color}40; border-left: 4px solid ${color}; padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.85em; color: #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-top: 15px;"><div style="font-weight:bold; color:${color}; margin-bottom: 6px; border-bottom: 1px dashed ${color}80; padding-bottom: 4px; letter-spacing: 1px;">${title}</div><div style="white-space: pre-wrap; line-height: 1.6;">$1</div></div>`;
-    const regexScript = { id: "statusbar_" + Date.now(), scriptName: "状态栏UI美化 (系统生成)", regex: "<stablock>([\\s\\S]*?)<\\/stablock>", replacementString: replacementHTML, placement: [1], disabled: false, markdownOnly: false, promptOnly: false, runOnEdit: true, color: color };
+    const newWbEntry = {
+      comment:  '===系统底层：状态栏约束===',
+      content:  buildPrompt(validFields),
+      keys:     [],
+      strategy: 'constant',
+      position: 4,
+      depth:    depth,
+      role:     0,
+      order:    order,
+      prob:     100,
+    };
 
-    
+    const regexScripts = buildRegexScripts(color, layout, anim, fx, title, validFields);
+
     if (window.injectStatusBarGlobal) {
-      window.injectStatusBarGlobal(newWbEntry, regexScript);
-      sbStatusText.textContent = "✅ 注入成功！底层提示词与正则已就绪。";
-      setTimeout(() => sbStatusText.textContent = "", 3000);
+      window.injectStatusBarGlobal(newWbEntry, regexScripts);
+      sbStatusText.textContent =
+        `✅ 注入成功！${validFields.length} 个字段，depth=${depth}，正则×${regexScripts.length}`;
+      sbStatusText.style.color = '#10b981';
+      setTimeout(() => { sbStatusText.textContent = ''; }, 3000);
+    } else {
+      alert('❌ 注入接口未找到，请检查页面是否完整加载！');
     }
   });
 
   
-  sbEnable.addEventListener('change', () => {
-    if (window.setStatusBarActiveState) {
-      window.setStatusBarActiveState(sbEnable.checked);
-    }
+  
+  
+  [sbTitle, sbColor, sbLayout, sbAnim, sbFx].forEach(el => {
+    el.addEventListener('change', updatePreview);
+    el.addEventListener('input', updatePreview);
   });
+
+  sbEnable.addEventListener('change', () => {
+    if (window.setStatusBarActiveState) window.setStatusBarActiveState(sbEnable.checked);
+  });
+
+  
+  
+  
+  window.__getStatusBarData__ = function() {
+    return {
+      title:   sbTitle.value,
+      color:   sbColor.value,
+      layout:  sbLayout.value,
+      anim:    sbAnim.value,
+      fx:      sbFx.value,
+      depth:   sbDepth.value,
+      order:   sbOrder.value,
+      enabled: sbEnable.checked,
+      fields:  fields,
+    };
+  };
+
+  window.__loadStatusBarData__ = function(data) {
+    if (!data) {
+      
+      sbTitle.value    = '📊 STATUS REPORT';
+      sbColor.value    = '#f59e0b';
+      sbLayout.value   = 'grid2';
+      sbAnim.value     = 'cyber';
+      sbFx.value       = 'all';
+      sbDepth.value    = '1';
+      sbOrder.value    = '999';
+      sbEnable.checked = true;
+      fields = [
+        { name: '生命值',   desc: '主角的身体完整度，最高100%，受伤降低，治疗恢复' },
+        { name: '精神状态', desc: '主角当前的心理状态，如：清醒、疲惫、崩溃边缘' },
+        { name: '当前位置', desc: '主角所在的具体地点' },
+        { name: '情绪',     desc: '主角此刻的情绪倾向' },
+      ];
+      renderFieldList();
+      return;
+    }
+    if (data.title   !== undefined) sbTitle.value    = data.title;
+    if (data.color   !== undefined) sbColor.value    = data.color;
+    if (data.layout  !== undefined) sbLayout.value   = data.layout;
+    if (data.anim    !== undefined) sbAnim.value     = data.anim;
+    if (data.fx      !== undefined) sbFx.value       = data.fx;
+    if (data.depth   !== undefined) sbDepth.value    = data.depth;
+    if (data.order   !== undefined) sbOrder.value    = data.order;
+    if (data.enabled !== undefined) sbEnable.checked = data.enabled;
+    if (data.fields && Array.isArray(data.fields)) {
+      fields = data.fields;
+      renderFieldList();
+    }
+    updatePreview();
+  };
+
+  
+  
+  
+  renderFieldList();
+
+})();
 </script>

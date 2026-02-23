@@ -1,89 +1,426 @@
 ---
-
-
 ---
-<div class="panel">
+<div class="panel area-worldbook">
   <h2>📖 世界书条目</h2>
-  
-  <div style="background: rgba(139, 92, 246, 0.1); border: 1px dashed #8b5cf6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-    <h4 style="margin: 0 0 10px 0; color: #d8b4fe; font-size: 0.95rem;">🤖 AI 单条生成（自动叠加）</h4>
-    <p style="font-size: 0.75rem; color: #94a3b8; margin: 0 0 10px 0;">AI 会自动读取已有的词条，确保世界观连贯且不重复。</p>
+
+  <!-- AI 单条生成 -->
+  <div style="background: rgba(139, 92, 246, 0.06); border: 1px dashed rgba(139, 92, 246, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 20px;">
+    <h4 style="margin: 0 0 8px 0; color: #c4b5fd; font-size: 0.9rem;">🤖 AI 单条生成（自动叠加）</h4>
+    <p style="font-size: 0.72rem; color: #64748b; margin: 0 0 12px 0;">AI 会自动读取已有词条，确保世界观连贯且不重复。</p>
     <div style="display: flex; gap: 10px;">
       <input type="text" id="wbSinglePrompt" placeholder="定向要求(可选)，如：写一把专属武器..." style="flex: 1;" />
-      <button id="btnAiSingleWb" class="btn" style="width: auto; margin: 0; background-color: #8b5cf6;">🎲 生成 1 条</button>
+      <button id="btnAiSingleWb" class="btn" style="width: auto; margin: 0; background: linear-gradient(135deg, #8b5cf6, #6d28d9); white-space: nowrap;">🎲 生成 1 条</button>
     </div>
     <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
       <input type="checkbox" id="wbIncludeCharData" checked style="width: 14px; height: 14px; accent-color: #8b5cf6; cursor: pointer;" />
-      <label for="wbIncludeCharData" style="margin: 0; color: #cbd5e1; font-size: 0.8rem; cursor: pointer; font-weight: normal;">生成时融合当前【角色名与角色描述】(若构建通用世界观请取消勾选)</label>
+      <label for="wbIncludeCharData" style="margin: 0; color: #94a3b8; font-size: 0.78rem; cursor: pointer; font-weight: normal;">生成时融合当前【角色名与描述】</label>
     </div>
   </div>
 
-  <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #334155;">
-    <h4 style="margin: 0 0 10px 0; color: #94a3b8; font-size: 0.85rem;">✍️ 手动录入 / 修改区</h4>
+  <!-- 手动录入区 -->
+  <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #1e293b;">
+    <h4 style="margin: 0 0 12px 0; color: #64748b; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em;">✍️ 手动录入 / 修改区</h4>
+
     <div class="form-group">
-      <label>条目标题 (Comment)</label>
+      <label>条目标题</label>
       <input type="text" id="entryComment" placeholder="例如：===特殊武器===" />
     </div>
-    
+
     <div class="form-group">
-      <label>设定内容 (Content)</label>
+      <label>设定内容</label>
       <textarea id="entryContent" placeholder="具体设定详情..."></textarea>
     </div>
-    
+
     <div class="form-group">
-      <label>触发词 (Keys) - 多个用英文逗号隔开</label>
+      <label>触发词 — 多个用英文逗号隔开</label>
       <input type="text" id="entryKeys" placeholder="空为常驻，有词为触发" />
     </div>
-    
+
     <div class="grid-2">
       <div class="form-group">
-        <label>触发策略 (Strategy)</label>
+        <label>触发策略</label>
         <select id="entryStrategy">
-          <option value="constant">常驻 (Constant)</option>
-          <option value="selective" selected>关键词 (Selective)</option>
-          <option value="vectorized">向量化 (Vectorized)</option>
+          <option value="constant">常驻</option>
+          <option value="selective" selected>关键词</option>
+          <option value="vectorized">向量化</option>
         </select>
       </div>
       <div class="form-group">
-        <label>插入位置 (Position)</label>
+        <label>插入位置</label>
         <select id="entryPosition">
-          <option value="0">0-之前(Char)</option>
-          <option value="1">1-之后(Char)</option>
-          <option value="2">2-前(EM)</option>
-          <option value="3">3-后(EM)</option>
-          <option value="4" selected>4-深度 (Depth)</option>
-          <option value="5">5-之前(AN)</option>
-          <option value="6">6-之后(AN)</option>
+          <option value="0">0 — 之前</option>
+          <option value="1">1 — 之后</option>
+          <option value="2">2 — 前 EM</option>
+          <option value="3">3 — 后 EM</option>
+          <option value="4" selected>4 — 深度</option>
+          <option value="5">5 — 之前 AN</option>
+          <option value="6">6 — 之后 AN</option>
         </select>
       </div>
     </div>
 
     <div class="grid-3">
       <div class="form-group">
-        <label>深度 (Depth)</label>
+        <label>深度</label>
         <input type="number" id="entryDepth" value="4" min="0" />
       </div>
       <div class="form-group">
-        <label>深度角色 (Role)</label>
+        <label>角色</label>
         <select id="entryRole">
-          <option value="0">系统 (System)</option>
-          <option value="1">用户 (User)</option>
-          <option value="2">助手 (AI)</option>
+          <option value="0">系统</option>
+          <option value="1">用户</option>
+          <option value="2">助手</option>
         </select>
       </div>
       <div class="form-group">
-        <label>插入顺序 (Order)</label>
+        <label>顺序</label>
         <input type="number" id="entryOrder" value="100" />
       </div>
     </div>
-    
+
     <div class="form-group">
-      <label>触发概率 (Probability %)</label>
+      <label>概率 (%)</label>
       <input type="number" id="entryProb" value="100" min="1" max="100" />
     </div>
 
     <button id="btnAddEntry" class="btn btn-add">➕ 保存到列表</button>
   </div>
 
+  <!-- ★ AI 智能整理（美化版） -->
+  <div class="wb-organize-wrap">
+    <div class="organize-header-row">
+      <div class="organize-icon-wrap">
+        <span class="organize-icon">🧹</span>
+      </div>
+      <div class="organize-title-wrap">
+        <span class="organize-title">AI 智能整理</span>
+        <span class="organize-subtitle">自动优化深度 · 顺序 · 概率</span>
+      </div>
+      <button id="btnAiOrganize" class="btn-organize-magic">
+        <span class="btn-magic-icon">⚡</span>
+        <span class="btn-magic-text">一键整理</span>
+      </button>
+    </div>
+    <div id="organizeStatus" class="organize-status-bar"></div>
+  </div>
+  <div id="organizePreview" class="organize-preview-container" style="display: none;"></div>
+
+  <!-- 条目列表 -->
   <div id="entriesList"></div>
 </div>
+
+<style>
+  
+  .wb-organize-wrap {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(139, 92, 246, 0.06) 50%, rgba(6, 182, 212, 0.04) 100%);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(251, 191, 36, 0.08);
+  }
+  .wb-organize-wrap::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    animation: organize-shine 4s infinite;
+    pointer-events: none;
+  }
+  @keyframes organize-shine {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(50%); }
+  }
+
+  .organize-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .organize-icon-wrap {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(145deg, #fbbf24, #f59e0b);
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 10px rgba(251, 191, 36, 0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+    flex-shrink: 0;
+  }
+  .organize-icon {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+  }
+
+  .organize-title-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .organize-title {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #fcd34d;
+    letter-spacing: 0.03em;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+  }
+  .organize-subtitle {
+    display: block;
+    font-size: 0.68rem;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+
+  .btn-organize-magic {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(145deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+    color: #fff;
+    padding: 10px 18px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 3px 12px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    flex-shrink: 0;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-organize-magic::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15), transparent);
+    pointer-events: none;
+    border-radius: 9px 9px 0 0;
+  }
+  .btn-organize-magic:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-organize-magic:active {
+    transform: translateY(0);
+  }
+  .btn-organize-magic:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+  }
+  .btn-magic-icon {
+    font-size: 1rem;
+    animation: magic-pulse 1.5s infinite;
+  }
+  @keyframes magic-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.95); }
+  }
+  .btn-magic-text {
+    position: relative;
+    z-index: 1;
+  }
+
+  .organize-status-bar {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(51, 65, 85, 0.3);
+  }
+
+  
+  .organize-preview-container {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(8, 12, 28, 0.99));
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 12px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    animation: preview-slide-in 0.35s ease-out;
+  }
+  @keyframes preview-slide-in {
+    from { opacity: 0; transform: translateY(-12px); max-height: 0; }
+    to { opacity: 1; transform: translateY(0); max-height: 500px; }
+  }
+
+  .organize-preview-header {
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.15), rgba(139, 92, 246, 0.1));
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .preview-header-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .preview-header-badge {
+    font-size: 0.64rem;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-weight: 600;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+
+  .organize-table-wrap {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .organize-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+  }
+  .organize-table th {
+    background: rgba(30, 41, 59, 0.9);
+    color: #94a3b8;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+  }
+  .organize-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+    color: #e2e8f0;
+    transition: background 0.15s ease;
+  }
+  .organize-table tr:hover td {
+    background: rgba(251, 191, 36, 0.05);
+  }
+  .organize-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .org-name-cell {
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .org-value-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+  }
+  .org-changed {
+    color: #34d399 !important;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.12);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .org-old {
+    color: #64748b;
+    text-decoration: line-through;
+    font-size: 0.62rem;
+    margin-right: 5px;
+  }
+
+  .org-reason-cell {
+    max-width: 150px;
+    font-size: 0.64rem;
+    color: #64748b;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .organize-footer {
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border-top: 1px solid rgba(51, 65, 85, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .organize-stats {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+  .organize-stats strong {
+    color: #34d399;
+    font-weight: 700;
+  }
+
+  .organize-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .btn-org-apply {
+    background: linear-gradient(145deg, #10b981, #059669) !important;
+    color: #fff !important;
+    padding: 8px 18px !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    border: none !important;
+    border-radius: 7px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+  }
+  .btn-org-apply:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
+  }
+  .btn-org-cancel {
+    background: rgba(51, 65, 85, 0.5) !important;
+    color: #94a3b8 !important;
+    padding: 8px 16px !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    border: 1px solid rgba(71, 85, 105, 0.5) !important;
+    border-radius: 7px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .btn-org-cancel:hover {
+    background: rgba(71, 85, 105, 0.6) !important;
+    color: #e2e8f0 !important;
+  }
+</style>
