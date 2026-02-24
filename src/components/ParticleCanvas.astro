@@ -1,0 +1,181 @@
+---
+---
+<!-- ★ 全屏粒子背景 — 支持特效开关 -->
+<canvas id="particleCanvas"></canvas>
+
+<style is:global>
+  #particleCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+  }
+  .app-header, .app-container {
+    position: relative;
+    z-index: 1;
+  }
+</style>
+
+<script is:inline>
+(function () {
+  var canvas = document.getElementById('particleCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W, H;
+  var particles = [];
+  var mouse = { x: -9999, y: -9999 };
+  var PARTICLE_COUNT = 60;
+  var CONNECTION_DIST = 160;
+  var MOUSE_DIST = 200;
+  var rafId = null;
+  var running = false;
+
+  var COLORS = [
+    { r: 139, g: 92, b: 246 },
+    { r: 56, g: 189, b: 248 },
+    { r: 16, g: 185, b: 129 },
+    { r: 245, g: 158, b: 11 },
+    { r: 244, g: 114, b: 182 },
+  ];
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function createParticle() {
+    var c = COLORS[Math.floor(Math.random() * COLORS.length)];
+    return {
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35,
+      r: Math.random() * 2 + 0.8, color: c,
+      alpha: Math.random() * 0.5 + 0.2,
+      pulseSpeed: Math.random() * 0.02 + 0.005,
+      pulseOffset: Math.random() * Math.PI * 2,
+    };
+  }
+
+  function init() {
+    resize();
+    particles = [];
+    for (var i = 0; i < PARTICLE_COUNT; i++) particles.push(createParticle());
+  }
+
+  var frame = 0;
+  function animate() {
+    if (!running) return;
+    frame++;
+    ctx.clearRect(0, 0, W, H);
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10;
+      if (p.y < -10) p.y = H + 10; if (p.y > H + 10) p.y = -10;
+
+      var dx = p.x - mouse.x, dy = p.y - mouse.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < MOUSE_DIST && dist > 0) {
+        var force = (MOUSE_DIST - dist) / MOUSE_DIST * 0.008;
+        p.vx += (dx / dist) * force; p.vy += (dy / dist) * force;
+      }
+      p.vx *= 0.999; p.vy *= 0.999;
+
+      var pulse = Math.sin(frame * p.pulseSpeed + p.pulseOffset) * 0.3 + 0.7;
+      var alpha = p.alpha * pulse;
+
+      ctx.beginPath();
+      var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+      grad.addColorStop(0, 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',' + (alpha * 0.6) + ')');
+      grad.addColorStop(1, 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',0)');
+      ctx.fillStyle = grad;
+      ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',' + alpha + ')';
+      ctx.fill();
+    }
+
+    for (var i = 0; i < particles.length; i++) {
+      for (var j = i + 1; j < particles.length; j++) {
+        var a = particles[i], b = particles[j];
+        var ddx = a.x - b.x, ddy = a.y - b.y;
+        var d = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (d < CONNECTION_DIST) {
+          var lineAlpha = (1 - d / CONNECTION_DIST) * 0.12;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = 'rgba(' + ((a.color.r + b.color.r) >> 1) + ',' + ((a.color.g + b.color.g) >> 1) + ',' + ((a.color.b + b.color.b) >> 1) + ',' + lineAlpha + ')';
+          ctx.lineWidth = 0.6; ctx.stroke();
+        }
+      }
+    }
+
+    if (mouse.x > 0 && mouse.y > 0) {
+      var mGrad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 120);
+      mGrad.addColorStop(0, 'rgba(139,92,246,0.04)');
+      mGrad.addColorStop(0.5, 'rgba(56,189,248,0.02)');
+      mGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = mGrad;
+      ctx.fillRect(mouse.x - 120, mouse.y - 120, 240, 240);
+    }
+
+    rafId = requestAnimationFrame(animate);
+  }
+
+  // 启停控制
+  function start() {
+    if (running) return;
+    running = true;
+    canvas.style.display = '';
+    animate();
+  }
+  function stop() {
+    running = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    ctx.clearRect(0, 0, W, H);
+    canvas.style.display = 'none';
+  }
+
+  window.addEventListener('resize', resize);
+  document.addEventListener('mousemove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; });
+  document.addEventListener('mouseleave', function () { mouse.x = -9999; mouse.y = -9999; });
+
+  init();
+
+  // 读取偏好决定是否启动
+  var FX_KEY = 'st_v3_fx_enabled';
+  var shouldRun = true;
+  try { var s = localStorage.getItem(FX_KEY); if (s !== null) shouldRun = s === '1'; } catch(e) {}
+
+  if (shouldRun) {
+    start();
+    if (window.gsap) gsap.to(canvas, { opacity: 1, duration: 2, ease: 'power2.out', delay: 0.3 });
+    else canvas.style.opacity = '1';
+  }
+
+  // 监听开关变化
+  var toggle = document.getElementById('fxToggle');
+  if (toggle) {
+    toggle.addEventListener('change', function () {
+      if (toggle.checked) {
+        start();
+        canvas.style.opacity = '1';
+      } else {
+        stop();
+      }
+    });
+  }
+})();
+</script>

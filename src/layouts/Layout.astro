@@ -25,39 +25,217 @@ const { title } = Astro.props;
       }
 
       body {
-        background-color: #0a0f1e;
-        color: #f8fafc;
+        background-color: #0a0e1a;
+        background-image:
+          radial-gradient(ellipse at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+          radial-gradient(ellipse at 85% 20%, rgba(34, 197, 232, 0.06) 0%, transparent 50%),
+          radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+        background-attachment: fixed;
+        color: #f1f5f9;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         margin: 0;
-        padding: 16px;
+        padding: 20px;
         min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: geometricPrecision;
       }
 
-      /* ========== 主容器布局 ========== */
+      /* ========== App 头部 ========== */
+      .app-header {
+        max-width: 1920px;
+        margin: 0 auto 20px;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, rgba(13, 18, 32, 0.95), rgba(10, 14, 26, 0.98));
+        border: 1px solid rgba(99, 102, 241, 0.15);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        position: relative;
+        overflow: hidden;
+      }
+      /* 流光伪元素 — 完美跟随圆角 */
+      .header-glow-border::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1.5px;
+        background: conic-gradient(
+          from var(--glow-angle, 0deg),
+          rgba(139, 92, 246, 0.5),
+          rgba(56, 189, 248, 0.4),
+          rgba(16, 185, 129, 0.4),
+          rgba(245, 158, 11, 0.3),
+          rgba(244, 114, 182, 0.3),
+          rgba(139, 92, 246, 0.5)
+        );
+        -webkit-mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        pointer-events: none;
+        z-index: 0;
+      }
+      /* 确保 header 内容在伪元素上方 */
+      .app-header > * {
+        position: relative;
+        z-index: 1;
+      }
+      .app-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .app-logo {
+        font-size: 1.5rem;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(56, 189, 248, 0.1));
+        border-radius: 12px;
+        border: 1px solid rgba(139, 92, 246, 0.2);
+      }
+      .app-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        margin: 0;
+        background: linear-gradient(135deg, #a5f3fc, #6366f1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 0.02em;
+      }
+      .app-subtitle {
+        font-size: 0.68rem;
+        color: #475569;
+        margin: 3px 0 0;
+        letter-spacing: 0.03em;
+      }
+      .app-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .app-version-badge {
+        font-size: 0.62rem;
+        color: #64748b;
+        background: rgba(100, 116, 139, 0.1);
+        padding: 4px 10px;
+        border-radius: 99px;
+        border: 1px solid rgba(100, 116, 139, 0.15);
+        font-family: 'JetBrains Mono', monospace;
+        letter-spacing: 0.05em;
+      }
+
+      /* ========== 特效开关 ========== */
+      .fx-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+        margin: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .fx-toggle input { display: none; }
+      .fx-toggle-track {
+        width: 36px;
+        height: 20px;
+        background: rgba(51, 65, 85, 0.6);
+        border-radius: 99px;
+        border: 1px solid rgba(71, 85, 105, 0.4);
+        position: relative;
+        transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+        flex-shrink: 0;
+      }
+      .fx-toggle-thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #64748b;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s, box-shadow 0.3s;
+      }
+      .fx-toggle input:checked ~ .fx-toggle-track {
+        background: rgba(139, 92, 246, 0.25);
+        border-color: rgba(139, 92, 246, 0.5);
+        box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+      }
+      .fx-toggle input:checked ~ .fx-toggle-track .fx-toggle-thumb {
+        transform: translateX(16px);
+        background: #a78bfa;
+        box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+      }
+      .fx-toggle-label {
+        font-size: 0.72rem;
+        color: #64748b;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        transition: color 0.3s;
+      }
+      .fx-toggle input:checked ~ .fx-toggle-label {
+        color: #c4b5fd;
+      }
+
+      /* ========== 主容器布局 — 7 面板双行网格 ========== */
       .app-container {
         display: grid;
-        grid-template-columns: 320px 1fr 380px minmax(400px, 1.5fr);
-        grid-template-rows: auto;
-        grid-template-areas: "ai character worldbook preview";
+        grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr) minmax(360px, 1.2fr);
+        grid-template-rows: auto auto;
+        grid-template-areas:
+          "ai character worldbook preview"
+          "statusbar chat auditor preview";
         gap: 16px;
         max-width: 1920px;
         margin: 0 auto;
         align-items: start;
       }
 
-      /* 区域分配 */
+      /* 区域分配 — 全部 7 面板 */
       .area-ai { grid-area: ai; }
       .area-character { grid-area: character; }
       .area-worldbook { grid-area: worldbook; }
       .area-preview { grid-area: preview; }
+      .area-chat { grid-area: chat; }
+      .area-statusbar { grid-area: statusbar; }
+      .area-auditor { grid-area: auditor; }
 
-      /* ========== 响应式 ========== */
-      @media (max-width: 1400px) {
+      /* ========== 响应式 — 4 档自适应 ========== */
+      @media (max-width: 1600px) {
+        .app-container {
+          grid-template-columns: 280px 1fr minmax(340px, 1fr);
+          grid-template-areas:
+            "ai character preview"
+            "worldbook chat preview"
+            "statusbar auditor preview";
+        }
+      }
+
+      @media (max-width: 1200px) {
         .app-container {
           grid-template-columns: 1fr 1fr;
           grid-template-areas:
             "ai character"
-            "worldbook preview";
+            "worldbook chat"
+            "statusbar auditor"
+            "preview preview";
+        }
+        .code-window {
+          position: static !important;
+          max-height: 600px !important;
         }
       }
 
@@ -68,11 +246,24 @@ const { title } = Astro.props;
             "ai"
             "character"
             "worldbook"
+            "chat"
+            "statusbar"
+            "auditor"
             "preview";
         }
         .panel, .code-window {
           max-height: none !important;
           position: static !important;
+        }
+        .app-header {
+          flex-direction: column;
+          text-align: center;
+          gap: 10px;
+          padding: 12px 16px;
+        }
+        .app-brand {
+          flex-direction: column;
+          gap: 8px;
         }
       }
 
@@ -84,31 +275,44 @@ const { title } = Astro.props;
 
       /* ========== 面板通用 ========== */
       .panel {
-        background-color: #111827;
+        background: linear-gradient(135deg, rgba(15, 23, 37, 0.92), rgba(13, 18, 32, 0.95));
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         padding: 20px;
-        border-radius: 14px;
-        border: 1px solid #1e293b;
-        max-height: calc(100vh - 32px);
+        border-radius: 16px;
+        border: 1px solid rgba(99, 102, 241, 0.12);
+        max-height: calc(100vh - 40px);
         overflow-y: auto;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-        transition: border-color 0.3s ease;
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        will-change: none;
+        transform: translateZ(0);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       .panel:hover {
-        border-color: #334155;
+        border-color: rgba(99, 102, 241, 0.25);
+        box-shadow:
+          0 12px 48px rgba(99, 102, 241, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.07);
       }
 
       .panel h2 {
         margin: 0 0 16px 0;
-        color: #f1f5f9;
-        border-bottom: 1px solid #1e293b;
+        color: #e0e7ff;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.15);
         padding-bottom: 12px;
         font-size: 1.05rem;
         letter-spacing: 0.02em;
+        font-weight: 700;
       }
       .panel h3 {
         margin: 20px 0 12px 0;
         color: #cbd5e1;
         font-size: 0.95rem;
+        font-weight: 600;
       }
 
       /* ========== 表单控件 ========== */
@@ -118,7 +322,7 @@ const { title } = Astro.props;
       .form-group label {
         display: block;
         font-size: 0.8rem;
-        color: #64748b;
+        color: #a5b4fc;
         margin-bottom: 6px;
         font-weight: 600;
         text-transform: uppercase;
@@ -131,24 +335,25 @@ const { title } = Astro.props;
       textarea,
       select {
         width: 100%;
-        background-color: #0a0f1e;
-        border: 1px solid #1e293b;
-        color: #f8fafc;
+        background-color: rgba(13, 18, 32, 0.8);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: #f1f5f9;
         padding: 10px 12px;
         border-radius: 8px;
         box-sizing: border-box;
         font-family: inherit;
         font-size: 0.88rem;
         outline: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
       }
       input[type="text"]:focus,
       input[type="password"]:focus,
       input[type="number"]:focus,
       textarea:focus,
       select:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        border-color: #6366f1;
+        background-color: rgba(13, 18, 32, 0.95);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
       }
       textarea {
         min-height: 80px;
@@ -158,7 +363,7 @@ const { title } = Astro.props;
       select {
         cursor: pointer;
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23cbd5e1' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 10px center;
         padding-right: 32px;
@@ -172,9 +377,9 @@ const { title } = Astro.props;
         padding: 0;
       }
       input[type="file"]::file-selector-button {
-        background-color: #1e293b;
-        color: #e2e8f0;
-        border: 1px solid #334155;
+        background: linear-gradient(135deg, #475569, #334155);
+        color: #e0e7ff;
+        border: 1px solid rgba(99, 102, 241, 0.2);
         padding: 7px 14px;
         border-radius: 8px;
         cursor: pointer;
@@ -185,9 +390,10 @@ const { title } = Astro.props;
         transition: all 0.2s ease;
       }
       input[type="file"]::file-selector-button:hover {
-        background-color: #334155;
-        border-color: #8b5cf6;
-        color: #d8b4fe;
+        background: linear-gradient(135deg, #334155, #1f2937);
+        border-color: rgba(99, 102, 241, 0.4);
+        color: #c7d2fe;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
       }
 
       /* ========== 网格布局 ========== */
@@ -196,18 +402,18 @@ const { title } = Astro.props;
 
       /* ========== 面板主题变体 ========== */
       .ai-panel {
-        border-color: rgba(139, 92, 246, 0.3);
-        background: linear-gradient(180deg, #111827 0%, #0d0a1a 100%);
+        border-color: rgba(139, 92, 246, 0.25);
+        background: linear-gradient(180deg, rgba(13, 18, 32, 0.95), rgba(15, 23, 37, 0.92));
       }
-      .ai-panel:hover { border-color: rgba(139, 92, 246, 0.5); }
-      .ai-panel h2 { border-color: rgba(139, 92, 246, 0.3); color: #c4b5fd; }
+      .ai-panel:hover { border-color: rgba(139, 92, 246, 0.4); }
+      .ai-panel h2 { border-color: rgba(139, 92, 246, 0.25); color: #d8b4fe; }
 
       .sb-panel {
-        border-color: rgba(245, 158, 11, 0.3);
-        background: linear-gradient(180deg, #111827 0%, #1a1408 100%);
+        border-color: rgba(245, 158, 11, 0.25);
+        background: linear-gradient(180deg, rgba(13, 18, 32, 0.95), rgba(15, 23, 37, 0.92));
       }
-      .sb-panel:hover { border-color: rgba(245, 158, 11, 0.5); }
-      .sb-panel h2 { border-color: rgba(245, 158, 11, 0.3); color: #fcd34d; }
+      .sb-panel:hover { border-color: rgba(245, 158, 11, 0.4); }
+      .sb-panel h2 { border-color: rgba(245, 158, 11, 0.25); color: #fde047; }
 
       /* ========== 状态文本 ========== */
       .status-text {
@@ -220,17 +426,17 @@ const { title } = Astro.props;
 
       /* ========== 预设上传区 ========== */
       .preset-upload {
-        border: 1px dashed rgba(139, 92, 246, 0.4);
+        border: 1px dashed rgba(99, 102, 241, 0.4);
         padding: 14px;
         border-radius: 10px;
-        background: rgba(139, 92, 246, 0.05);
+        background: rgba(99, 102, 241, 0.05);
         margin-bottom: 16px;
       }
 
       /* ========== 草稿管理器 ========== */
       .draft-manager {
-        background: rgba(16, 185, 129, 0.06);
-        border: 1px solid rgba(16, 185, 129, 0.25);
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.2);
         padding: 14px;
         border-radius: 10px;
         margin-bottom: 20px;
@@ -249,9 +455,9 @@ const { title } = Astro.props;
       .btn {
         width: 100%;
         padding: 10px 16px;
-        background-color: #3b82f6;
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
         color: white;
-        border: none;
+        border: 1px solid rgba(99, 102, 241, 0.3);
         border-radius: 8px;
         cursor: pointer;
         font-weight: 600;
@@ -262,12 +468,12 @@ const { title } = Astro.props;
         overflow: hidden;
       }
       .btn:hover {
-        background-color: #2563eb;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        border-color: rgba(99, 102, 241, 0.5);
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
       }
       .btn:active {
-        transform: translateY(0);
+        transform: scale(0.98);
       }
       .btn:disabled {
         opacity: 0.5;
@@ -276,34 +482,64 @@ const { title } = Astro.props;
         box-shadow: none !important;
       }
 
-      .btn-fetch { background-color: #374151; }
-      .btn-fetch:hover { background-color: #4b5563; box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3); }
+      .btn-fetch { 
+        background: linear-gradient(135deg, #475569, #334155);
+        border-color: rgba(71, 85, 105, 0.3);
+      }
+      .btn-fetch:hover { 
+        background: linear-gradient(135deg, #334155, #1e293b);
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 8px 24px rgba(71, 85, 105, 0.2);
+      }
 
       .btn-ai {
-        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        border-color: rgba(139, 92, 246, 0.3);
         font-size: 0.95rem;
         padding: 12px 16px;
         margin-top: 12px;
-        box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
       }
       .btn-ai:hover {
-        background: linear-gradient(135deg, #7c3aed, #5b21b6);
-        box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+        background: linear-gradient(135deg, #7c3aed, #6d28d9);
+        border-color: rgba(139, 92, 246, 0.5);
+        box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
       }
 
-      .btn-add { background-color: #059669; }
-      .btn-add:hover { background-color: #047857; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3); }
+      .btn-add { 
+        background: linear-gradient(135deg, #10b981, #059669);
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+      .btn-add:hover { 
+        background: linear-gradient(135deg, #059669, #047857);
+        border-color: rgba(16, 185, 129, 0.5);
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+      }
 
       .btn-delete {
-        background-color: #dc2626;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border-color: rgba(239, 68, 68, 0.3);
         width: auto;
         padding: 5px 10px;
         font-size: 0.75rem;
       }
-      .btn-delete:hover { background-color: #b91c1c; }
+      .btn-delete:hover { 
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        border-color: rgba(239, 68, 68, 0.5);
+        box-shadow: 0 8px 24px rgba(239, 68, 68, 0.2);
+      }
 
-      .btn-img { background-color: #d97706; width: auto; margin: 0; padding: 6px 14px; }
-      .btn-img:hover { background-color: #b45309; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3); }
+      .btn-img { 
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border-color: rgba(245, 158, 11, 0.3);
+        width: auto; 
+        margin: 0; 
+        padding: 6px 14px;
+      }
+      .btn-img:hover { 
+        background: linear-gradient(135deg, #d97706, #b45309);
+        border-color: rgba(245, 158, 11, 0.5);
+        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.2);
+      }
 
       /* ========== 世界书条目 ========== */
       .entry-item {
@@ -330,16 +566,20 @@ const { title } = Astro.props;
 
       /* ========== 代码预览窗口 ========== */
       .code-window {
-        background-color: #050510;
-        border-radius: 14px;
-        border: 1px solid #1e293b;
+        background-color: rgba(5, 5, 16, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 16px;
+        border: 1px solid rgba(30, 41, 59, 0.8);
         display: flex;
         flex-direction: column;
-        max-height: calc(100vh - 32px);
+        max-height: calc(100vh - 40px);
         position: sticky;
-        top: 16px;
+        top: 20px;
         overflow: hidden;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        box-shadow:
+          0 4px 24px rgba(0, 0, 0, 0.4),
+          0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
       .code-header {
         background-color: #0f172a;
@@ -950,6 +1190,69 @@ const { title } = Astro.props;
       .btn-org-cancel:hover {
         background: rgba(71, 85, 105, 0.6) !important;
         color: #e2e8f0 !important;
+      }
+
+      /* ========== GSAP 动画专用 ========== */
+
+      /* 面板 Hover 追光 */
+      .panel-hover-glow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        opacity: 0;
+        z-index: 0;
+        border-radius: inherit;
+        background: radial-gradient(
+          320px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+          rgba(139, 92, 246, 0.08) 0%,
+          rgba(56, 189, 248, 0.04) 30%,
+          transparent 70%
+        );
+        transition: opacity 0.3s;
+      }
+
+      /* 确保面板子元素浮在追光上方 */
+      .panel > *:not(.panel-hover-glow),
+      .code-window > *:not(.panel-hover-glow) {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Header 扫光 */
+      .header-shine-sweep {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.06),
+          transparent
+        );
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      /* 环境浮光球 */
+      .ambient-orb {
+        position: fixed;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.5;
+        filter: blur(80px);
+        will-change: transform, opacity;
+      }
+
+      /* 面板 transform 不影响 overflow */
+      .panel, .code-window {
+        will-change: transform;
+        transform-origin: center center;
       }
     </style>
   </head>

@@ -1,6 +1,6 @@
 ---
 ---
-<div class="panel chat-playground area-chat">
+<div class="panel chat-playground">
   <h2>💬 角色试聊室</h2>
 
   <!-- 控制栏 -->
@@ -435,6 +435,46 @@
     word-break: break-word;
   }
 
+  /* 变量更新组件 */
+  .chat-var-update {
+    margin: 8px 0 4px;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    overflow: hidden;
+  }
+  .cvu-header {
+    padding: 5px 10px;
+    background: rgba(139, 92, 246, 0.1);
+    color: #c4b5fd;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cvu-header:hover { background: rgba(139, 92, 246, 0.16); }
+  .cvu-body { display: none; }
+  .cvu-body.open { display: block; }
+  .cvu-analysis {
+    padding: 6px 10px;
+    color: #94a3b8;
+    font-size: 0.68rem;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+    white-space: pre-line;
+  }
+  .cvu-patch {
+    padding: 6px 10px;
+    margin: 0;
+    color: #a5b4fc;
+    font-size: 0.65rem;
+    line-height: 1.4;
+    overflow-x: auto;
+    background: transparent;
+    white-space: pre-wrap;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+
   
   .chat-input-area {
     border-top: 1px solid rgba(139, 92, 246, 0.15);
@@ -746,10 +786,63 @@
   function updateLastMessage(div, text, done) {
     var el = div.querySelector('.chat-text');
     if (!el) return;
-    el.textContent = text;
-    if (done) el.classList.remove('streaming-cursor');
-    else el.classList.add('streaming-cursor');
+    if (done) {
+      el.classList.remove('streaming-cursor');
+      renderChatText(el, text);
+    } else {
+      el.textContent = text;
+      el.classList.add('streaming-cursor');
+    }
     chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  var UV_RE = /<UpdateVariable>\s*<Analysis>([\s\S]*?)<\/Analysis>\s*<JSONPatch>([\s\S]*?)<\/JSONPatch>\s*<\/UpdateVariable>/;
+
+  function renderChatText(el, text) {
+    var m = text.match(UV_RE);
+    if (!m) { el.textContent = text; return; }
+
+    el.textContent = '';
+    var idx = text.indexOf('<UpdateVariable>');
+    var endTag = '</UpdateVariable>';
+    var endIdx = text.indexOf(endTag);
+    var before = text.substring(0, idx);
+    var after  = text.substring(endIdx + endTag.length);
+
+    if (before.trim()) {
+      var bs = document.createElement('span');
+      bs.textContent = before;
+      el.appendChild(bs);
+    }
+
+    var card = document.createElement('div');
+    card.className = 'chat-var-update';
+    var hdr = document.createElement('div');
+    hdr.className = 'cvu-header';
+    hdr.textContent = '📊 变量更新 ▸';
+    var body = document.createElement('div');
+    body.className = 'cvu-body';
+    var ana = document.createElement('div');
+    ana.className = 'cvu-analysis';
+    ana.textContent = m[1].trim();
+    var patch = document.createElement('pre');
+    patch.className = 'cvu-patch';
+    patch.textContent = m[2].trim();
+    body.appendChild(ana);
+    body.appendChild(patch);
+    card.appendChild(hdr);
+    card.appendChild(body);
+    hdr.addEventListener('click', function() {
+      var open = body.classList.toggle('open');
+      hdr.textContent = open ? '📊 变量更新 ▾' : '📊 变量更新 ▸';
+    });
+    el.appendChild(card);
+
+    if (after.trim()) {
+      var as = document.createElement('span');
+      as.textContent = after;
+      el.appendChild(as);
+    }
   }
 
   function esc(s) {

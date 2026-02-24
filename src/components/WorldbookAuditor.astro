@@ -3,14 +3,8 @@
 <div class="panel wb-auditor area-auditor">
   <h2>🔍 世界书审计官</h2>
 
-  <!-- 控制栏：竖排按钮 + 简要说明 -->
-  <div class="auditor-intro">
-    <p class="auditor-desc">分析世界书的完整度、触发词设计、内容质量等维度，找出潜在问题并给出改进建议。</p>
-    <div class="auditor-btn-group">
-      <button id="btnQuickCheck" class="btn btn-audit-quick">⚡ 快速自检</button>
-      <button id="btnRunAudit" class="btn btn-audit-run">🧠 AI 深度审计</button>
-    </div>
-  </div>
+  <!-- 控制栏：只显示 AI 审计按钮 -->
+  <button id="btnRunAudit" class="btn btn-audit-run" style="width: 100%; margin-bottom: 10px;">🧠 AI 深度审计</button>
 
   <!-- AI 审计状态 -->
   <div id="auditStatus" class="audit-status"></div>
@@ -50,17 +44,31 @@
   .wb-auditor {
     display: flex;
     flex-direction: column;
+    min-height: min(680px, calc(100vh - 40px));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
   }
 
-  
+  /* 让结果区域撑满剩余空间可滚动 */
+  .wb-auditor .audit-section {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
   .auditor-intro {
     margin-bottom: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .auditor-desc {
     font-size: 0.72rem;
     color: #64748b;
     line-height: 1.5;
     margin-bottom: 10px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .auditor-btn-group {
     display: flex;
@@ -87,20 +95,25 @@
   }
   .btn-audit-run {
     width: 100%;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    height: 40px;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
     color: white;
-    border: none;
-    padding: 10px 16px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 0 16px;
     border-radius: 8px;
     font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
     font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
   }
   .btn-audit-run:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.25);
   }
   .btn-audit-run:disabled {
     opacity: 0.5;
@@ -109,12 +122,13 @@
     box-shadow: none;
   }
 
-  
   .audit-status {
     font-size: 0.78rem;
-    min-height: 0;
-    margin-bottom: 4px;
-    transition: all 0.3s ease;
+    min-height: 20px;
+    margin-bottom: 10px;
+    margin-top: 8px;
+    transition: color 0.2s ease;
+    line-height: 1.4;
   }
   .audit-status:empty {
     display: none;
@@ -135,8 +149,8 @@
     align-items: center;
     gap: 14px;
     padding: 14px;
-    background: rgba(139, 92, 246, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.15);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.08));
+    border: 1px solid rgba(139, 92, 246, 0.2);
     border-radius: 12px;
     margin-bottom: 12px;
   }
@@ -153,7 +167,7 @@
   }
   .score-bg {
     fill: none;
-    stroke: rgba(139, 92, 246, 0.1);
+    stroke: rgba(139, 92, 246, 0.15);
     stroke-width: 6;
   }
   .score-fill {
@@ -199,15 +213,15 @@
     margin-bottom: 12px;
   }
   .dim-card {
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(51, 65, 85, 0.4);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(25, 35, 50, 0.7));
+    border: 1px solid rgba(99, 102, 241, 0.15);
     border-radius: 8px;
     padding: 10px 12px;
     transition: all 0.2s ease;
   }
   .dim-card:hover {
-    border-color: rgba(139, 92, 246, 0.3);
-    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(99, 102, 241, 0.3);
+    background: linear-gradient(135deg, rgba(35, 45, 60, 0.8), rgba(30, 40, 55, 0.8));
   }
   .dim-header {
     display: flex;
@@ -259,9 +273,12 @@
     transition: width 1s ease;
   }
   .dim-detail {
-    font-size: 0.65rem;
-    color: #64748b;
+    font-size: 0.68rem;
+    color: #94a3b8;
     line-height: 1.4;
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   
@@ -273,16 +290,20 @@
     font-weight: 700;
     color: #e2e8f0;
     margin-bottom: 8px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .issue-item {
     display: flex;
     gap: 8px;
     padding: 8px 10px;
-    background: rgba(30, 41, 59, 0.4);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(25, 35, 50, 0.7));
     border-radius: 8px;
     margin-bottom: 6px;
     border-left: 3px solid transparent;
     animation: issueIn 0.3s ease both;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   @keyframes issueIn {
     0% { opacity: 0; transform: translateX(-8px); }
@@ -306,25 +327,30 @@
     font-weight: 600;
     color: #e2e8f0;
     margin-bottom: 2px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .issue-desc {
-    font-size: 0.7rem;
-    color: #94a3b8;
-    line-height: 1.4;
+    font-size: 0.73rem;
+    color: #cbd5e1;
+    line-height: 1.5;
     word-break: break-word;
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   
   .audit-suggestions {
-    background: rgba(139, 92, 246, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.15);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.08));
+    border: 1px solid rgba(139, 92, 246, 0.2);
     border-radius: 10px;
     padding: 14px;
   }
   .suggestions-title {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #c4b5fd;
+    color: #d8b4fe;
     margin-bottom: 10px;
   }
   .suggestion-item {
@@ -363,9 +389,9 @@
     align-items: center;
     gap: 8px;
     padding: 8px 10px;
-    background: rgba(30, 41, 59, 0.5);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(25, 35, 50, 0.7));
     border-radius: 8px;
-    border: 1px solid rgba(51, 65, 85, 0.4);
+    border: 1px solid rgba(99, 102, 241, 0.15);
   }
   .qc-stat-num {
     font-size: 1.1rem;
@@ -375,9 +401,10 @@
     text-align: right;
   }
   .qc-stat-label {
-    font-size: 0.68rem;
-    color: #94a3b8;
+    font-size: 0.7rem;
+    color: #cbd5e1;
     line-height: 1.3;
+    font-weight: 500;
   }
 
   
@@ -388,11 +415,12 @@
     margin-bottom: 10px;
   }
   .qc-dim-tag {
-    font-size: 0.62rem;
-    padding: 2px 8px;
+    font-size: 0.65rem;
+    padding: 3px 10px;
     border-radius: 99px;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
+    border: 1px solid;
   }
 
   
@@ -402,15 +430,38 @@
     gap: 6px;
   }
 
+  /* 快速建议样式 */
+  .qc-suggestions-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .qc-suggestion-item {
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.12));
+    border-left: 3px solid #a78bfa;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #e0e7ff;
+    line-height: 1.5;
+    font-weight: 500;
+    animation: suggestionSlide 0.4s ease both;
+  }
+  @keyframes suggestionSlide {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
   
   .qc-section-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #94a3b8;
-    margin-bottom: 6px;
-    margin-top: 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #e0e7ff;
+    margin-bottom: 8px;
+    margin-top: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
   }
 </style>
 
@@ -420,7 +471,6 @@
   
   
   var btnRunAudit = document.getElementById('btnRunAudit');
-  var btnQuickCheck = document.getElementById('btnQuickCheck');
   var quickCheckResult = document.getElementById('quickCheckResult');
   var auditStatus = document.getElementById('auditStatus');
   var auditReport = document.getElementById('auditReport');
@@ -452,7 +502,8 @@
   
   
   
-  btnQuickCheck.addEventListener('click', function() {
+  // ── 快速自检逻辑（内部使用）──
+  function runQuickCheck() {
     var entries = getEntries();
     var char = getCharData();
     var issues = [];
@@ -532,6 +583,30 @@
     var dimHtml = '<div class="qc-section-title">🧭 维度覆盖</div>'
       + '<div class="qc-dim-tags">' + renderDimTags(dimensions) + '</div>';
 
+    // 自动生成快速建议
+    var quickSuggestions = [];
+    if (totalEntries < 5) quickSuggestions.push('📝 条目数量较少，建议至少创建 5-10 条条目来丰富世界观');
+    if (constantCount === 0 && totalEntries > 0) quickSuggestions.push('📌 没有常驻条目，建议将重要设定设为常驻以确保始终生效');
+    if (selectiveCount === 0 && totalEntries > 0) quickSuggestions.push('🎯 没有触发式条目，建议添加具有触发词的条目以增加交互性');
+    if (skeletonCount > totalEntries * 0.3) quickSuggestions.push('✨ 超过30%的条目内容较短，建议用「AI重写」展开为300+字的完整设定');
+    if (totalContentLen < 100 && totalEntries > 0) quickSuggestions.push('📖 总内容非常精简，建议补充更详细的世界背景和设定细节');
+    if (dupKeys.length > 0) quickSuggestions.push('🔑 发现重复触发词，这会导致多个条目同时激活，考虑调整词汇避免冲突');
+    if (char.name && !nameInKeys && totalEntries > 0) quickSuggestions.push('💬 角色名未出现在任何触发词中，建议创建包含「' + char.name + '」的核心设定条目');
+    if (totalEntries > 0) {
+      var avgLen = Math.round(totalContentLen / totalEntries);
+      if (avgLen < 100) quickSuggestions.push('📏 条目平均长度 ' + avgLen + ' 字，建议每条至少 150+ 字以提供足够信息');
+    }
+
+    var suggestionsHtml = '';
+    if (quickSuggestions.length > 0) {
+      suggestionsHtml = '<div class="qc-section-title">💡 快速建议</div>'
+        + '<div class="qc-suggestions-box">'
+        + quickSuggestions.map(function(sugg, i) {
+          return '<div class="qc-suggestion-item" style="animation-delay:' + (i * 0.05) + 's;">' + sugg + '</div>';
+        }).join('')
+        + '</div>';
+    }
+
     var issuesHtml = '<div class="qc-section-title">🔎 检查结果</div>'
       + '<div class="qc-issue-list">'
       + issues.map(function(iss, i) {
@@ -541,8 +616,8 @@
       }).join('')
       + '</div>';
 
-    quickCheckResult.innerHTML = statsHtml + dimHtml + issuesHtml;
-  });
+    quickCheckResult.innerHTML = statsHtml + dimHtml + suggestionsHtml + issuesHtml;
+  }
 
   function statCard(num, label, color) {
     return '<div class="qc-stat"><div class="qc-stat-num" style="color:' + color + ';">' + num + '</div><div class="qc-stat-label">' + label + '</div></div>';
@@ -752,6 +827,11 @@
   function escapeHTML(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
+
+  // ── 页面加载后自动运行快速自检 ──
+  setTimeout(function() {
+    runQuickCheck();
+  }, 600);
 
 })();
 </script>

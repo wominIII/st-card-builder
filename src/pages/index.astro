@@ -7,18 +7,50 @@ import StatusBarPanel from '../components/StatusBarPanel.astro';
 import PreviewPanel from '../components/PreviewPanel.astro';
 import ChatPlayground from '../components/ChatPlayground.astro';
 import WorldbookAuditor from '../components/WorldbookAuditor.astro';
+import VariableCardPanel from '../components/VariableCardPanel.astro';
+import SecurityCordon from '../components/SecurityCordon.astro';
+import ParticleCanvas from '../components/ParticleCanvas.astro';
+import GsapAnimations from '../components/GsapAnimations.astro';
 ---
 
-<Layout title="卡片构建器V2">
+<Layout title="SillyTavern V3 卡片构建器">
+  <ParticleCanvas />
+  <div class="app-header">
+    <div class="app-brand">
+      <span class="app-logo">🌌</span>
+      <div>
+        <h1 class="app-title">V3 卡片构建器</h1>
+        <p class="app-subtitle">未完成版本</p>
+      </div>
+    </div>
+    <div class="app-header-actions">
+      <label class="fx-toggle" title="开启/关闭动画特效（低性能设备建议关闭）">
+        <input type="checkbox" id="fxToggle" />
+        <span class="fx-toggle-track">
+          <span class="fx-toggle-thumb"></span>
+        </span>
+        <span class="fx-toggle-label">✨ 特效</span>
+      </label>
+      <span class="app-version-badge">V3 SPEC</span>
+    </div>
+  </div>
+
   <div class="app-container">
     <AIPanel />
     <CharacterPanel />
     <WorldbookPanel />
     <PreviewPanel />
-    <ChatPlayground />
+    <div class="area-chat" style="display:flex;flex-direction:column;gap:16px;">
+      <ChatPlayground />
+      <SecurityCordon unlockClicks={10} label="🔒 变量卡模块封锁中 · 开发未完成">
+        <VariableCardPanel />
+      </SecurityCordon>
+    </div>
     <StatusBarPanel />
     <WorldbookAuditor />
   </div>
+
+  <GsapAnimations />
 
   <script is:inline>
     // ============================================================
@@ -172,6 +204,7 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
     // ============================================================
     var worldbookEntries     = [];
     var regexScripts         = [];
+    var tavernHelperScripts  = [];  // ScriptTree[] — 酒馆助手脚本
     var currentAvatarBase64  = "";
     var currentDraftId       = "";
     var parsedPresetList     = [];
@@ -198,6 +231,57 @@ import WorldbookAuditor from '../components/WorldbookAuditor.astro';
       if (idx >= 0) worldbookEntries[idx] = wbEntry; else worldbookEntries.push(wbEntry);
       regexScripts = Array.isArray(regexOrArray) ? regexOrArray : [regexOrArray];
       renderEntriesList();
+      debouncedUpdateAndSave();
+    };
+
+    // ★ 变量卡生成器 — 批量注入世界书条目 & 正则脚本
+    window.__injectMvuEntries__ = function(entries, newRegexScripts) {
+      if (!Array.isArray(entries)) return;
+      entries.forEach(function(entry) {
+        var idx = -1;
+        for (var i = 0; i < worldbookEntries.length; i++) {
+          if (worldbookEntries[i].comment === entry.comment) { idx = i; break; }
+        }
+        if (idx >= 0) worldbookEntries[idx] = entry; else worldbookEntries.push(entry);
+      });
+      if (Array.isArray(newRegexScripts)) {
+        newRegexScripts.forEach(function(rx) {
+          var rxIdx = -1;
+          for (var j = 0; j < regexScripts.length; j++) {
+            if (regexScripts[j].scriptName === rx.scriptName) { rxIdx = j; break; }
+          }
+          if (rxIdx >= 0) regexScripts[rxIdx] = rx; else regexScripts.push(rx);
+        });
+      }
+      renderEntriesList();
+      debouncedUpdateAndSave();
+    };
+
+    // ★ 变量卡生成器 — 设置酒馆助手脚本（完整 ScriptTree 格式）
+    window.__setTavernHelperScript__ = function(name, code) {
+      if (!name) return;
+      // 确保是数组（兼容旧草稿）
+      if (!Array.isArray(tavernHelperScripts)) tavernHelperScripts = [];
+      // 查找是否已存在同名脚本
+      var found = false;
+      for (var i = 0; i < tavernHelperScripts.length; i++) {
+        if (tavernHelperScripts[i].name === name) {
+          tavernHelperScripts[i].content = code;
+          found = true; break;
+        }
+      }
+      if (!found) {
+        tavernHelperScripts.push({
+          type: 'script',
+          enabled: true,
+          name: name,
+          id: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
+          content: code,
+          info: '由 Card Builder 变量卡生成器自动创建',
+          button: { enabled: true, buttons: [] },
+          data: {}
+        });
+      }
       debouncedUpdateAndSave();
     };
 
@@ -231,6 +315,10 @@ window.applyJSONFromEditor = function(json) {
   }
   if (json.data.extensions && json.data.extensions.regex_scripts) {
     regexScripts = json.data.extensions.regex_scripts;
+  }
+  if (json.data.extensions && json.data.extensions.tavern_helper && json.data.extensions.tavern_helper.scripts) {
+    var ths = json.data.extensions.tavern_helper.scripts;
+    tavernHelperScripts = Array.isArray(ths) ? ths : [];
   }
   if (json.data.alternate_greetings && json.data.alternate_greetings.length > 0) {
     window.__altGreetings__ = json.data.alternate_greetings;
@@ -452,6 +540,7 @@ window.__setImportedAvatar__ = function(base64) {
       creatorNotes.value = d.creatorNotes || '';
       worldbookEntries   = d.worldbookEntries || [];
       regexScripts       = d.regexScripts     || [];
+      tavernHelperScripts = Array.isArray(d.tavernHelperScripts) ? d.tavernHelperScripts : [];
       currentAvatarBase64 = d.avatarBase64    || '';
       window.__altGreetings__ = d.altGreetings || [];
       if (window.__renderAltGreetings__) window.__renderAltGreetings__();
@@ -479,6 +568,7 @@ window.__setImportedAvatar__ = function(base64) {
         creatorNotes:    creatorNotes.value.trim(),
         worldbookEntries: worldbookEntries,
         regexScripts:    regexScripts,
+        tavernHelperScripts: tavernHelperScripts,
         avatarBase64:    currentAvatarBase64,
         altGreetings:    window.__altGreetings__ || [],
         statusBarData:   window.__getStatusBarData__ ? window.__getStatusBarData__() : null,  // ★ 保存状态栏
@@ -500,7 +590,7 @@ window.__setImportedAvatar__ = function(base64) {
     btnNewDraft.addEventListener('click', function() {
       currentDraftId = genId();
       charName.value = ''; wbName.value = ''; charDesc.value = ''; firstMes.value = ''; creatorNotes.value = '';
-      worldbookEntries = []; regexScripts = []; currentAvatarBase64 = ''; charImageInput.value = '';
+      worldbookEntries = []; regexScripts = []; tavernHelperScripts = []; currentAvatarBase64 = ''; charImageInput.value = '';
       avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'block';
       window.__altGreetings__ = [];
       if (window.__renderAltGreetings__) window.__renderAltGreetings__();
@@ -1032,6 +1122,10 @@ window.__setImportedAvatar__ = function(base64) {
       var wn  = wbName.value.trim()   || "无名世界书";
       var ext = { world: wn };
       if (statusBarActive && regexScripts && regexScripts.length > 0) ext.regex_scripts = regexScripts;
+      // ★ 酒馆助手脚本（ScriptTree[] 格式，直接输出原始数组）
+      if (tavernHelperScripts.length > 0) {
+        ext.tavern_helper = { scripts: tavernHelperScripts, variables: {} };
+      }
       var altG = (window.__altGreetings__ || []).filter(function(g) { return g && g.trim(); });
       return { name: cn, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creatorcomment: creatorNotes.value, avatar: "none", talkativeness: "0.5", fav: false, tags: [], spec: "chara_card_v3", spec_version: "3.0", data: { name: cn, description: charDesc.value, personality: "", scenario: "", first_mes: firstMes.value, mes_example: "", creator_notes: creatorNotes.value, system_prompt: "", post_history_instructions: "", tags: [], creator: "", character_version: "1.0", alternate_greetings: altG, extensions: ext, character_book: { name: wn, entries: fe } } };
     }

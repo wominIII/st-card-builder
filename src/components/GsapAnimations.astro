@@ -1,0 +1,248 @@
+---
+---
+<!-- ★ GSAP 动画编排中心 — 支持特效开关 -->
+<script is:inline>
+(function () {
+  if (!window.gsap) return;
+
+  // ============================================================
+  //  工具
+  // ============================================================
+  function qAll(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+  function q(sel) { return document.querySelector(sel); }
+
+  var FX_KEY = 'st_v3_fx_enabled';
+  var fxEnabled = true;
+  var loopTweens = [];   // 所有可暂停的持续动画
+  var orbEls = [];       // 环境光球 DOM
+  var glowEls = [];      // 追光 DOM
+
+  // 读取保存的偏好
+  try {
+    var saved = localStorage.getItem(FX_KEY);
+    if (saved !== null) fxEnabled = saved === '1';
+  } catch(e) {}
+
+  // ============================================================
+  //  开关 UI 绑定
+  // ============================================================
+  var toggle = q('#fxToggle');
+  if (toggle) {
+    toggle.checked = fxEnabled;
+    toggle.addEventListener('change', function () {
+      fxEnabled = toggle.checked;
+      try { localStorage.setItem(FX_KEY, fxEnabled ? '1' : '0'); } catch(e) {}
+      applyFxState();
+    });
+  }
+
+  function applyFxState() {
+    // 粒子 Canvas
+    var canvas = q('#particleCanvas');
+    if (canvas) canvas.style.display = fxEnabled ? '' : 'none';
+
+    // 持续循环动画
+    loopTweens.forEach(function (tw) {
+      if (fxEnabled) tw.resume();
+      else tw.pause();
+    });
+
+    // 环境光球
+    orbEls.forEach(function (orb) {
+      orb.style.display = fxEnabled ? '' : 'none';
+    });
+
+    // 追光层
+    glowEls.forEach(function (el) {
+      el.style.display = fxEnabled ? '' : 'none';
+    });
+
+    // Header 流光边框
+    var header = q('.app-header');
+    if (header) {
+      if (fxEnabled) header.classList.add('header-glow-border');
+      else header.classList.remove('header-glow-border');
+    }
+  }
+
+  // ============================================================
+  //  1. 入场动画（只播放一次，不受开关影响）
+  // ============================================================
+  var header = q('.app-header');
+  var logo = q('.app-logo');
+  var title = q('.app-title');
+  var subtitle = q('.app-subtitle');
+  var badge = q('.app-version-badge');
+
+  var master = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+  if (header) {
+    gsap.set(header, { y: -40, opacity: 0 });
+    master.to(header, { y: 0, opacity: 1, duration: 0.8 }, 0);
+  }
+  if (logo) {
+    gsap.set(logo, { scale: 0, rotation: -180 });
+    master.to(logo, { scale: 1, rotation: 0, duration: 1, ease: 'back.out(1.7)' }, 0.2);
+  }
+  if (title) {
+    gsap.set(title, { x: -30, opacity: 0 });
+    master.to(title, { x: 0, opacity: 1, duration: 0.7 }, 0.4);
+  }
+  if (subtitle) {
+    gsap.set(subtitle, { x: -20, opacity: 0 });
+    master.to(subtitle, { x: 0, opacity: 1, duration: 0.6 }, 0.55);
+  }
+  if (badge) {
+    gsap.set(badge, { scale: 0 });
+    master.to(badge, { scale: 1, duration: 0.5, ease: 'back.out(2)' }, 0.6);
+  }
+
+  var panels = qAll('.app-container > *');
+  if (panels.length) {
+    panels.forEach(function (p) { gsap.set(p, { y: 50, opacity: 0 }); });
+    master.to(panels, {
+      y: 0, opacity: 1, duration: 0.7,
+      stagger: { each: 0.09, from: 'start' },
+    }, 0.5);
+  }
+
+  if (header) {
+    var shine = document.createElement('div');
+    shine.className = 'header-shine-sweep';
+    header.appendChild(shine);
+    master.fromTo(shine, { x: '-100%' }, { x: '200%', duration: 1.2, ease: 'power2.inOut' }, 0.8);
+  }
+
+  // ============================================================
+  //  2. 面板 Hover 追光（无 scale，仅光效）
+  // ============================================================
+  var allPanels = qAll('.panel, .code-window');
+  allPanels.forEach(function (panel) {
+    var glowEl = document.createElement('div');
+    glowEl.className = 'panel-hover-glow';
+    panel.appendChild(glowEl);
+    glowEls.push(glowEl);
+
+    panel.addEventListener('mouseenter', function () {
+      if (!fxEnabled) return;
+      gsap.to(glowEl, { opacity: 1, duration: 0.4 });
+    });
+    panel.addEventListener('mouseleave', function () {
+      gsap.to(glowEl, { opacity: 0, duration: 0.5 });
+    });
+    panel.addEventListener('mousemove', function (e) {
+      if (!fxEnabled) return;
+      var rect = panel.getBoundingClientRect();
+      glowEl.style.setProperty('--glow-x', (e.clientX - rect.left) + 'px');
+      glowEl.style.setProperty('--glow-y', (e.clientY - rect.top) + 'px');
+    });
+  });
+
+  // ============================================================
+  //  3. H2 标题入场
+  // ============================================================
+  var h2s = qAll('.panel h2');
+  if (h2s.length) {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          gsap.fromTo(entry.target,
+            { x: -20, opacity: 0 },
+            { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }
+          );
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    h2s.forEach(function (h) { gsap.set(h, { opacity: 0 }); obs.observe(h); });
+  }
+
+  // ============================================================
+  //  4. Logo 持续浮动 + 脉冲（可暂停）
+  // ============================================================
+  if (logo) {
+    loopTweens.push(gsap.to(logo, {
+      y: -3, duration: 2, ease: 'sine.inOut', yoyo: true, repeat: -1,
+    }));
+    loopTweens.push(gsap.to(logo, {
+      boxShadow: '0 0 18px rgba(139,92,246,0.5), 0 0 40px rgba(139,92,246,0.2)',
+      duration: 2, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 0.5,
+    }));
+  }
+
+  // ============================================================
+  //  5. Badge 呼吸光（可暂停）
+  // ============================================================
+  if (badge) {
+    loopTweens.push(gsap.to(badge, {
+      boxShadow: '0 0 12px rgba(139,92,246,0.4), inset 0 0 6px rgba(139,92,246,0.1)',
+      duration: 2.5, ease: 'sine.inOut', yoyo: true, repeat: -1,
+    }));
+  }
+
+  // ============================================================
+  //  6. 环境浮光球（可隐藏）
+  // ============================================================
+  function createOrb(color, size, posX, posY, dur) {
+    var orb = document.createElement('div');
+    orb.className = 'ambient-orb';
+    orb.style.cssText =
+      'width:' + size + 'px;height:' + size + 'px;' +
+      'background:radial-gradient(circle, ' + color + ' 0%, transparent 70%);' +
+      'left:' + posX + '%;top:' + posY + '%;';
+    document.body.appendChild(orb);
+    orbEls.push(orb);
+    loopTweens.push(gsap.to(orb, {
+      x: 'random(-80, 80)', y: 'random(-60, 60)',
+      duration: dur, ease: 'sine.inOut', yoyo: true, repeat: -1,
+      delay: Math.random() * 2,
+    }));
+    loopTweens.push(gsap.to(orb, {
+      opacity: 'random(0.3, 0.8)',
+      duration: dur * 0.6, ease: 'sine.inOut', yoyo: true, repeat: -1,
+    }));
+  }
+
+  createOrb('rgba(139,92,246,0.06)', 500, 10, 20, 12);
+  createOrb('rgba(56,189,248,0.05)', 400, 80, 10, 15);
+  createOrb('rgba(16,185,129,0.04)', 450, 50, 80, 18);
+  createOrb('rgba(245,158,11,0.03)', 350, 25, 65, 14);
+
+  // ============================================================
+  //  7. Entry item 弹入 hook
+  // ============================================================
+  window.__animateNewEntry__ = function (el) {
+    if (!el || !window.gsap || !fxEnabled) return;
+    gsap.fromTo(el,
+      { y: 20, opacity: 0, scale: 0.95 },
+      { y: 0, opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(1.4)' }
+    );
+  };
+
+  // ============================================================
+  //  8. Header 边框流光（可暂停）
+  // ============================================================
+  if (header) {
+    header.classList.add('header-glow-border');
+    var angle = { value: 0 };
+    loopTweens.push(gsap.to(angle, {
+      value: 360, duration: 8, ease: 'none', repeat: -1,
+      onUpdate: function () {
+        header.style.setProperty('--glow-angle', angle.value + 'deg');
+      },
+    }));
+  }
+
+  // ============================================================
+  //  初始化状态
+  // ============================================================
+  if (!fxEnabled) {
+    // 等入场动画结束后再应用关闭
+    master.eventCallback('onComplete', function () { applyFxState(); });
+  }
+
+  // 暴露给外部
+  window.__fxEnabled__ = function () { return fxEnabled; };
+
+})();
+</script>

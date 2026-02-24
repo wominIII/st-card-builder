@@ -1,0 +1,503 @@
+﻿---
+---
+<div class="panel varcard-panel">
+  <h2>🎛️ MVU 变量卡生成器</h2>
+
+  <!-- ★ 角色卡同步状态 -->
+  <div class="vc-sync-bar" id="vcSyncBar">
+    <span class="vc-sync-dot" id="vcSyncDot"></span>
+    <span class="vc-sync-text" id="vcSyncText">等待角色数据…</span>
+    <button class="vc-sync-btn" id="vcSyncBtn" title="刷新角色卡数据">🔄</button>
+  </div>
+
+  <!-- ★ 需求输入 -->
+  <div class="vc-section">
+    <label class="vc-label">📝 变量需求（可留空，AI 自动设计）</label>
+    <textarea id="varRequirements" rows="3" placeholder="例：好感度(0~100)、着装系统、时间地点、物品栏…"></textarea>
+    <div class="vc-quick-tags">
+      <button class="vc-tag" data-text="好感度/亲密度(0~100)">💗 好感</button>
+      <button class="vc-tag" data-text="物品栏(名称/描述/数量)">🎒 物品</button>
+      <button class="vc-tag" data-text="时间日期系统">⏰ 时间</button>
+      <button class="vc-tag" data-text="位置/场景追踪">📍 位置</button>
+      <button class="vc-tag" data-text="着装系统(上/下/内/袜/鞋/饰)">👗 着装</button>
+      <button class="vc-tag" data-text="属性面板(力/敏/体/智/感/魅)">📊 属性</button>
+      <button class="vc-tag" data-text="任务系统(名称/状态/奖励)">📜 任务</button>
+      <button class="vc-tag" data-text="称号/标签系统">🏅 称号</button>
+    </div>
+  </div>
+
+  <!-- ★ 生成按钮 -->
+  <div class="vc-gen-bar">
+    <button id="btnVcGenerate" class="btn vc-gen-btn">🧬 一键生成并注入</button>
+    <span id="vcStatus" class="vc-status"></span>
+  </div>
+
+  <!-- ★ 生成结果 — 清单 + 可展开详情 -->
+  <div id="vcResult" class="vc-result" style="display:none;">
+    <div class="vc-checklist" id="vcChecklist"></div>
+
+    <!-- 折叠详情 -->
+    <details class="vc-details">
+      <summary class="vc-details-toggle">📄 查看生成详情 / 逐项复制</summary>
+      <div class="vc-details-body">
+        <div class="vc-detail-block">
+          <div class="vc-detail-head"><strong>📜 变量结构脚本</strong><span class="vc-badge script">酒馆助手脚本</span><button class="vc-copy-btn" data-target="vcCodeSchema">📋</button></div>
+          <pre class="vc-pre"><code id="vcCodeSchema"></code></pre>
+        </div>
+        <div class="vc-detail-block">
+          <div class="vc-detail-head"><strong>🎯 变量初始化</strong><span class="vc-badge wb-off">禁用条目</span><button class="vc-copy-btn" data-target="vcCodeInitvar">📋</button></div>
+          <pre class="vc-pre"><code id="vcCodeInitvar"></code></pre>
+        </div>
+        <div class="vc-detail-block">
+          <div class="vc-detail-head"><strong>🔄 更新规则</strong><span class="vc-badge wb-on">常驻条目</span><button class="vc-copy-btn" data-target="vcCodeUpdate">📋</button></div>
+          <pre class="vc-pre"><code id="vcCodeUpdate"></code></pre>
+        </div>
+        <div class="vc-detail-block">
+          <div class="vc-detail-head"><strong>📤 输出格式</strong><span class="vc-badge wb-on">D0 常驻</span><button class="vc-copy-btn" data-target="vcCodeFormat">📋</button></div>
+          <pre class="vc-pre"><code id="vcCodeFormat"></code></pre>
+        </div>
+        <div class="vc-detail-block">
+          <div class="vc-detail-head"><strong>📋 变量列表</strong><span class="vc-badge wb-on">D1 常驻</span><button class="vc-copy-btn" data-target="vcCodeVarlist">📋</button></div>
+          <pre class="vc-pre"><code id="vcCodeVarlist"></code></pre>
+        </div>
+        <div class="vc-detail-block">
+          <div class="vc-detail-head"><strong>🔧 正则脚本</strong><span class="vc-badge regex">3 条</span><button class="vc-copy-btn" data-target="vcCodeRegex">📋</button></div>
+          <pre class="vc-pre"><code id="vcCodeRegex"></code></pre>
+        </div>
+      </div>
+    </details>
+
+    <!-- 底栏 -->
+    <div class="vc-bottom">
+      <span class="vc-summary" id="vcSummary"></span>
+      <button id="btnVcExport" class="btn vc-export-btn">💾 导出变量卡包</button>
+    </div>
+  </div>
+</div>
+
+<!-- ★★★ 样式 ★★★ -->
+<style is:global>
+  /* ── 同步栏 ── */
+  .vc-sync-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: rgba(15,23,42,0.5);
+    border: 1px solid #1e293b; border-radius: 8px; margin-bottom: 14px;
+    font-size: 0.72rem;
+  }
+  .vc-sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #475569; flex-shrink: 0; transition: background 0.3s;
+  }
+  .vc-sync-dot.ready { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.5); }
+  .vc-sync-dot.warn  { background: #fbbf24; }
+  .vc-sync-text { color: #94a3b8; flex: 1; min-width: 0; }
+  .vc-sync-btn {
+    background: none; border: none; cursor: pointer; font-size: 0.8rem;
+    padding: 2px 6px; border-radius: 4px; transition: background 0.2s;
+  }
+  .vc-sync-btn:hover { background: rgba(139,92,246,0.15); }
+
+  /* ── 输入 ── */
+  .vc-section { margin-bottom: 12px; }
+  .vc-label { display: block; font-size: 0.72rem; color: #94a3b8; font-weight: 600; margin-bottom: 5px; }
+  #varRequirements { width: 100%; min-height: 56px; resize: vertical; }
+  .vc-quick-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .vc-tag {
+    font-size: 0.64rem; padding: 2px 8px; border-radius: 99px;
+    border: 1px solid rgba(139,92,246,0.2); background: rgba(139,92,246,0.06);
+    color: #c4b5fd; cursor: pointer; transition: all 0.2s;
+    font-family: inherit; white-space: nowrap;
+  }
+  .vc-tag:hover { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.4); color: #e9d5ff; }
+  .vc-tag.picked { border-color: #34d399; color: #6ee7b7; }
+
+  /* ── 生成栏 ── */
+  .vc-gen-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .vc-gen-btn {
+    background: linear-gradient(135deg,#8b5cf6,#6d28d9,#4f46e5) !important;
+    color: #fff !important; font-weight: 700;
+    padding: 9px 20px !important; font-size: 0.82rem !important;
+    border: none !important; border-radius: 8px; cursor: pointer;
+    transition: all 0.25s; box-shadow: 0 2px 12px rgba(139,92,246,0.3);
+  }
+  .vc-gen-btn:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(139,92,246,0.5); transform: translateY(-1px); }
+  .vc-gen-btn:disabled { opacity: 0.6; cursor: wait; }
+  .vc-status { font-size: 0.72rem; color: #94a3b8; flex: 1; min-width: 0; word-break: break-word; }
+
+  /* ── 结果 ── */
+  .vc-result { animation: vcFade 0.35s ease; }
+  @keyframes vcFade { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── 清单 ── */
+  .vc-checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .vc-check-item {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 10px; border-radius: 6px;
+    background: rgba(15,23,42,0.5); border: 1px solid #1e293b;
+    font-size: 0.7rem; color: #cbd5e1; transition: border-color 0.3s;
+  }
+  .vc-check-item.ok { border-color: rgba(52,211,153,0.3); }
+  .vc-check-icon { flex-shrink: 0; }
+  .vc-check-label { flex: 1; min-width: 0; }
+  .vc-check-badge {
+    font-size: 0.56rem; padding: 1px 6px; border-radius: 99px;
+    background: rgba(139,92,246,0.1); color: #a5b4fc;
+    border: 1px solid rgba(139,92,246,0.2);
+  }
+
+  /* ── 折叠详情 ── */
+  .vc-details { margin-bottom: 12px; }
+  .vc-details-toggle {
+    font-size: 0.72rem; color: #8b5cf6; cursor: pointer;
+    padding: 6px 0; list-style: none; font-weight: 600; transition: color 0.2s;
+  }
+  .vc-details-toggle:hover { color: #c4b5fd; }
+  .vc-details-toggle::-webkit-details-marker { display: none; }
+  .vc-details[open] .vc-details-toggle { margin-bottom: 10px; }
+  .vc-details-body { display: flex; flex-direction: column; gap: 10px; }
+
+  .vc-detail-block {
+    border: 1px solid #1e293b; border-radius: 6px;
+    background: rgba(2,6,23,0.4); overflow: hidden;
+  }
+  .vc-detail-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; background: rgba(15,23,42,0.6);
+    border-bottom: 1px solid #1e293b; flex-wrap: wrap;
+  }
+  .vc-detail-head strong { font-size: 0.72rem; color: #e2e8f0; }
+  .vc-badge {
+    font-size: 0.54rem; padding: 1px 6px; border-radius: 99px; font-weight: 700; display: inline-block;
+  }
+  .vc-badge.script { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+  .vc-badge.wb-off { background: rgba(239,68,68,0.1);   color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+  .vc-badge.wb-on  { background: rgba(56,189,248,0.1);  color: #7dd3fc;  border: 1px solid rgba(56,189,248,0.2); }
+  .vc-badge.regex  { background: rgba(244,114,182,0.1); color: #f9a8d4; border: 1px solid rgba(244,114,182,0.2); }
+
+  .vc-copy-btn {
+    margin-left: auto; font-size: 0.66rem; padding: 2px 8px;
+    border-radius: 5px; border: 1px solid rgba(139,92,246,0.2);
+    background: rgba(139,92,246,0.06); color: #c4b5fd;
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .vc-copy-btn:hover { background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.4); }
+
+  .vc-pre {
+    margin: 0; padding: 10px; overflow-x: auto;
+    font-size: 0.68rem; line-height: 1.55; color: #cbd5e1;
+    max-height: 260px; scrollbar-width: thin;
+  }
+  .vc-pre code { font-family: 'JetBrains Mono','Fira Code','Consolas',monospace; white-space: pre; }
+
+  /* ── 底栏 ── */
+  .vc-bottom {
+    display: flex; align-items: center; gap: 10px;
+    padding-top: 12px; border-top: 1px solid #1e293b; flex-wrap: wrap;
+  }
+  .vc-summary { font-size: 0.7rem; color: #94a3b8; flex: 1; min-width: 0; line-height: 1.5; word-break: break-word; }
+  .vc-export-btn {
+    background: rgba(56,189,248,0.08) !important; color: #7dd3fc !important;
+    border: 1px solid rgba(56,189,248,0.2) !important;
+    font-weight: 600; padding: 7px 14px !important; font-size: 0.72rem !important;
+    border-radius: 7px; cursor: pointer; transition: all 0.2s;
+  }
+  .vc-export-btn:hover { background: rgba(56,189,248,0.18) !important; border-color: rgba(56,189,248,0.45) !important; }
+
+  @media (max-width: 900px) { .vc-checklist { grid-template-columns: 1fr; } }
+</style>
+
+<!-- ★★★ 脚本 ★★★ -->
+<script is:inline>
+(function () {
+  /* ============================================================
+   *  DOM
+   * ============================================================ */
+  var syncDot     = document.getElementById('vcSyncDot');
+  var syncText    = document.getElementById('vcSyncText');
+  var syncBtn     = document.getElementById('vcSyncBtn');
+  var reqArea     = document.getElementById('varRequirements');
+  var btnGen      = document.getElementById('btnVcGenerate');
+  var statusEl    = document.getElementById('vcStatus');
+  var resultDiv   = document.getElementById('vcResult');
+  var checklistEl = document.getElementById('vcChecklist');
+  var summaryEl   = document.getElementById('vcSummary');
+  var btnExport   = document.getElementById('btnVcExport');
+
+  var codeEls = {
+    schema:  document.getElementById('vcCodeSchema'),
+    initvar: document.getElementById('vcCodeInitvar'),
+    update:  document.getElementById('vcCodeUpdate'),
+    format:  document.getElementById('vcCodeFormat'),
+    varlist: document.getElementById('vcCodeVarlist'),
+    regex:   document.getElementById('vcCodeRegex')
+  };
+
+  /* ============================================================
+   *  生成数据
+   * ============================================================ */
+  var gen = { schema:'', initvar:'', varlist:'', updateRules:'', outputFormat:'', regexScripts:[], summary:'' };
+
+  /* ============================================================
+   *  模板常量
+   * ============================================================ */
+  var SCHEMA_HEAD = "import { registerMvuSchema } from 'https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js';\n\nexport const Schema = ";
+  var SCHEMA_TAIL = "\n\n$(() => {\n  registerMvuSchema(Schema);\n});";
+
+  var VARLIST_TPL = '---\n<status_current_variable>\n{{format_message_variable::stat_data}}\n</status_current_variable>';
+
+  var FORMAT_TPL = '---\n变量输出格式:\n  rule:\n    - you must output the update analysis and the actual update commands at once in the end of the next reply\n    - the update commands works like the **JSON Patch (RFC 6902)** standard, must be a valid JSON array containing operation objects, but supports the following operations instead:\n      - replace: replace the value of existing paths\n      - delta: update the value of existing number paths by a delta value\n      - insert: insert new items into an object or array (using `-` as array index intends appending to the end)\n      - remove\n      - move\n    - don\'t update field names starts with `_` as they are readonly\n  format: |-\n    <UpdateVariable>\n    <Analysis>$(IN ENGLISH, no more than 80 words)\n    - ${calculate time passed: ...}\n    - ${decide whether dramatic updates are allowed as it\'s in a special case or the time passed is more than usual: yes/no}\n    - ${analyze every variable based on its corresponding `check`, according only to current reply instead of previous plots: ...}\n    </Analysis>\n    <JSONPatch>\n    [\n      { "op": "replace", "path": "${/path/to/variable}", "value": "${new_value}" },\n      { "op": "delta", "path": "${/path/to/number/variable}", "value": "${positive_or_negative_delta}" },\n      { "op": "insert", "path": "${/path/to/object/new_key}", "value": "${new_value}" },\n      { "op": "insert", "path": "${/path/to/array/-}", "value": "${new_value}" },\n      { "op": "remove", "path": "${/path/to/object/key}" },\n      { "op": "remove", "path": "${/path/to/array/0}" },\n      { "op": "move", "from": "${/path/to/variable}", "to": "${/path/to/another/path}" },\n      ...\n    ]\n    </JSONPatch>\n    </UpdateVariable>';
+
+  var REGEX_SCRIPTS = [
+    { id:'mvu_hide', scriptName:'[不发送]去除变量更新', findRegex:'<UpdateVariable>[\\s\\S]*?</UpdateVariable>', replaceString:'', trimStrings:[], placement:[2], disabled:false, markdownOnly:false, promptOnly:true, runOnEdit:true, substituteRegex:false, minDepth:null, maxDepth:null },
+    { id:'mvu_display', scriptName:'[美化]变量更新', findRegex:'<UpdateVariable>\\s*<Analysis>([\\s\\S]*?)</Analysis>\\s*<JSONPatch>([\\s\\S]*?)</JSONPatch>\\s*</UpdateVariable>', replaceString:'<div style="margin:8px 0;border-radius:8px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);overflow:hidden"><div style="padding:6px 12px;background:rgba(139,92,246,0.1);color:#c4b5fd;font-size:0.78rem;font-weight:600">📊 变量更新</div><div style="padding:6px 12px;color:#94a3b8;font-size:0.72rem;line-height:1.5;border-bottom:1px solid rgba(139,92,246,0.1);white-space:pre-line">$1</div><pre style="padding:8px 12px;margin:0;color:#a5b4fc;font-size:0.68rem;line-height:1.4;overflow-x:auto;background:transparent;white-space:pre-wrap">$2</pre></div>', trimStrings:[], placement:[2], disabled:false, markdownOnly:true, promptOnly:false, runOnEdit:true, substituteRegex:false, minDepth:null, maxDepth:null }
+  ];
+
+  /* ============================================================
+   *  同步检测
+   * ============================================================ */
+  var cardData = {};
+
+  function refreshSync() {
+    var name = (document.getElementById('charName') || {}).value || '';
+    var desc = (document.getElementById('charDesc') || {}).value || '';
+    var fmes = (document.getElementById('firstMes') || {}).value || '';
+    var wbArr = window.__getWorldbookEntries__ ? window.__getWorldbookEntries__() : [];
+
+    cardData = { name: name.trim(), desc: desc, firstMes: fmes, wb: wbArr };
+
+    if (!name.trim() && !desc.trim()) {
+      syncDot.className = 'vc-sync-dot warn';
+      syncText.textContent = '⚠️ 未检测到角色数据，请先在角色面板填写';
+      return false;
+    }
+    var parts = ['📛 ' + (name.trim() || '?')];
+    if (wbArr.length > 0) parts.push('📖 ' + wbArr.length + '条');
+    var hasMvu = wbArr.some(function(e) {
+      return (e.comment||'').indexOf('[initvar]') >= 0 || (e.comment||'').indexOf('[mvu_update]') >= 0;
+    });
+    if (hasMvu) parts.push('🎛️ 已有MVU');
+    syncDot.className = 'vc-sync-dot ready';
+    syncText.textContent = parts.join(' · ');
+    return true;
+  }
+
+  syncBtn.addEventListener('click', refreshSync);
+  setTimeout(refreshSync, 600);
+
+  // 挂钩全局更新
+  var _origTrigger = window.triggerGlobalUpdate;
+  window.triggerGlobalUpdate = function() {
+    if (_origTrigger) _origTrigger();
+    setTimeout(refreshSync, 100);
+  };
+
+  /* ============================================================
+   *  快捷标签
+   * ============================================================ */
+  document.querySelectorAll('.vc-tag').forEach(function(t) {
+    t.addEventListener('click', function() {
+      var txt = t.getAttribute('data-text');
+      if (reqArea.value.indexOf(txt) >= 0) return;
+      reqArea.value = (reqArea.value ? reqArea.value + '、' : '') + txt;
+      t.classList.add('picked'); reqArea.focus();
+    });
+  });
+
+  /* ============================================================
+   *  复制
+   * ============================================================ */
+  document.querySelectorAll('.vc-copy-btn').forEach(function(b) {
+    b.addEventListener('click', function() {
+      var el = document.getElementById(b.getAttribute('data-target'));
+      if (!el) return;
+      navigator.clipboard.writeText(el.textContent).then(function() {
+        var o = b.textContent; b.textContent = '✅';
+        setTimeout(function() { b.textContent = o; }, 1200);
+      });
+    });
+  });
+
+  /* ============================================================
+   *  工具
+   * ============================================================ */
+  function extractJson(text) {
+    var m = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    var raw = m ? m[1].trim() : text.trim();
+    var s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+    if (s >= 0 && e > s) raw = raw.substring(s, e + 1);
+    return JSON.parse(raw);
+  }
+  function setStatus(t, c) { statusEl.textContent = t; statusEl.style.color = c || '#94a3b8'; }
+
+  /* ============================================================
+   *  渲染清单
+   * ============================================================ */
+  function renderChecklist(items) {
+    checklistEl.innerHTML = items.map(function(it) {
+      return '<div class="vc-check-item ok"><span class="vc-check-icon">✅</span>'
+        + '<span class="vc-check-label">' + it.label + '</span>'
+        + '<span class="vc-check-badge">' + it.badge + '</span></div>';
+    }).join('');
+  }
+
+  /* ============================================================
+   *  ★ 核心：AI 生成 → 自动注入全部
+   * ============================================================ */
+  btnGen.addEventListener('click', async function() {
+    if (!refreshSync()) return alert('请先填写角色名和描述！');
+
+    var apiUrl   = document.getElementById('apiUrl');
+    var apiKey   = document.getElementById('apiKey');
+    var modelSel = document.getElementById('modelSelect');
+    if (!apiUrl || !apiKey || !modelSel) return alert('找不到 AI 配置面板！');
+    var url   = apiUrl.value.replace(/\/$/, '') + '/chat/completions';
+    var key   = apiKey.value.trim();
+    var model = modelSel.value;
+    if (!model) return alert('请先在 AI 面板拉取并选择模型！');
+
+    var reqText   = reqArea.value.trim();
+    var wbSummary = cardData.wb.slice(0, 12).map(function(e) {
+      return '「' + (e.comment || '?') + '」' + (e.content || '').substring(0, 60);
+    }).join('\n');
+
+    btnGen.disabled = true; btnGen.textContent = '⏳ 生成中…';
+    resultDiv.style.display = 'none';
+    setStatus('🧬 正在分析角色信息，设计变量系统…', '#38bdf8');
+
+    try {
+      var headers = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = 'Bearer ' + key;
+
+      var sysPrompt = buildPrompt(cardData.name, cardData.desc, cardData.firstMes, wbSummary);
+      var userMsg = '请根据以上角色信息，生成完整的 MVU zod 变量卡。';
+      if (reqText) userMsg += '\n\n【用户额外需求】：' + reqText;
+
+      var res = await fetch(url, {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ model: model, messages: [
+          { role: 'system', content: sysPrompt },
+          { role: 'user', content: userMsg }
+        ], temperature: 0.7 })
+      });
+      if (!res.ok) throw new Error('API 返回 HTTP ' + res.status);
+      var aiData = extractJson((await res.json()).choices[0].message.content);
+
+      var schemaBody = aiData.schema_body  || aiData.schema  || '';
+      var initYaml   = aiData.initvar_yaml || aiData.initvar || '';
+      var updateYaml = aiData.update_rules_yaml || aiData.update_rules || '';
+      var summaryTxt = aiData.variable_summary  || aiData.summary      || '';
+
+      setStatus('📥 正在注入到角色卡…', '#c4b5fd');
+
+      /* ── 组装 ── */
+      gen.schema       = SCHEMA_HEAD + schemaBody + SCHEMA_TAIL;
+      gen.initvar      = initYaml;
+      gen.varlist      = VARLIST_TPL;
+      gen.updateRules  = updateYaml;
+      gen.outputFormat = FORMAT_TPL;
+      gen.regexScripts = REGEX_SCRIPTS;
+      gen.summary      = summaryTxt;
+
+      /* ══════════════════════════════════════════════
+       *  自动注入 — 全部写入角色卡，无需手动操作
+       * ══════════════════════════════════════════════ */
+
+      // 1) 注入世界书条目（4 条）
+      var wbEntries = [
+        { comment:'[initvar]变量初始化勿开', content:initYaml, keys:[], strategy:'selective', position:0, depth:0, role:0, order:1000, prob:100 },
+        { comment:'变量列表', content:VARLIST_TPL, keys:[], strategy:'constant', position:4, depth:1, role:0, order:950, prob:100 },
+        { comment:'[mvu_update]变量更新规则', content:updateYaml, keys:[], strategy:'constant', position:4, depth:4, role:0, order:900, prob:100 },
+        { comment:'[mvu_update]变量输出格式', content:FORMAT_TPL, keys:[], strategy:'constant', position:4, depth:0, role:0, order:890, prob:100 }
+      ];
+      if (window.__injectMvuEntries__) {
+        window.__injectMvuEntries__(wbEntries, REGEX_SCRIPTS);
+      }
+
+      // 2) 注入酒馆助手脚本（tavern_helper.scripts）
+      if (window.__setTavernHelperScript__) {
+        window.__setTavernHelperScript__('变量结构', gen.schema);
+      }
+
+      /* ── 渲染结果清单 ── */
+      renderChecklist([
+        { label:'变量结构脚本',            badge:'自动注入' },
+        { label:'[initvar]变量初始化勿开', badge:'禁用条目' },
+        { label:'变量列表',                badge:'D1 常驻' },
+        { label:'[mvu_update]变量更新规则', badge:'AI 生成' },
+        { label:'[mvu_update]变量输出格式', badge:'D0 常驻' },
+        { label:'正则脚本 ×3',             badge:'自动注入' }
+      ]);
+
+      /* ── 填充详情 ── */
+      codeEls.schema.textContent  = gen.schema;
+      codeEls.initvar.textContent = gen.initvar;
+      codeEls.update.textContent  = gen.updateRules;
+      codeEls.format.textContent  = gen.outputFormat;
+      codeEls.varlist.textContent = gen.varlist;
+      codeEls.regex.textContent   = JSON.stringify(REGEX_SCRIPTS.map(function(r) {
+        return { scriptName:r.scriptName, findRegex:r.findRegex, replaceString:r.replaceString||'(空)' };
+      }), null, 2);
+
+      summaryEl.textContent = '🎉 已全部自动注入角色卡！' + (summaryTxt ? ' — ' + summaryTxt : '');
+
+      resultDiv.style.display = 'block';
+      setStatus('✅ 变量卡生成完毕！6 个组件已自动写入角色卡，展开详情可查看/复制。', '#34d399');
+
+      if (window.gsap && window.__fxEnabled__ && window.__fxEnabled__()) {
+        window.gsap.fromTo(resultDiv, { y:15, opacity:0 }, { y:0, opacity:1, duration:0.4, ease:'power2.out' });
+      }
+
+    } catch (err) {
+      setStatus('❌ 生成失败: ' + err.message, '#ef4444');
+    } finally {
+      btnGen.disabled = false;
+      btnGen.textContent = '🧬 一键生成并注入';
+    }
+  });
+
+  /* ============================================================
+   *  Prompt Builder
+   * ============================================================ */
+  function buildPrompt(name, desc, firstMes, wbSummary) {
+    return '你是 SillyTavern MVU zod 变量卡设计专家。请根据角色卡信息设计一套完整且实用的变量系统。\n\n'
+      + '【角色信息】\n角色名：' + name + '\n描述：' + desc.substring(0, 1000) + '\n开场白：' + firstMes.substring(0, 500) + '\n'
+      + (wbSummary ? '世界书摘要：\n' + wbSummary.substring(0, 600) + '\n' : '')
+      + '\n【MVU zod 规范】\n'
+      + '- 使用 z.coerce.number() 而非 z.number()（防止字符串数字报错）\n'
+      + '- 数值范围用 .transform(v => _.clamp(v, min, max))\n'
+      + '- 固定选项用 z.enum([...])\n'
+      + '- 动态键对象用 z.record(z.string().describe(\'键描述\'), 值结构)\n'
+      + '- 可选默认值用 .prefault(默认值)\n'
+      + '- 文本 z.string()，布尔 z.boolean()，嵌套 z.object({...})\n'
+      + '\n【更新规则格式】\n'
+      + 'YAML 格式，每个变量可含 type/range/format/check 字段。\n'
+      + '相似变量合并路径（如 着装.${上装|下装|...}），不言自明的可省略。\n'
+      + '\n【输出要求】\n'
+      + '仅输出 JSON 对象（不要其他文字），包含 4 个字符串字段：\n'
+      + '1. "schema_body": z.object({...}) 主体 JS 代码，可直接拼在 export const Schema = 后面。\n'
+      + '2. "initvar_yaml": YAML 格式初始值，根据角色设定合理设定。\n'
+      + '3. "update_rules_yaml": 以 "---\\n变量更新规则:\\n" 开头的 YAML，包含每个关键变量的 type、check。\n'
+      + '4. "variable_summary": 一句话中文摘要（50字以内）。\n';
+  }
+
+  /* ============================================================
+   *  导出
+   * ============================================================ */
+  btnExport.addEventListener('click', function() {
+    if (!gen.schema) return alert('请先生成变量卡！');
+    var pack = {
+      _format:'st_v3_mvu_variable_card_pack', _version:'1.0',
+      _generated_at: new Date().toISOString(),
+      schema_script:gen.schema, initvar_yaml:gen.initvar,
+      variable_list:gen.varlist, update_rules:gen.updateRules,
+      output_format:gen.outputFormat, regex_scripts:gen.regexScripts,
+      summary:gen.summary
+    };
+    var blob = new Blob([JSON.stringify(pack, null, 2)], { type:'application/json' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = (cardData.name || 'varcard') + '_mvu_pack.json';
+    a.click(); URL.revokeObjectURL(a.href);
+  });
+
+})();
+</script>

@@ -1,0 +1,698 @@
+---
+interface Props {
+  unlockClicks?: number;
+  label?: string;
+}
+
+const { unlockClicks = 10, label = '🔒 模块封锁中 · 开发未完成' } = Astro.props;
+---
+
+<div
+  class="security-cordon-wrapper locked"
+  data-unlock={unlockClicks}
+  data-label={label}
+>
+  <div class="cordon-content-layer">
+    <slot />
+  </div>
+  <!-- 警戒线遮罩层 -->
+  <div class="cordon-overlay">
+    <!-- 四条警戒带（每条由多层辉光线组成） -->
+    <div class="cordon-tape cordon-top">
+      <div class="tape-line tape-edge"></div>
+      <div class="tape-line tape-dash"></div>
+      <div class="tape-line tape-core"></div>
+      <div class="tape-line tape-dash tape-dash-alt"></div>
+      <div class="tape-line tape-edge"></div>
+    </div>
+    <div class="cordon-tape cordon-bottom">
+      <div class="tape-line tape-edge"></div>
+      <div class="tape-line tape-dash"></div>
+      <div class="tape-line tape-core"></div>
+      <div class="tape-line tape-dash tape-dash-alt"></div>
+      <div class="tape-line tape-edge"></div>
+    </div>
+    <div class="cordon-tape cordon-diag-1">
+      <div class="tape-line tape-edge tape-red"></div>
+      <div class="tape-line tape-dash tape-red"></div>
+      <div class="tape-line tape-core tape-red"></div>
+      <div class="tape-line tape-dash tape-dash-alt tape-red"></div>
+      <div class="tape-line tape-edge tape-red"></div>
+    </div>
+    <div class="cordon-tape cordon-diag-2">
+      <div class="tape-line tape-edge tape-red"></div>
+      <div class="tape-line tape-dash tape-red"></div>
+      <div class="tape-line tape-core tape-red"></div>
+      <div class="tape-line tape-dash tape-dash-alt tape-red"></div>
+      <div class="tape-line tape-edge tape-red"></div>
+    </div>
+
+    <!-- 中央锁定标签 -->
+    <div class="cordon-center-badge">
+      <div class="cordon-lock-icon">🔐</div>
+      <div class="cordon-label-text">{label}</div>
+      <div class="cordon-badge-sub">施工中 · 敬请期待</div>
+    </div>
+
+    <!-- 点击特效容器 -->
+    <div class="cordon-fx-container"></div>
+
+    <!-- 电子扫描线 -->
+    <div class="cordon-scanline"></div>
+
+    <!-- 角落装饰 -->
+    <div class="cordon-corner cordon-corner-tl"></div>
+    <div class="cordon-corner cordon-corner-tr"></div>
+    <div class="cordon-corner cordon-corner-bl"></div>
+    <div class="cordon-corner cordon-corner-br"></div>
+  </div>
+</div>
+
+<style is:global>
+  /* ============================
+     SecurityCordon — 电子警戒线
+     ============================ */
+
+  /* ── 容器 ── */
+  .security-cordon-wrapper {
+    position: relative;
+    isolation: isolate;
+    border-radius: 14px;
+  }
+
+  .security-cordon-wrapper.locked .cordon-content-layer {
+    filter: blur(5px) brightness(0.45) saturate(0.25);
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.8s cubic-bezier(.4,0,.2,1);
+  }
+
+  .security-cordon-wrapper.unlocked .cordon-content-layer {
+    filter: none;
+    pointer-events: auto;
+    user-select: auto;
+    transition: filter 0.8s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ── 遮罩层 ── */
+  .cordon-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    border-radius: inherit;
+    overflow: hidden;
+    cursor: crosshair;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .security-cordon-wrapper.unlocked .cordon-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.03);
+  }
+
+  /* ── 警戒带 · 多层霓虹辉光 ── */
+  .cordon-tape {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: stretch;
+    filter: drop-shadow(0 0 8px rgba(245,158,11,0.3));
+  }
+
+  .cordon-top {
+    top: 2px;
+    left: -10px;
+    right: -10px;
+    transform: rotate(-1.2deg);
+    animation: neonBandPulseAmber 3s ease-in-out infinite;
+  }
+  .cordon-bottom {
+    bottom: 2px;
+    left: -10px;
+    right: -10px;
+    transform: rotate(0.8deg);
+    animation: neonBandPulseAmber 3s ease-in-out infinite 0.8s;
+  }
+  .cordon-diag-1 {
+    top: 50%;
+    left: -20%;
+    right: -20%;
+    transform: rotate(-16deg) translateY(-50%);
+    filter: drop-shadow(0 0 8px rgba(239,68,68,0.3));
+    animation: neonBandPulseRed 3s ease-in-out infinite 0.4s;
+  }
+  .cordon-diag-2 {
+    top: 50%;
+    left: -20%;
+    right: -20%;
+    transform: rotate(16deg) translateY(-50%);
+    filter: drop-shadow(0 0 8px rgba(239,68,68,0.3));
+    animation: neonBandPulseRed 3s ease-in-out infinite 1.2s;
+  }
+
+  /* ─ 子线层 ─ */
+  .tape-line {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  /* 边缘实线 */
+  .tape-line.tape-edge {
+    height: 1px;
+    background: #f59e0b;
+    opacity: 0.5;
+    box-shadow: 0 0 4px rgba(245,158,11,0.4);
+  }
+  .tape-line.tape-edge.tape-red {
+    background: #ef4444;
+    box-shadow: 0 0 4px rgba(239,68,68,0.4);
+  }
+
+  /* 虚线段 */
+  .tape-line.tape-dash {
+    height: 1px;
+    background: repeating-linear-gradient(
+      90deg,
+      #f59e0b 0px, #f59e0b 12px,
+      transparent 12px, transparent 20px
+    );
+    opacity: 0.7;
+    box-shadow: 0 0 6px rgba(245,158,11,0.3);
+  }
+  .tape-line.tape-dash.tape-dash-alt {
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 8px,
+      #f59e0b 8px, #f59e0b 20px
+    );
+  }
+  .tape-line.tape-dash.tape-red {
+    background: repeating-linear-gradient(
+      90deg,
+      #ef4444 0px, #ef4444 12px,
+      transparent 12px, transparent 20px
+    );
+    box-shadow: 0 0 6px rgba(239,68,68,0.3);
+  }
+  .tape-line.tape-dash.tape-dash-alt.tape-red {
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 8px,
+      #ef4444 8px, #ef4444 20px
+    );
+  }
+
+  /* 核心亮线（最亮） */
+  .tape-line.tape-core {
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      #fcd34d 5%, #f59e0b 20%, #fcd34d 40%,
+      #f59e0b 60%, #fcd34d 80%, #f59e0b 95%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 4px #f59e0b,
+      0 0 10px rgba(245,158,11,0.7),
+      0 0 24px rgba(245,158,11,0.3);
+  }
+  .tape-line.tape-core.tape-red {
+    background: linear-gradient(90deg,
+      transparent 0%,
+      #fca5a5 5%, #ef4444 20%, #fca5a5 40%,
+      #ef4444 60%, #fca5a5 80%, #ef4444 95%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 4px #ef4444,
+      0 0 10px rgba(239,68,68,0.7),
+      0 0 24px rgba(239,68,68,0.3);
+  }
+
+  /* 整条带呼吸辉光 */
+  @keyframes neonBandPulseAmber {
+    0%, 100% {
+      opacity: 0.7;
+      filter: drop-shadow(0 0 6px rgba(245,158,11,0.3));
+    }
+    50% {
+      opacity: 1;
+      filter: drop-shadow(0 0 14px rgba(245,158,11,0.6)) drop-shadow(0 0 30px rgba(245,158,11,0.2));
+    }
+  }
+  @keyframes neonBandPulseRed {
+    0%, 100% {
+      opacity: 0.6;
+      filter: drop-shadow(0 0 6px rgba(239,68,68,0.3));
+    }
+    50% {
+      opacity: 1;
+      filter: drop-shadow(0 0 14px rgba(239,68,68,0.6)) drop-shadow(0 0 30px rgba(239,68,68,0.2));
+    }
+  }
+
+  /* ── 中央标签 ── */
+  .cordon-center-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    background: rgba(15,23,42,0.92);
+    border: 1px solid rgba(245,158,11,0.4);
+    border-radius: 14px;
+    padding: 20px 32px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow:
+      0 0 30px rgba(245,158,11,0.15),
+      0 8px 32px rgba(0,0,0,0.5);
+    animation: cordonBadgePulse 3s ease-in-out infinite;
+    min-width: 220px;
+  }
+
+  @keyframes cordonBadgePulse {
+    0%, 100% {
+      border-color: rgba(245,158,11,0.4);
+      box-shadow: 0 0 30px rgba(245,158,11,0.15), 0 8px 32px rgba(0,0,0,0.5);
+    }
+    50% {
+      border-color: rgba(239,68,68,0.6);
+      box-shadow: 0 0 40px rgba(239,68,68,0.2), 0 8px 32px rgba(0,0,0,0.5);
+    }
+  }
+
+  .cordon-lock-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    animation: cordonLockShake 4s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(245,158,11,0.5));
+  }
+
+  @keyframes cordonLockShake {
+    0%, 88%, 100% { transform: rotate(0deg); }
+    90% { transform: rotate(-10deg); }
+    92% { transform: rotate(10deg); }
+    94% { transform: rotate(-7deg); }
+    96% { transform: rotate(7deg); }
+    98% { transform: rotate(0deg); }
+  }
+
+  .cordon-label-text {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fcd34d;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 12px rgba(245,158,11,0.4);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .cordon-badge-sub {
+    font-size: 0.6rem;
+    color: #475569;
+    letter-spacing: 0.08em;
+  }
+
+
+
+  /* ── 扫描线 · 霓虹 ── */
+  .cordon-scanline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #f59e0b 30%, #fcd34d 50%, #f59e0b 70%, transparent 100%);
+    z-index: 3;
+    animation: cordonScanDown 3.5s linear infinite;
+    box-shadow:
+      0 0 6px #f59e0b,
+      0 0 15px rgba(245,158,11,0.5),
+      0 0 30px rgba(245,158,11,0.2);
+  }
+
+  @keyframes cordonScanDown {
+    0%   { top: -2px; opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { top: calc(100% + 2px); opacity: 0; }
+  }
+
+  /* ── 角落装饰 · 霓虹 ── */
+  .cordon-corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    z-index: 4;
+  }
+  .cordon-corner::before,
+  .cordon-corner::after {
+    content: '';
+    position: absolute;
+    background: #f59e0b;
+    border-radius: 1px;
+    box-shadow:
+      0 0 4px #f59e0b,
+      0 0 10px rgba(245,158,11,0.6),
+      0 0 20px rgba(245,158,11,0.2);
+  }
+  .cordon-corner-tl { top: 4px; left: 4px; }
+  .cordon-corner-tl::before { top: 0; left: 0; width: 16px; height: 2px; }
+  .cordon-corner-tl::after  { top: 0; left: 0; width: 2px; height: 16px; }
+
+  .cordon-corner-tr { top: 4px; right: 4px; }
+  .cordon-corner-tr::before { top: 0; right: 0; width: 16px; height: 2px; }
+  .cordon-corner-tr::after  { top: 0; right: 0; width: 2px; height: 16px; }
+
+  .cordon-corner-bl { bottom: 4px; left: 4px; }
+  .cordon-corner-bl::before { bottom: 0; left: 0; width: 16px; height: 2px; }
+  .cordon-corner-bl::after  { bottom: 0; left: 0; width: 2px; height: 16px; }
+
+  .cordon-corner-br { bottom: 4px; right: 4px; }
+  .cordon-corner-br::before { bottom: 0; right: 0; width: 16px; height: 2px; }
+  .cordon-corner-br::after  { bottom: 0; right: 0; width: 2px; height: 16px; }
+
+  /* ── 点击涟漪 ── */
+  .cordon-ripple {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+    animation: cordonRippleExpand 0.8s ease-out forwards;
+  }
+
+  @keyframes cordonRippleExpand {
+    0% {
+      width: 0; height: 0;
+      opacity: 1;
+      border: 3px solid #f59e0b;
+      box-shadow: 0 0 20px rgba(245,158,11,0.6), inset 0 0 10px rgba(245,158,11,0.3);
+    }
+    100% {
+      width: 200px; height: 200px;
+      opacity: 0;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 40px rgba(239,68,68,0.3), inset 0 0 20px rgba(239,68,68,0.1);
+    }
+  }
+
+  /* ── 电火花 ── */
+  .cordon-spark {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fcd34d;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 0 6px #f59e0b, 0 0 14px rgba(245,158,11,0.5);
+    animation: cordonSparkFly 0.6s ease-out forwards;
+  }
+
+  @keyframes cordonSparkFly {
+    0%   { opacity: 1; transform: translate(0,0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0.15); }
+  }
+
+  /* ── 电弧线条 ── */
+  .cordon-arc {
+    position: absolute;
+    pointer-events: none;
+    z-index: 9;
+    overflow: visible;
+    animation: cordonArcFade 0.5s ease-out forwards;
+  }
+
+  @keyframes cordonArcFade {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* ── 电击闪光 ── */
+  .cordon-shock-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    pointer-events: none;
+    border-radius: inherit;
+    animation: cordonShockFlash 0.3s ease-out forwards;
+  }
+
+  @keyframes cordonShockFlash {
+    0%   { background: rgba(245,158,11,0.15); }
+    30%  { background: rgba(239,68,68,0.12); }
+    100% { background: transparent; }
+  }
+
+
+
+  /* ── 解锁能量爆发 ── */
+  .cordon-unlock-burst {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    border-radius: inherit;
+    animation: cordonUnlockBurst 1.5s ease-out forwards;
+  }
+
+  @keyframes cordonUnlockBurst {
+    0% {
+      background: radial-gradient(ellipse at center, rgba(16,185,129,0.5) 0%, transparent 50%);
+      opacity: 1;
+    }
+    40% {
+      background: radial-gradient(ellipse at center, rgba(52,211,153,0.3) 0%, rgba(16,185,129,0.1) 50%, transparent 70%);
+    }
+    100% {
+      background: transparent;
+      opacity: 0;
+    }
+  }
+
+  /* ── 解锁成功提示 ── */
+  .cordon-success-toast {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 30;
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.5);
+    border-radius: 14px;
+    padding: 20px 36px;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    pointer-events: none;
+    animation: cordonToastIn 0.5s ease-out forwards, cordonToastOut 0.5s 2.2s ease-in forwards;
+  }
+
+  @keyframes cordonToastIn {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  @keyframes cordonToastOut {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  }
+
+  .cordon-success-toast .toast-icon { font-size: 2.2rem; margin-bottom: 6px; }
+  .cordon-success-toast .toast-text {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #34d399;
+    text-shadow: 0 0 14px rgba(16,185,129,0.5);
+  }
+  .cordon-success-toast .toast-sub {
+    font-size: 0.65rem;
+    color: #64748b;
+    margin-top: 6px;
+  }
+
+  /* ── 警戒线抖动 ── */
+  @keyframes cordonShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-3px) rotate(-0.3deg); }
+    40% { transform: translateX(3px) rotate(0.3deg); }
+    60% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
+  }
+
+  /* ── 解锁时的霓虹带熄灭飞散 ── */
+  .cordon-tape.shatter {
+    transition: all 0.8s cubic-bezier(.4,0,.2,1);
+    animation: none !important;
+  }
+  .cordon-tape.shatter .tape-line {
+    box-shadow: none !important;
+    transition: opacity 0.6s ease;
+  }
+  .cordon-tape.shatter.cordon-top    { transform: rotate(-1.2deg) translateY(-50px); opacity: 0; filter: none; }
+  .cordon-tape.shatter.cordon-bottom { transform: rotate(0.8deg) translateY(50px); opacity: 0; filter: none; }
+  .cordon-tape.shatter.cordon-diag-1 { transform: rotate(-16deg) translateY(-50%) translateX(-70px); opacity: 0; filter: none; }
+  .cordon-tape.shatter.cordon-diag-2 { transform: rotate(16deg) translateY(-50%) translateX(70px); opacity: 0; filter: none; }
+</style>
+
+<script is:inline>
+(function() {
+  document.querySelectorAll('.security-cordon-wrapper').forEach(function(wrapper) {
+    var unlockThreshold = parseInt(wrapper.dataset.unlock) || 10;
+    var overlay     = wrapper.querySelector('.cordon-overlay');
+    var fxContainer = wrapper.querySelector('.cordon-fx-container');
+    var tapes       = wrapper.querySelectorAll('.cordon-tape');
+    var badge       = wrapper.querySelector('.cordon-center-badge');
+
+    var clickCount = 0;
+    var isUnlocked = false;
+
+    // ── 生成电弧 SVG ──
+    function createArc(x, y) {
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'cordon-arc');
+      svg.style.left = (x - 50) + 'px';
+      svg.style.top  = (y - 50) + 'px';
+      svg.setAttribute('width', '100');
+      svg.setAttribute('height', '100');
+      svg.setAttribute('viewBox', '0 0 100 100');
+
+      for (var i = 0; i < 3; i++) {
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        var segs = 'M50,50 ';
+        var cx = 50, cy = 50;
+        for (var s = 0; s < 4; s++) {
+          cx += (Math.random() - 0.5) * 40;
+          cy += (Math.random() - 0.5) * 40;
+          cx = Math.max(5, Math.min(95, cx));
+          cy = Math.max(5, Math.min(95, cy));
+          segs += 'L' + cx.toFixed(1) + ',' + cy.toFixed(1) + ' ';
+        }
+        path.setAttribute('d', segs);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', i === 0 ? '#fcd34d' : 'rgba(245,158,11,0.4)');
+        path.setAttribute('stroke-width', i === 0 ? '2' : '1');
+        path.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(path);
+      }
+      return svg;
+    }
+
+    overlay.addEventListener('click', function(e) {
+      if (isUnlocked) return;
+
+      clickCount++;
+      var rect = overlay.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+      var pct = Math.min((clickCount / unlockThreshold) * 100, 100);
+
+      // ── 涟漪 ──
+      var ripple = document.createElement('div');
+      ripple.className = 'cordon-ripple';
+      ripple.style.left = x + 'px';
+      ripple.style.top  = y + 'px';
+      ripple.style.marginLeft = '-100px';
+      ripple.style.marginTop  = '-100px';
+      fxContainer.appendChild(ripple);
+      setTimeout(function() { ripple.remove(); }, 800);
+
+      // ── 电火花 ──
+      var sparkCount = 6 + Math.floor(pct / 15);
+      for (var i = 0; i < sparkCount; i++) {
+        var spark = document.createElement('div');
+        spark.className = 'cordon-spark';
+        var angle = (Math.PI * 2 / sparkCount) * i + (Math.random() - 0.5) * 0.6;
+        var dist  = 30 + Math.random() * 60;
+        spark.style.left = x + 'px';
+        spark.style.top  = y + 'px';
+        spark.style.setProperty('--sx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+        spark.style.setProperty('--sy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+        fxContainer.appendChild(spark);
+        (function(s) { setTimeout(function() { s.remove(); }, 600); })(spark);
+      }
+
+      // ── 电弧 ──
+      if (pct > 30) {
+        var arc = createArc(x, y);
+        fxContainer.appendChild(arc);
+        setTimeout(function() { arc.remove(); }, 500);
+      }
+
+      // ── 电击闪光 ──
+      var flash = document.createElement('div');
+      flash.className = 'cordon-shock-flash';
+      overlay.appendChild(flash);
+      setTimeout(function() { flash.remove(); }, 300);
+
+      // ── 轻微抖动反馈 ──
+      wrapper.style.animation = 'none';
+      void wrapper.offsetHeight;
+      wrapper.style.animation = 'cordonShake 0.12s ease';
+      setTimeout(function() { wrapper.style.animation = ''; }, 150);
+
+      // ══════════════════════════
+      //       ★ 解锁！★
+      // ══════════════════════════
+      if (clickCount >= unlockThreshold) {
+        isUnlocked = true;
+
+        // 警戒线碎裂飞散
+        tapes.forEach(function(tape) {
+          tape.classList.add('shatter');
+        });
+
+        // badge 消失
+        badge.style.transition = 'opacity 0.5s, transform 0.5s';
+        badge.style.opacity = '0';
+        badge.style.transform = 'translate(-50%,-50%) scale(0.7)';
+
+        // 能量爆发
+        var burst = document.createElement('div');
+        burst.className = 'cordon-unlock-burst';
+        overlay.appendChild(burst);
+
+        // 大量庆祝火花
+        for (var j = 0; j < 24; j++) {
+          (function(idx) {
+            setTimeout(function() {
+              var sp = document.createElement('div');
+              sp.className = 'cordon-spark';
+              var a = (Math.PI * 2 / 24) * idx;
+              var d = 60 + Math.random() * 100;
+              var cx = rect.width / 2, cy = rect.height / 2;
+              sp.style.left = cx + 'px';
+              sp.style.top  = cy + 'px';
+              sp.style.background = ['#34d399','#fcd34d','#60a5fa','#f472b6','#a78bfa'][idx % 5];
+              sp.style.width = '6px';
+              sp.style.height = '6px';
+              sp.style.setProperty('--sx', (Math.cos(a) * d).toFixed(1) + 'px');
+              sp.style.setProperty('--sy', (Math.sin(a) * d).toFixed(1) + 'px');
+              fxContainer.appendChild(sp);
+              setTimeout(function() { sp.remove(); }, 800);
+            }, idx * 30);
+          })(j);
+        }
+
+        // 成功提示
+        setTimeout(function() {
+          var toast = document.createElement('div');
+          toast.className = 'cordon-success-toast';
+          toast.innerHTML =
+            '<div class="toast-icon">🎉</div>' +
+            '<div class="toast-text">封锁已解除！</div>' +
+            '<div class="toast-sub">模块已解锁 · 可以正常使用了</div>';
+          wrapper.appendChild(toast);
+
+          wrapper.classList.remove('locked');
+          wrapper.classList.add('unlocked');
+
+          setTimeout(function() { toast.remove(); }, 2800);
+        }, 500);
+      }
+    });
+  });
+})();
+</script>
