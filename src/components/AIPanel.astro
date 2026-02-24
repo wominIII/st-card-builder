@@ -3,25 +3,30 @@
 <div class="panel ai-panel area-ai">
   <h2>✨ AI 引擎</h2>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px;">
-  <div class="form-group" style="margin-bottom:0;">
-    <label>API 接口地址</label>
-    <input type="text" id="apiUrl" value="https://api.openai.com/v1" placeholder="https://..." style="width:100%;" />
+  <!-- API 地址 + 密钥 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:8px;">
+    <div class="form-group" style="margin-bottom:0;">
+      <label>API 接口地址</label>
+      <input type="text" id="apiUrl" value="https://api.openai.com/v1" placeholder="https://..." style="width:100%;" />
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>API 密钥</label>
+      <input type="password" id="apiKey" placeholder="sk-..." style="width:100%;" />
+    </div>
   </div>
-  <div class="form-group" style="margin-bottom:0;">
-    <label>API 密钥</label>
-    <input type="password" id="apiKey" placeholder="sk-..." style="width:100%;" />
-  </div>
-</div>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px;">
-  <button id="btnFetchModels" class="btn btn-fetch" style="margin:0;">🔄 拉取可用模型</button>
-  <div class="form-group" style="margin-bottom:0;">
-    <select id="modelSelect" style="width:100%;">
-      <option value="">请先获取模型...</option>
-    </select>
+  <!-- 协议提示条（独占一行，紧凑） -->
+  <div id="apiUrlHint" style="display:none;margin-bottom:8px;"></div>
+
+  <!-- 拉取模型 + 模型选择 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px;">
+    <button id="btnFetchModels" class="btn btn-fetch" style="margin:0;">🔄 拉取可用模型</button>
+    <div class="form-group" style="margin-bottom:0;">
+      <select id="modelSelect" style="width:100%;">
+        <option value="">请先获取模型...</option>
+      </select>
+    </div>
   </div>
-</div>
 
   <hr class="divider" />
 
@@ -164,6 +169,34 @@
 </div>
 
 <style>
+  /* ── 协议提示条 ── */
+  #apiUrlHint {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.72rem;
+  }
+  #apiUrlHint .hint-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: default;
+    line-height: 1.4;
+  }
+  #apiUrlHint .hint-detail {
+    display: none;
+    padding: 6px 10px 8px 10px;
+    border-radius: 0 0 6px 6px;
+    margin-top: -2px;
+    font-size: 0.7rem;
+    line-height: 1.7;
+  }
+  #apiUrlHint:hover .hint-detail {
+    display: block;
+  }
+
+  /* ── 骨架条数按钮 ── */
   .wb-count-btn {
     background: rgba(16, 185, 129, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.2);
@@ -189,6 +222,7 @@
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
   }
 
+  /* ── 搜索配置块 ── */
   #searchConfigBlock {
     background: rgba(56, 189, 248, 0.04);
     border: 1px solid rgba(56, 189, 248, 0.15);
@@ -201,6 +235,7 @@
     background: rgba(56, 189, 248, 0.08);
   }
 
+  /* ── 搜索结果预览 ── */
   .search-result-item {
     padding: 8px;
     border-bottom: 1px solid rgba(56, 189, 248, 0.1);
@@ -226,7 +261,7 @@
     word-break: break-all;
   }
 
-  /* 黑客动画 */
+  /* ── 黑客动画 ── */
   #hackerOverlay {
     position: relative;
     margin-top: 14px;
@@ -297,7 +332,7 @@
   }
   @keyframes hackerGlow {
     0%, 100% { text-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
-    50% { text-shadow: 0 0 40px rgba(139, 92, 246, 0.8), 0 0 80px rgba(139, 92, 246, 0.3); }
+    50%       { text-shadow: 0 0 40px rgba(139, 92, 246, 0.8), 0 0 80px rgba(139, 92, 246, 0.3); }
   }
   #hackerOverlay::after {
     content: '';
@@ -310,13 +345,15 @@
     z-index: 3;
   }
   @keyframes hackerScan {
-    0% { top: 0; opacity: 1; }
+    0%   { top: 0;    opacity: 1;   }
     100% { top: 100%; opacity: 0.2; }
   }
 </style>
 
 <script is:inline>
 (function() {
+  var apiUrl           = document.getElementById('apiUrl');
+  var apiUrlHint       = document.getElementById('apiUrlHint');
   var wbSkeletonCount  = document.getElementById('wbSkeletonCount');
   var countBtns        = document.querySelectorAll('.wb-count-btn');
   var hackerOverlay    = document.getElementById('hackerOverlay');
@@ -326,23 +363,63 @@
   var hackerDetail     = document.getElementById('hackerDetail');
 
   // 搜索相关 DOM
-  var searchEnable      = document.getElementById('searchEnable');
-  var searchConfigBlock = document.getElementById('searchConfigBlock');
+  var searchEnable       = document.getElementById('searchEnable');
+  var searchConfigBlock  = document.getElementById('searchConfigBlock');
   var searchConfigDetail = document.getElementById('searchConfigDetail');
-  var searchModeBadge   = document.getElementById('searchModeBadge');
-  var searchEngine      = document.getElementById('searchEngine');
-  var searchKeyGroup    = document.getElementById('searchKeyGroup');
-  var searchKeyLabel    = document.getElementById('searchKeyLabel');
-  var searchApiKey      = document.getElementById('searchApiKey');
+  var searchModeBadge    = document.getElementById('searchModeBadge');
+  var searchEngine       = document.getElementById('searchEngine');
+  var searchKeyGroup     = document.getElementById('searchKeyGroup');
+  var searchKeyLabel     = document.getElementById('searchKeyLabel');
+  var searchApiKey       = document.getElementById('searchApiKey');
   var searchRegisterHint = document.getElementById('searchRegisterHint');
-  var searchResultCount = document.getElementById('searchResultCount');
-  var searchLang        = document.getElementById('searchLang');
-  var searchCustomQuery = document.getElementById('searchCustomQuery');
-  var btnTestSearch     = document.getElementById('btnTestSearch');
-  var searchTestStatus  = document.getElementById('searchTestStatus');
-  var searchPreview     = document.getElementById('searchPreview');
+  var searchResultCount  = document.getElementById('searchResultCount');
+  var searchLang         = document.getElementById('searchLang');
+  var searchCustomQuery  = document.getElementById('searchCustomQuery');
+  var btnTestSearch      = document.getElementById('btnTestSearch');
+  var searchTestStatus   = document.getElementById('searchTestStatus');
+  var searchPreview      = document.getElementById('searchPreview');
 
   var SEARCH_CONFIG_KEY = 'st_v3_builder_search_config';
+
+  // ============================================================
+  //  协议提示条
+  // ============================================================
+  function checkApiUrlProtocol() {
+    var val     = apiUrl.value.trim();
+    var isHttps = location.protocol === 'https:';
+    var isHttp  = val.startsWith('http://');
+
+    if (!val) { apiUrlHint.style.display = 'none'; return; }
+    apiUrlHint.style.display = 'block';
+
+    if (isHttps && isHttp) {
+      apiUrlHint.innerHTML =
+        '<div class="hint-bar" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);color:#fcd34d;">' +
+          '⚠️ <span>HTTP 地址在 HTTPS 页面下会被浏览器拦截</span>' +
+          '<span style="margin-left:auto;font-size:0.65rem;opacity:0.6;">悬停查看解决方法 ▾</span>' +
+        '</div>' +
+        '<div class="hint-detail" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-top:none;color:#fcd34d;">' +
+          '解决方法（任选一种）：<br/>' +
+          '① 🔗 改用本工具的 HTTP 版本访问：' +
+          '<a href="http://zmer.xyz:11450" target="_blank" style="color:#38bdf8;text-decoration:underline;">http://zmer.xyz:11450</a><br/>' +
+          '② 给你的 API 套上 HTTPS<br/>' +
+          '③ 使用 OpenAI / 中转站等 HTTPS 接口' +
+        '</div>';
+    } else if (!isHttps && isHttp) {
+      apiUrlHint.innerHTML =
+        '<div class="hint-bar" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:#34d399;">' +
+          '✅ <span>HTTP 地址，当前页面也是 HTTP，可以正常请求。</span>' +
+        '</div>';
+    } else {
+      apiUrlHint.innerHTML =
+        '<div class="hint-bar" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:#34d399;">' +
+          '✅ <span>HTTPS 地址，可以正常请求。</span>' +
+        '</div>';
+    }
+  }
+
+  apiUrl.addEventListener('input', checkApiUrlProtocol);
+  checkApiUrlProtocol();
 
   // ============================================================
   //  快捷条数按钮
@@ -379,27 +456,27 @@
     searchModeBadge.style.display = 'inline';
 
     if (engine === 'none') {
-      searchModeBadge.textContent = 'AI 自带联网';
+      searchModeBadge.textContent      = 'AI 自带联网';
       searchModeBadge.style.background = 'rgba(56,189,248,0.12)';
-      searchModeBadge.style.color = '#38bdf8';
-      searchModeBadge.style.border = '1px solid rgba(56,189,248,0.25)';
-      searchKeyGroup.style.display = 'none';
+      searchModeBadge.style.color      = '#38bdf8';
+      searchModeBadge.style.border     = '1px solid rgba(56,189,248,0.25)';
+      searchKeyGroup.style.display     = 'none';
     } else if (engine === 'serper') {
-      searchModeBadge.textContent = 'Serper · Google';
+      searchModeBadge.textContent      = 'Serper · Google';
       searchModeBadge.style.background = 'rgba(16,185,129,0.12)';
-      searchModeBadge.style.color = '#34d399';
-      searchModeBadge.style.border = '1px solid rgba(16,185,129,0.25)';
-      searchKeyGroup.style.display = 'block';
-      searchKeyLabel.textContent = 'Serper API Key';
-      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https://serper.dev" target="_blank" style="color:#38bdf8;text-decoration:underline;">serper.dev</a> → 注册后在 Dashboard 复制 API Key（免费 2,500 次/月）';
+      searchModeBadge.style.color      = '#34d399';
+      searchModeBadge.style.border     = '1px solid rgba(16,185,129,0.25)';
+      searchKeyGroup.style.display     = 'block';
+      searchKeyLabel.textContent       = 'Serper API Key';
+      searchRegisterHint.innerHTML     = '📎 免费注册：<a href="https://serper.dev" target="_blank" style="color:#38bdf8;text-decoration:underline;">serper.dev</a> → 注册后在 Dashboard 复制 API Key（免费 2,500 次/月）';
     } else if (engine === 'tavily') {
-      searchModeBadge.textContent = 'Tavily · AI 专用';
+      searchModeBadge.textContent      = 'Tavily · AI 专用';
       searchModeBadge.style.background = 'rgba(245,158,11,0.12)';
-      searchModeBadge.style.color = '#fbbf24';
-      searchModeBadge.style.border = '1px solid rgba(245,158,11,0.25)';
-      searchKeyGroup.style.display = 'block';
-      searchKeyLabel.textContent = 'Tavily API Key';
-      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https://tavily.com" target="_blank" style="color:#38bdf8;text-decoration:underline;">tavily.com</a> → 注册后在 API Keys 页复制（免费 1,000 次/月）';
+      searchModeBadge.style.color      = '#fbbf24';
+      searchModeBadge.style.border     = '1px solid rgba(245,158,11,0.25)';
+      searchKeyGroup.style.display     = 'block';
+      searchKeyLabel.textContent       = 'Tavily API Key';
+      searchRegisterHint.innerHTML     = '📎 免费注册：<a href="https://tavily.com" target="_blank" style="color:#38bdf8;text-decoration:underline;">tavily.com</a> → 注册后在 API Keys 页复制（免费 1,000 次/月）';
     }
 
     saveSearchConfig();
@@ -427,21 +504,14 @@
   function loadSearchConfig() {
     try {
       var c = JSON.parse(localStorage.getItem(SEARCH_CONFIG_KEY));
-      // ★ 没有存档时默认关闭
-      if (!c) {
-        searchEnable.checked = false;
-        updateSearchUI();
-        return;
-      }
-      // ★ 明确读取 enabled，没有记录则默认 false
-      searchEnable.checked = c.enabled === true ? true : false;
+      if (!c) { searchEnable.checked = false; updateSearchUI(); return; }
+      searchEnable.checked = c.enabled === true;
       if (c.engine)      searchEngine.value      = c.engine;
       if (c.apiKey)      searchApiKey.value       = c.apiKey;
       if (c.resultCount) searchResultCount.value  = c.resultCount;
       if (c.lang)        searchLang.value         = c.lang;
       updateSearchUI();
     } catch(e) {
-      // ★ 出错时也强制关闭
       searchEnable.checked = false;
       updateSearchUI();
     }
@@ -531,8 +601,8 @@
     var html = '';
     results.forEach(function(r) {
       html += '<div class="search-result-item">';
-      html += '<div class="search-result-title">'   + escapeHTMLSimple(r.title)                        + '</div>';
-      html += '<div class="search-result-snippet">' + escapeHTMLSimple(r.snippet).substring(0, 200)    + '</div>';
+      html += '<div class="search-result-title">'   + escapeHTMLSimple(r.title)                     + '</div>';
+      html += '<div class="search-result-snippet">' + escapeHTMLSimple(r.snippet).substring(0, 200) + '</div>';
       if (r.url) html += '<div class="search-result-url">' + escapeHTMLSimple(r.url) + '</div>';
       html += '</div>';
     });
@@ -558,7 +628,7 @@
     if (engine === 'none') {
       searchTestStatus.textContent = 'ℹ️ 当前为 AI 自带联网模式，无需测试';
       searchTestStatus.style.color = '#38bdf8';
-      searchPreview.style.display = 'none';
+      searchPreview.style.display  = 'none';
       return;
     }
     if (!searchApiKey.value.trim()) {
@@ -566,7 +636,7 @@
       searchTestStatus.style.color = '#fca5a5';
       return;
     }
-    btnTestSearch.disabled = true;
+    btnTestSearch.disabled       = true;
     searchTestStatus.textContent = '🔍 搜索中...';
     searchTestStatus.style.color = '#38bdf8';
     try {
@@ -580,12 +650,12 @@
       } else {
         searchTestStatus.textContent = '⚠️ 未找到结果';
         searchTestStatus.style.color = '#fbbf24';
-        searchPreview.style.display = 'none';
+        searchPreview.style.display  = 'none';
       }
     } catch(err) {
       searchTestStatus.textContent = '❌ ' + err.message;
       searchTestStatus.style.color = '#fca5a5';
-      searchPreview.style.display = 'none';
+      searchPreview.style.display  = 'none';
     } finally {
       btnTestSearch.disabled = false;
     }
@@ -594,8 +664,8 @@
   // ============================================================
   //  黑客风信息流动画
   // ============================================================
-  var hackerChars   = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン{}[]<>/\\|=+-*&^%$#@!~;:,.?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  var hackerAnimId  = null;
+  var hackerChars      = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン{}[]<>/\\|=+-*&^%$#@!~;:,.?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var hackerAnimId     = null;
   var hackerStreamText = '';
 
   function startHackerAnim() {
@@ -622,16 +692,16 @@
         arr.push('\n');
         for (var nn = 0; nn < newLine.length; nn++) arr.push(newLine[nn]);
         if (arr.length > 1200) arr.splice(0, arr.length - 1200);
-        hackerStreamText = arr.join('');
+        hackerStreamText         = arr.join('');
         hackerCanvas.textContent = hackerStreamText;
-        hackerCanvas.scrollTop = hackerCanvas.scrollHeight;
+        hackerCanvas.scrollTop   = hackerCanvas.scrollHeight;
       }
       hackerAnimId = requestAnimationFrame(tick);
     }
     hackerAnimId = requestAnimationFrame(tick);
   }
 
-  function stopHackerAnim()  { if (hackerAnimId) { cancelAnimationFrame(hackerAnimId); hackerAnimId = null; } }
+  function stopHackerAnim()    { if (hackerAnimId) { cancelAnimationFrame(hackerAnimId); hackerAnimId = null; } }
   function hideHackerOverlay() { hackerOverlay.style.display = 'none'; }
   function setHackerPhase(text)  { hackerPhase.textContent = text; }
   function setHackerProgress(current, total) {
@@ -641,26 +711,26 @@
   function setHackerDetail(text) { hackerDetail.textContent = text; }
 
   var hackerMessages = [
-    '正在编译神经语言矩阵...',
-    '量子纠缠通道已建立...',
-    '解码亚空间设定碎片...',
-    '注入虚构现实坐标...',
-    '扫描平行世界线...',
-    '同步角色灵魂数据...',
-    '重构叙事因果链...',
-    '加载世界观拓扑结构...',
-    '校准角色人格向量...',
-    '编织命运之线...',
-    '提取设定基因序列...',
-    '渲染角色全息投影...',
-    '建立世界书索引节点...',
-    '激活深层叙事引擎...',
-    '解析角色潜意识层...',
-    '构建虚拟存在证明...',
-    '折叠多维设定空间...',
-    '初始化故事奇点...',
-    '拦截跨维度信息流...',
-    '解锁叙事量子态...',
+    '正在肘击gemini...',
+    '正在肘击deepseek...',
+    '正在申请退款Claude...',
+    '正在给谷歌写申述邮件...',
+    '正在删除无用的屎山代码...',
+    '正在申请GPT大兵认证...',
+    '正在假装看懂了报错信息...',
+    '正在说服模型不要幻觉...',
+    '正在等模型生成，已等待三个世纪...',
+    '正在让 GPT 假装自己是 Claude...',
+    '正在让 Claude 假装自己是 GPT...',
+    '正在把幻觉结果当参考文献...',
+    '正在把五行代码注释写成两百字...',
+    '正在把 bug 重新命名为 feature...',
+    '正在偷偷绕过内容审核...',
+    '正在控诉 token 不够用...',
+    '正在等待 Cloudflare 转圈圈...',
+    '正在给 token 省钱，删掉了标点...',
+    '正在测试 AI 有没有感情...',
+    '正在把 prompt 改了又改...',
   ];
   function getRandomHackerMsg() { return hackerMessages[Math.floor(Math.random() * hackerMessages.length)]; }
 
@@ -668,10 +738,10 @@
   //  暴露给 index.astro
   // ============================================================
   window.__hackerAnim__ = {
-    start:    startHackerAnim,
-    stop:     stopHackerAnim,
-    hide:     hideHackerOverlay,
-    setPhase: setHackerPhase,
+    start:       startHackerAnim,
+    stop:        stopHackerAnim,
+    hide:        hideHackerOverlay,
+    setPhase:    setHackerPhase,
     setProgress: setHackerProgress,
     setDetail:   setHackerDetail,
     randomMsg:   getRandomHackerMsg,
@@ -685,12 +755,12 @@
   };
 
   window.__searchConfig__ = {
-    isEnabled:     function() { return searchEnable.checked; },
-    getEngine:     function() { return searchEngine.value; },
-    getCustomQuery: function() { return searchCustomQuery.value.trim(); },
-    getResultCount: function() { return parseInt(searchResultCount.value) || 5; },
-    getLang:        function() { return searchLang.value; },
-    executeSearch:  executeSearch,
+    isEnabled:       function() { return searchEnable.checked; },
+    getEngine:       function() { return searchEngine.value; },
+    getCustomQuery:  function() { return searchCustomQuery.value.trim(); },
+    getResultCount:  function() { return parseInt(searchResultCount.value) || 5; },
+    getLang:         function() { return searchLang.value; },
+    executeSearch:   executeSearch,
     formatForPrompt: formatSearchResultsForPrompt,
   };
 

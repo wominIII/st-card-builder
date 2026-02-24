@@ -70,8 +70,8 @@
   </div>
 </div>
 
-<style>
-  
+<style is:global>
+  /* ── 备选开场白区域 ── */
   .alt-greetings-section {
     margin-bottom: 14px;
   }
@@ -86,6 +86,8 @@
     color: #475569;
     margin: 0 0 10px 0;
   }
+
+  /* ＋ 添加按钮 */
   .btn-alt-add {
     width: 28px;
     height: 28px;
@@ -110,6 +112,7 @@
     transform: scale(1.1);
   }
 
+  /* 条目动画 */
   .alt-greeting-item {
     position: relative;
     margin-bottom: 8px;
@@ -117,7 +120,7 @@
   }
   @keyframes altIn {
     from { opacity: 0; transform: translateY(-6px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .alt-greeting-bar {
     display: flex;
@@ -134,36 +137,86 @@
     display: flex;
     gap: 4px;
   }
+
+  /* ── 操作按钮基础 ── */
   .btn-alt-action {
-    width: 24px;
-    height: 24px;
-    border-radius: 5px;
-    border: 1px solid #1e293b;
-    background: #111827;
-    color: #64748b;
-    font-size: 0.7rem;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: rgba(99, 102, 241, 0.08);
+    color: #818cf8;
+    font-size: 0.78rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all 0.18s ease;
     padding: 0;
+    font-family: inherit;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
   .btn-alt-action:hover {
-    border-color: #475569;
-    color: #e2e8f0;
-    background: #1e293b;
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #c7d2fe;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
+  }
+  .btn-alt-action:active {
+    transform: translateY(0);
+  }
+
+  /* 上移 — 蓝色 */
+  .btn-alt-action[data-action="up"] {
+    border-color: rgba(56, 189, 248, 0.25);
+    background: rgba(56, 189, 248, 0.08);
+    color: #7dd3fc;
+  }
+  .btn-alt-action[data-action="up"]:hover {
+    background: rgba(56, 189, 248, 0.18);
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #bae6fd;
+    box-shadow: 0 3px 8px rgba(56, 189, 248, 0.2);
+    transform: translateY(-1px);
+  }
+
+  /* 下移 — 绿色 */
+  .btn-alt-action[data-action="down"] {
+    border-color: rgba(16, 185, 129, 0.25);
+    background: rgba(16, 185, 129, 0.08);
+    color: #6ee7b7;
+  }
+  .btn-alt-action[data-action="down"]:hover {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #a7f3d0;
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.2);
+    transform: translateY(-1px);
+  }
+
+  /* 删除 — 红色 */
+  .btn-alt-action.btn-alt-del {
+    border-color: rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.08);
+    color: #fca5a5;
   }
   .btn-alt-action.btn-alt-del:hover {
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #fca5a5;
-    background: rgba(239, 68, 68, 0.08);
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fecaca;
+    box-shadow: 0 3px 8px rgba(239, 68, 68, 0.2);
+    transform: translateY(-1px);
   }
+
+  /* 条目文本框 */
   .alt-greeting-item textarea {
     width: 100%;
     min-height: 80px;
     resize: vertical;
   }
+
+  /* 空状态 */
   .alt-greetings-empty {
     text-align: center;
     padding: 16px;
@@ -179,7 +232,7 @@
   var btnAdd = document.getElementById('btnAddGreeting');
   var listEl = document.getElementById('altGreetingsList');
 
-  
+  // 全局存储
   if (!window.__altGreetings__) window.__altGreetings__ = [];
 
   function render() {
@@ -196,16 +249,22 @@
         '<div class="alt-greeting-bar">' +
           '<span class="alt-greeting-label">开场白 #' + (i + 2) + '</span>' +
           '<div class="alt-greeting-actions">' +
-            (i > 0 ? '<button class="btn-alt-action" data-action="up" data-idx="' + i + '" title="上移">↑</button>' : '') +
-            (i < greetings.length - 1 ? '<button class="btn-alt-action" data-action="down" data-idx="' + i + '" title="下移">↓</button>' : '') +
+            (i > 0
+              ? '<button class="btn-alt-action" data-action="up" data-idx="' + i + '" title="上移">↑</button>'
+              : '') +
+            (i < greetings.length - 1
+              ? '<button class="btn-alt-action" data-action="down" data-idx="' + i + '" title="下移">↓</button>'
+              : '') +
             '<button class="btn-alt-action btn-alt-del" data-action="del" data-idx="' + i + '" title="删除">✕</button>' +
           '</div>' +
         '</div>' +
-        '<textarea class="alt-greeting-ta" data-idx="' + i + '" placeholder="备选开场白 #' + (i + 2) + ' 的内容...">' + escapeHTML(text) + '</textarea>';
+        '<textarea class="alt-greeting-ta" data-idx="' + i + '" placeholder="备选开场白 #' + (i + 2) + ' 的内容...">' +
+          escapeHTML(text) +
+        '</textarea>';
       listEl.appendChild(item);
     });
 
-    
+    // 事件绑定
     listEl.querySelectorAll('.alt-greeting-ta').forEach(function(ta) {
       ta.addEventListener('input', function(e) {
         var idx = parseInt(e.target.getAttribute('data-idx'));
@@ -216,8 +275,8 @@
     listEl.querySelectorAll('.btn-alt-action').forEach(function(btn) {
       btn.addEventListener('click', function(e) {
         var action = e.currentTarget.getAttribute('data-action');
-        var idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-        var g = window.__altGreetings__;
+        var idx    = parseInt(e.currentTarget.getAttribute('data-idx'));
+        var g      = window.__altGreetings__;
         if (action === 'del') {
           g.splice(idx, 1);
         } else if (action === 'up' && idx > 0) {
@@ -234,7 +293,6 @@
   btnAdd.addEventListener('click', function() {
     window.__altGreetings__.push('');
     render();
-    
     var tas = listEl.querySelectorAll('.alt-greeting-ta');
     if (tas.length) tas[tas.length - 1].focus();
     notifyChange();
@@ -248,10 +306,7 @@
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  
   window.__renderAltGreetings__ = render;
-
-  
   render();
 })();
 </script>
