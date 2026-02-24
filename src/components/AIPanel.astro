@@ -3,26 +3,25 @@
 <div class="panel ai-panel area-ai">
   <h2>✨ AI 引擎</h2>
 
-  <!-- API 配置 -->
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 16px;">
-    <div class="form-group" style="margin-bottom: 0;">
-      <label>API 接口地址</label>
-      <input type="text" id="apiUrl" value="https://api.openai.com/v1" placeholder="https://..." style="width: 100%;" />
-    </div>
-    <div class="form-group" style="margin-bottom: 0;">
-      <label>API 密钥</label>
-      <input type="password" id="apiKey" placeholder="sk-..." style="width: 100%;" />
-    </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px;">
+  <div class="form-group" style="margin-bottom:0;">
+    <label>API 接口地址</label>
+    <input type="text" id="apiUrl" value="https://api.openai.com/v1" placeholder="https://..." style="width:100%;" />
   </div>
+  <div class="form-group" style="margin-bottom:0;">
+    <label>API 密钥</label>
+    <input type="password" id="apiKey" placeholder="sk-..." style="width:100%;" />
+  </div>
+</div>
 
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 16px;">
-    <button id="btnFetchModels" class="btn btn-fetch" style="margin: 0;">🔄 拉取可用模型</button>
-    <div class="form-group" style="margin-bottom: 0;">
-      <select id="modelSelect" style="width: 100%;">
-        <option value="">请先获取模型...</option>
-      </select>
-    </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px;">
+  <button id="btnFetchModels" class="btn btn-fetch" style="margin:0;">🔄 拉取可用模型</button>
+  <div class="form-group" style="margin-bottom:0;">
+    <select id="modelSelect" style="width:100%;">
+      <option value="">请先获取模型...</option>
+    </select>
   </div>
+</div>
 
   <hr class="divider" />
 
