@@ -20,7 +20,7 @@
 
   <!-- 拉取模型 + 模型选择 -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:16px;">
-    <button id="btnFetchModels" class="btn btn-fetch" style="margin:0;">🔄 拉取可用模型</button>
+    <button id="btnFetchModels" class="btn btn-fetch" style="margin:0;">🔄 拉取模型</button>
     <div class="form-group" style="margin-bottom:0;">
       <select id="modelSelect" style="width:100%;">
         <option value="">请先获取模型...</option>
@@ -34,7 +34,7 @@
   <div id="searchConfigBlock" style="margin-bottom: 16px;">
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="searchEnable" style="width: 16px; height: 16px; accent-color: #38bdf8; cursor: pointer;" />
+        <input type="checkbox" id="searchEnable" />
         <label for="searchEnable" style="margin: 0; color: #38bdf8; cursor: pointer; font-weight: 700; font-size: 0.88rem;">🌐 联网搜索增强</label>
       </div>
       <span id="searchModeBadge" style="font-size: 0.62rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; display: none;"></span>
@@ -72,10 +72,10 @@
         <div class="form-group" style="margin-bottom: 0;">
           <label>搜索结果数量</label>
           <select id="searchResultCount">
-            <option value="3">3 条（快速）</option>
-            <option value="5" selected>5 条（推荐）</option>
-            <option value="8">8 条（详细）</option>
-            <option value="12">12 条（深度）</option>
+            <option value="3">3 条</option>
+            <option value="5" selected>5 条</option>
+            <option value="8">8 条</option>
+            <option value="12">12 条</option>
           </select>
         </div>
         <div class="form-group" style="margin-bottom: 0;">
@@ -153,7 +153,7 @@
     </div>
   </div>
 
-  <button id="btnAiGenerate" class="btn btn-ai">🚀 一键生成（角色 + 世界书骨架）</button>
+  <button id="btnAiGenerate" class="btn btn-ai">🚀 一键生成角色和世界书骨架</button>
 
   <!-- 黑客风动画区域 -->
   <div id="hackerOverlay" style="display: none;">
@@ -229,10 +229,42 @@
     border-radius: 10px;
     padding: 14px;
     transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
   }
   #searchConfigBlock.active {
     border-color: rgba(56, 189, 248, 0.35);
     background: rgba(56, 189, 248, 0.08);
+  }
+  /* 放大镜扫描动画覆盖层 */
+  .search-scan-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+  .search-scan-glass {
+    position: absolute;
+    font-size: 2.2rem;
+    filter: drop-shadow(0 0 12px rgba(56,189,248,0.7));
+    opacity: 0;
+  }
+  .search-scan-line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.6), rgba(56,189,248,0.9), rgba(56,189,248,0.6), transparent);
+    box-shadow: 0 0 12px rgba(56,189,248,0.5);
+    opacity: 0;
+  }
+  .search-scan-doc {
+    position: absolute;
+    font-size: 1.4rem;
+    opacity: 0;
+    filter: drop-shadow(0 0 8px rgba(56,189,248,0.5));
   }
 
   /* ── 搜索结果预览 ── */
@@ -442,15 +474,12 @@
   // ============================================================
   //  联网搜索 UI 逻辑
   // ============================================================
-  function updateSearchUI() {
-    var enabled = searchEnable.checked;
-    searchConfigDetail.style.display = enabled ? 'block' : 'none';
-    searchConfigBlock.classList.toggle('active', enabled);
+  var _searchInitDone = false;  // 初次 load 不动画
+  var _searchAnimating = false;
 
-    if (!enabled) {
-      searchModeBadge.style.display = 'none';
-      return;
-    }
+  function updateSearchBadge() {
+    var enabled = searchEnable.checked;
+    if (!enabled) { searchModeBadge.style.display = 'none'; return; }
 
     var engine = searchEngine.value;
     searchModeBadge.style.display = 'inline';
@@ -478,12 +507,174 @@
       searchKeyLabel.textContent       = 'Tavily API Key';
       searchRegisterHint.innerHTML     = '📎 免费注册：<a href="https://tavily.com" target="_blank" style="color:#38bdf8;text-decoration:underline;">tavily.com</a> → 注册后在 API Keys 页复制（免费 1,000 次/月）';
     }
+  }
+
+  /* ── 放大镜扫描文档动画 ── */
+  function playSearchScanAnimation(cb) {
+    if (!window.gsap) { cb(); return; }
+    var overlay = document.createElement('div');
+    overlay.className = 'search-scan-overlay';
+
+    // 文档图标群
+    var docIcons = ['📄', '📋', '📑'];
+    var docs = [];
+    docIcons.forEach(function (icon, i) {
+      var d = document.createElement('span');
+      d.className = 'search-scan-doc';
+      d.textContent = icon;
+      d.style.left = (20 + i * 30) + '%';
+      d.style.top = '35%';
+      overlay.appendChild(d);
+      docs.push(d);
+    });
+
+    // 放大镜
+    var glass = document.createElement('span');
+    glass.className = 'search-scan-glass';
+    glass.textContent = '🔍';
+    overlay.appendChild(glass);
+
+    // 扫描线
+    var scanLine = document.createElement('div');
+    scanLine.className = 'search-scan-line';
+    overlay.appendChild(scanLine);
+
+    searchConfigBlock.appendChild(overlay);
+    searchConfigBlock.style.overflow = 'hidden';
+
+    var tl = gsap.timeline({
+      onComplete: function () {
+        overlay.remove();
+        searchConfigBlock.style.overflow = '';
+        cb();
+      }
+    });
+
+    // Phase 1: 文档图标淡入浮起
+    docs.forEach(function (d, i) {
+      tl.fromTo(d,
+        { opacity: 0, y: 20, scale: 0.5 },
+        { opacity: 0.7, y: 0, scale: 1, duration: 0.25, ease: 'back.out(1.5)' },
+        i * 0.08
+      );
+    });
+
+    // Phase 2: 放大镜从左侧飞入并从左到右扫描
+    tl.fromTo(glass,
+      { opacity: 0, left: '-10%', top: '20%', scale: 0.3, rotation: -20 },
+      { opacity: 1, left: '10%', top: '25%', scale: 1, rotation: 0, duration: 0.3, ease: 'power2.out' },
+      0.15
+    );
+    tl.to(glass, {
+      left: '75%', top: '30%', duration: 0.6, ease: 'power1.inOut',
+    });
+
+    // 扫描线跟随
+    tl.fromTo(scanLine,
+      { opacity: 0, top: '0%' },
+      { opacity: 1, top: '100%', duration: 0.6, ease: 'power1.inOut' },
+      0.35
+    );
+
+    // Phase 3: 文档被"发现"时闪光
+    docs.forEach(function (d, i) {
+      tl.to(d, {
+        scale: 1.3, opacity: 1,
+        filter: 'drop-shadow(0 0 14px rgba(56,189,248,0.9))',
+        duration: 0.15, yoyo: true, repeat: 1,
+      }, 0.45 + i * 0.06);
+    });
+
+    // Phase 4: 全部飞散消失，放大镜缩小消失
+    tl.to(glass, { opacity: 0, scale: 0.5, y: -15, duration: 0.2, ease: 'power2.in' });
+    docs.forEach(function (d) {
+      tl.to(d, { opacity: 0, scale: 0.3, y: -10, duration: 0.2, ease: 'power2.in' }, '-=0.15');
+    });
+    tl.to(scanLine, { opacity: 0, duration: 0.15 }, '-=0.2');
+  }
+
+  /* ── 展开/收起搜索配置详情（带动画） ── */
+  function expandSearchDetail(animate) {
+    if (animate && window.gsap) {
+      searchConfigDetail.style.display = 'block';
+      searchConfigDetail.style.overflow = 'hidden';
+      var children = searchConfigDetail.children;
+      // 先让每个子元素隐藏
+      for (var i = 0; i < children.length; i++) {
+        gsap.set(children[i], { opacity: 0, y: 12 });
+      }
+      gsap.fromTo(searchConfigDetail,
+        { height: 0, opacity: 0 },
+        {
+          height: 'auto', opacity: 1, duration: 0.45, ease: 'power2.out',
+          onComplete: function () {
+            searchConfigDetail.style.overflow = '';
+            searchConfigDetail.style.height = '';
+          }
+        }
+      );
+      // 子元素依次淡入
+      for (var j = 0; j < children.length; j++) {
+        gsap.to(children[j], {
+          opacity: 1, y: 0, duration: 0.35, ease: 'power2.out',
+          delay: 0.1 + j * 0.06,
+        });
+      }
+    } else {
+      searchConfigDetail.style.display = 'block';
+    }
+  }
+
+  function collapseSearchDetail(animate) {
+    if (animate && window.gsap) {
+      searchConfigDetail.style.overflow = 'hidden';
+      gsap.to(searchConfigDetail, {
+        height: 0, opacity: 0, duration: 0.3, ease: 'power2.inOut',
+        onComplete: function () {
+          searchConfigDetail.style.display = 'none';
+          searchConfigDetail.style.overflow = '';
+          searchConfigDetail.style.height = '';
+          searchConfigDetail.style.opacity = '';
+        }
+      });
+    } else {
+      searchConfigDetail.style.display = 'none';
+    }
+  }
+
+  function updateSearchUI(isUserAction) {
+    var enabled = searchEnable.checked;
+    var shouldAnimate = _searchInitDone && isUserAction === true;
+    var fxOn = window.__fxEnabled__ ? window.__fxEnabled__() : true;
+    searchConfigBlock.classList.toggle('active', enabled);
+    updateSearchBadge();
+
+    if (enabled) {
+      if (shouldAnimate && fxOn && !_searchAnimating) {
+        _searchAnimating = true;
+        playSearchScanAnimation(function () {
+          expandSearchDetail(true);
+          _searchAnimating = false;
+        });
+      } else if (shouldAnimate && !fxOn) {
+        expandSearchDetail(true);
+      } else {
+        searchConfigDetail.style.display = 'block';
+      }
+    } else {
+      if (shouldAnimate) {
+        collapseSearchDetail(fxOn);
+      } else {
+        searchConfigDetail.style.display = 'none';
+      }
+      searchModeBadge.style.display = 'none';
+    }
 
     saveSearchConfig();
   }
 
-  searchEnable.addEventListener('change', updateSearchUI);
-  searchEngine.addEventListener('change', updateSearchUI);
+  searchEnable.addEventListener('change', function () { updateSearchUI(true); });
+  searchEngine.addEventListener('change', function () { updateSearchBadge(); saveSearchConfig(); });
   searchApiKey.addEventListener('input', saveSearchConfig);
   searchResultCount.addEventListener('change', saveSearchConfig);
   searchLang.addEventListener('change', saveSearchConfig);
@@ -504,16 +695,18 @@
   function loadSearchConfig() {
     try {
       var c = JSON.parse(localStorage.getItem(SEARCH_CONFIG_KEY));
-      if (!c) { searchEnable.checked = false; updateSearchUI(); return; }
+      if (!c) { searchEnable.checked = false; updateSearchUI(false); _searchInitDone = true; return; }
       searchEnable.checked = c.enabled === true;
       if (c.engine)      searchEngine.value      = c.engine;
       if (c.apiKey)      searchApiKey.value       = c.apiKey;
       if (c.resultCount) searchResultCount.value  = c.resultCount;
       if (c.lang)        searchLang.value         = c.lang;
-      updateSearchUI();
+      updateSearchUI(false);
+      _searchInitDone = true;
     } catch(e) {
       searchEnable.checked = false;
-      updateSearchUI();
+      updateSearchUI(false);
+      _searchInitDone = true;
     }
   }
 

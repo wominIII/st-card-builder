@@ -29,9 +29,9 @@
   var W, H;
   var particles = [];
   var mouse = { x: -9999, y: -9999 };
-  var PARTICLE_COUNT = 60;
-  var CONNECTION_DIST = 160;
-  var MOUSE_DIST = 200;
+  var PARTICLE_COUNT = 45;
+  var CONNECTION_DIST = 130;
+  var MOUSE_DIST = 180;
   var rafId = null;
   var running = false;
 
@@ -62,6 +62,9 @@
       alpha: Math.random() * 0.5 + 0.2,
       pulseSpeed: Math.random() * 0.02 + 0.005,
       pulseOffset: Math.random() * Math.PI * 2,
+      _fill: 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')',
+      _fillOuter: 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')',
+      _lineColor: 'rgb(' + c.r + ',' + c.g + ',' + c.b + ')',
     };
   }
 
@@ -72,6 +75,8 @@
   }
 
   var frame = 0;
+  var CONNECTION_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST;
+  var MOUSE_DIST_SQ = MOUSE_DIST * MOUSE_DIST;
   function animate() {
     if (!running) return;
     frame++;
@@ -84,8 +89,9 @@
       if (p.y < -10) p.y = H + 10; if (p.y > H + 10) p.y = -10;
 
       var dx = p.x - mouse.x, dy = p.y - mouse.y;
-      var dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < MOUSE_DIST && dist > 0) {
+      var distSq = dx * dx + dy * dy;
+      if (distSq < MOUSE_DIST_SQ && distSq > 0) {
+        var dist = Math.sqrt(distSq);
         var force = (MOUSE_DIST - dist) / MOUSE_DIST * 0.008;
         p.vx += (dx / dist) * force; p.vy += (dy / dist) * force;
       }
@@ -94,33 +100,37 @@
       var pulse = Math.sin(frame * p.pulseSpeed + p.pulseOffset) * 0.3 + 0.7;
       var alpha = p.alpha * pulse;
 
+      // 简化：用单圆 + globalAlpha 代替每帧 createRadialGradient
+      ctx.globalAlpha = alpha * 0.15;
+      ctx.fillStyle = p._fillOuter;
       ctx.beginPath();
-      var grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-      grad.addColorStop(0, 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',' + (alpha * 0.6) + ')');
-      grad.addColorStop(1, 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',0)');
-      ctx.fillStyle = grad;
       ctx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
       ctx.fill();
 
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p._fill;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',' + alpha + ')';
       ctx.fill();
+      ctx.globalAlpha = 1;
     }
 
     for (var i = 0; i < particles.length; i++) {
       for (var j = i + 1; j < particles.length; j++) {
         var a = particles[i], b = particles[j];
         var ddx = a.x - b.x, ddy = a.y - b.y;
-        var d = Math.sqrt(ddx * ddx + ddy * ddy);
-        if (d < CONNECTION_DIST) {
+        var dSq = ddx * ddx + ddy * ddy;
+        if (dSq < CONNECTION_DIST_SQ) {
+          var d = Math.sqrt(dSq);
           var lineAlpha = (1 - d / CONNECTION_DIST) * 0.12;
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = 'rgba(' + ((a.color.r + b.color.r) >> 1) + ',' + ((a.color.g + b.color.g) >> 1) + ',' + ((a.color.b + b.color.b) >> 1) + ',' + lineAlpha + ')';
+          ctx.strokeStyle = a._lineColor;
+          ctx.globalAlpha = lineAlpha;
           ctx.lineWidth = 0.6; ctx.stroke();
         }
       }
     }
+    ctx.globalAlpha = 1;
 
     if (mouse.x > 0 && mouse.y > 0) {
       var mGrad = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 120);
@@ -149,7 +159,14 @@
   }
 
   window.addEventListener('resize', resize);
-  document.addEventListener('mousemove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; });
+  var _mouseMoveRAF = 0;
+  document.addEventListener('mousemove', function (e) {
+    if (_mouseMoveRAF) return;
+    _mouseMoveRAF = requestAnimationFrame(function () {
+      mouse.x = e.clientX; mouse.y = e.clientY;
+      _mouseMoveRAF = 0;
+    });
+  });
   document.addEventListener('mouseleave', function () { mouse.x = -9999; mouse.y = -9999; });
 
   init();

@@ -1,7 +1,7 @@
 ---
 ---
 <div class="panel wb-auditor area-auditor">
-  <h2>🔍 世界书审计官</h2>
+  <h2>🔍 世界书内容监测</h2>
 
   <!-- 控制栏：只显示 AI 审计按钮 -->
   <button id="btnRunAudit" class="btn btn-audit-run" style="width: 100%; margin-bottom: 10px;">🧠 AI 深度审计</button>
@@ -832,6 +832,16 @@
   setTimeout(function() {
     runQuickCheck();
   }, 600);
+
+  // ── 实时监听世界书变化，自动刷新基础统计 ──
+  var _auditRefreshTimer = null;
+  window.addEventListener('worldbook-changed', function() {
+    // 防抖：避免短时间内大量更新
+    if (_auditRefreshTimer) clearTimeout(_auditRefreshTimer);
+    _auditRefreshTimer = setTimeout(function() {
+      runQuickCheck();
+    }, 300);
+  });
 
 })();
 </script>

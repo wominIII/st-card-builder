@@ -1,7 +1,7 @@
 ---
 ---
 <div class="panel chat-playground">
-  <h2>💬 角色试聊室</h2>
+  <h2>💬 角色试聊</h2>
 
   <!-- 控制栏 -->
   <div class="chat-controls">
@@ -35,13 +35,12 @@
           <div class="setting-label-row">
             <span class="setting-icon">📏</span>
             <span class="setting-label">回复长度</span>
+            <input type="number" id="chatMaxTokensInput" class="token-number-input" value="2000" min="100" max="16000" step="100" />
           </div>
-          <div class="token-btn-group">
-            <button class="token-btn" data-tokens="500">短</button>
-            <button class="token-btn" data-tokens="1000">中</button>
-            <button class="token-btn active" data-tokens="2000">长</button>
-            <button class="token-btn" data-tokens="4000">超长</button>
-            <button class="token-btn" data-tokens="8000">MAX</button>
+          <input type="range" id="chatMaxTokensSlider" min="100" max="16000" step="100" value="2000" class="setting-slider token-slider" />
+          <div class="setting-hint-row">
+            <span>精简 100</span>
+            <span>16000 极限</span>
           </div>
           <select id="chatMaxTokens" style="display:none;">
             <option value="2000" selected>2000</option>
@@ -162,6 +161,17 @@
   .chat-setting-item {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-setting-item .setting-label-row {
+    flex-shrink: 0;
+  }
+  .chat-setting-item .setting-slider {
+    flex-shrink: 0;
+  }
+  .chat-setting-item .setting-hint-row {
+    flex-shrink: 0;
   }
   .setting-divider {
     width: 1px;
@@ -174,6 +184,7 @@
     align-items: center;
     gap: 4px;
     margin-bottom: 6px;
+    height: 24px;
   }
   .setting-icon {
     font-size: 0.9rem;
@@ -237,33 +248,36 @@
   }
 
   
-  .token-btn-group {
-    display: flex;
-    gap: 4px;
+  .token-number-input {
+    width: 58px;
+    height: 20px;
+    box-sizing: border-box;
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 4px;
+    color: #38bdf8;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    margin-left: auto;
+    padding: 0 4px;
+    line-height: 18px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    -moz-appearance: textfield;
   }
-  .token-btn {
-    flex: 1;
-    padding: 5px 0;
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    background: rgba(15, 23, 42, 0.6);
-    color: #94a3b8;
-    border-radius: 6px;
-    font-size: 0.68rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
+  .token-number-input::-webkit-inner-spin-button,
+  .token-number-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
-  .token-btn:hover {
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #c4b5fd;
-    background: rgba(139, 92, 246, 0.08);
+  .token-number-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
   }
-  .token-btn.active {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
-    border-color: #8b5cf6;
-    color: #e9d5ff;
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+  .token-slider {
+    background: rgba(51, 65, 85, 0.6) !important;
   }
 
   
@@ -291,8 +305,6 @@
     background: rgba(51, 65, 85, 0.3);
   }
   .debug-toggle input {
-    width: 14px;
-    height: 14px;
     margin: 0;
   }
 
@@ -542,8 +554,16 @@
 
   .chat-messages::-webkit-scrollbar { width: 4px; }
   .chat-messages::-webkit-scrollbar-track { background: transparent; }
-  .chat-messages::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.2); border-radius: 99px; }
-  .chat-messages::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.4); }
+  .chat-messages::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.5), rgba(56, 189, 248, 0.45));
+    border-radius: 99px;
+    box-shadow: 0 0 4px rgba(139, 92, 246, 0.3);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+  .chat-messages::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.8), rgba(56, 189, 248, 0.7));
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+  }
 </style>
 
 <script is:inline>
@@ -587,16 +607,27 @@
 
   
   var tokenBtns = document.querySelectorAll('.token-btn');
-  tokenBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var val = btn.getAttribute('data-tokens');
-      
-      chatMaxTokens.innerHTML = '<option value="' + val + '" selected>' + val + '</option>';
-      chatMaxTokens.value = val;
-      
-      tokenBtns.forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-    });
+  var chatMaxTokensSlider = document.getElementById('chatMaxTokensSlider');
+  var chatMaxTokensInput = document.getElementById('chatMaxTokensInput');
+
+  function syncTokenValue(val) {
+    val = Math.max(100, Math.min(16000, parseInt(val) || 2000));
+    chatMaxTokensSlider.value = val;
+    chatMaxTokensInput.value = val;
+    chatMaxTokens.innerHTML = '<option value="' + val + '" selected>' + val + '</option>';
+    chatMaxTokens.value = val;
+  }
+
+  chatMaxTokensSlider.addEventListener('input', function() {
+    syncTokenValue(chatMaxTokensSlider.value);
+  });
+
+  chatMaxTokensInput.addEventListener('change', function() {
+    syncTokenValue(chatMaxTokensInput.value);
+  });
+
+  chatMaxTokensInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); syncTokenValue(chatMaxTokensInput.value); chatMaxTokensInput.blur(); }
   });
 
   

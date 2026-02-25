@@ -11,14 +11,20 @@
       <input type="text" id="wbSinglePrompt" placeholder="定向要求(可选)，如：写一把专属武器..." style="flex: 1;" />
       <button id="btnAiSingleWb" class="btn" style="width: auto; margin: 0; background: linear-gradient(135deg, #8b5cf6, #6d28d9); white-space: nowrap;">🎲 生成 1 条</button>
     </div>
-    <div style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
-      <input type="checkbox" id="wbIncludeCharData" checked style="width: 14px; height: 14px; accent-color: #8b5cf6; cursor: pointer;" />
-      <label for="wbIncludeCharData" style="margin: 0; color: #94a3b8; font-size: 0.78rem; cursor: pointer; font-weight: normal;">生成时融合当前【角色名与描述】</label>
+    <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="wbIncludeCharData" checked />
+        <label for="wbIncludeCharData" style="margin: 0; color: #94a3b8; font-size: 0.78rem; cursor: pointer; font-weight: normal;">融合【角色名与描述】</label>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="wbIncludeOtherEntries" checked />
+        <label for="wbIncludeOtherEntries" style="margin: 0; color: #94a3b8; font-size: 0.78rem; cursor: pointer; font-weight: normal;">融合【已有世界书条目】</label>
+      </div>
     </div>
   </div>
 
   <!-- 手动录入区 -->
-  <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #1e293b;">
+  <div id="wbManualEditArea" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #1e293b; transition: box-shadow 0.35s ease, border-color 0.35s ease;">
     <h4 style="margin: 0 0 12px 0; color: #64748b; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em;">✍️ 手动录入 / 修改区</h4>
 
     <div class="form-group">

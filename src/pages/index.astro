@@ -17,7 +17,25 @@ import GsapAnimations from '../components/GsapAnimations.astro';
   <ParticleCanvas />
   <div class="app-header">
     <div class="app-brand">
-      <span class="app-logo">🌌</span>
+      <span class="app-logo">
+        <svg class="logo-icon" viewBox="0 -1 24 26" width="22" height="22" fill="none">
+          <g transform="translate(0, 0)">
+          <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="url(#logoGrad)" stroke="url(#logoStroke)" stroke-width="0.8" />
+          <path class="logo-spark" d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="none" stroke="rgba(165,243,252,0.6)" stroke-width="0.6" />
+          <defs>
+            <linearGradient id="logoGrad" x1="4" y1="2" x2="20" y2="20">
+              <stop offset="0%" stop-color="#a78bfa" />
+              <stop offset="50%" stop-color="#6366f1" />
+              <stop offset="100%" stop-color="#38bdf8" />
+            </linearGradient>
+            <linearGradient id="logoStroke" x1="4" y1="2" x2="20" y2="20">
+              <stop offset="0%" stop-color="#c4b5fd" />
+              <stop offset="100%" stop-color="#67e8f9" />
+            </linearGradient>
+          </defs>
+          </g>
+        </svg>
+      </span>
       <div>
         <h1 class="app-title">V3 卡片构建器</h1>
         <p class="app-subtitle">未完成版本</p>
@@ -937,12 +955,18 @@ window.__setImportedAvatar__ = function(base64) {
     }
 
     function editEntry(index) {
+      var entryEl = entriesList.children[index];
       editingIndex = index; var e = worldbookEntries[index];
-      entryComment.value = e.comment || ''; entryContent.value = e.content || '';
-      entryKeys.value = (e.keys || []).join(', '); entryStrategy.value = e.strategy || 'selective';
-      entryPosition.value = String(e.position || 4); entryDepth.value = String(e.depth || 4);
-      entryRole.value = String(e.role || 0); entryOrder.value = String(e.order || 100); entryProb.value = String(e.prob || 100);
       btnAddEntry.textContent = '💾 确认覆盖'; btnAddEntry.style.backgroundColor = '#d97706';
+      if (window.__flyToEditArea__ && entryEl && window.__flyToEditArea__(entryEl, e)) {
+        /* 动画模式：碎片飞入后打字浮现 */
+      } else {
+        /* 无动画回退：直接填入 */
+        entryComment.value = e.comment || ''; entryContent.value = e.content || '';
+        entryKeys.value = (e.keys || []).join(', '); entryStrategy.value = e.strategy || 'selective';
+        entryPosition.value = String(e.position || 4); entryDepth.value = String(e.depth || 4);
+        entryRole.value = String(e.role || 0); entryOrder.value = String(e.order || 100); entryProb.value = String(e.prob || 100);
+      }
       btnAddEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
@@ -988,6 +1012,8 @@ window.__setImportedAvatar__ = function(base64) {
       document.querySelectorAll('.btn-toggle-reroll').forEach(function(b) { b.addEventListener('click', function(e) { var a = document.getElementById('reroll_area_' + e.currentTarget.getAttribute('data-index')); a.style.display = a.style.display === 'none' ? 'block' : 'none'; }); });
       document.querySelectorAll('.btn-submit-reroll').forEach(function(b) { b.addEventListener('click', async function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); var req = document.getElementById('reroll_prompt_' + idx).value.trim(); var isSk = worldbookEntries[idx].content.length < 60; if (!isSk && !req) return alert('请填写修改要求！'); await aiRewriteEntry(idx, req, e.currentTarget); }); });
       document.querySelectorAll('.btn-delete').forEach(function(b) { b.addEventListener('click', function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if (editingIndex === idx) resetWBForm(); renderEntriesList(); debouncedUpdateAndSave(); }); });
+      // 通知审计官：世界书条目已变化
+      window.dispatchEvent(new CustomEvent('worldbook-changed'));
     }
 
     btnAddEntry.addEventListener('click', function() {

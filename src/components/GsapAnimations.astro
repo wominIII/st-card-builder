@@ -66,7 +66,7 @@
   }
 
   // ============================================================
-  //  1. 入场动画（只播放一次，不受开关影响）
+  //  1. 入场动画 — 变形金刚折叠展开
   // ============================================================
   var header = q('.app-header');
   var logo = q('.app-logo');
@@ -97,13 +97,185 @@
     master.to(badge, { scale: 1, duration: 0.5, ease: 'back.out(2)' }, 0.6);
   }
 
+  // ── 面板：3D 展开 ── 点 → 线 → 面 → 内容依次滑出 ──
   var panels = qAll('.app-container > *');
+  var panelColors = [
+    { r: 99, g: 102, b: 241 },   // AI - 靛蓝
+    { r: 139, g: 92, b: 246 },   // Character - 紫
+    { r: 16, g: 185, b: 129 },   // Worldbook - 绿
+    { r: 56, g: 189, b: 248 },   // Preview - 天蓝
+    { r: 244, g: 114, b: 182 },  // Chat area - 粉
+    { r: 245, g: 158, b: 11 },   // StatusBar - 琥珀
+    { r: 52, g: 211, b: 153 },   // Auditor - 翡翠
+  ];
+
+  function rgba(c, a) { return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')'; }
+
   if (panels.length) {
-    panels.forEach(function (p) { gsap.set(p, { y: 50, opacity: 0 }); });
-    master.to(panels, {
-      y: 0, opacity: 1, duration: 0.7,
-      stagger: { each: 0.09, from: 'start' },
-    }, 0.5);
+    var container = q('.app-container');
+    if (container) {
+      container.style.perspective = '1400px';
+      container.style.perspectiveOrigin = '50% 30%';
+    }
+
+    panels.forEach(function (panel, idx) {
+      var c = panelColors[idx % panelColors.length];
+      var delay = 0.7 + idx * 0.4;
+
+      // 保存原始样式
+      var origBorder = getComputedStyle(panel).borderColor;
+      var origBg = getComputedStyle(panel).background;
+
+      // 强制 panel 相对定位（仅对 static 元素）+ 动画期间禁止横向溢出
+      var origPosition = getComputedStyle(panel).position;
+      var needSetPosition = origPosition === 'static';
+      if (needSetPosition) {
+        panel.style.position = 'relative';
+      }
+      panel.style.overflowX = 'hidden';
+
+      // ═══ 创建"外框"矩形（用一个 border-only 的 div 模拟） ═══
+      var frame = document.createElement('div');
+      frame.style.cssText =
+        'position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:20;' +
+        'border:1.5px solid ' + rgba(c, 0.8) + ';' +
+        'box-shadow:0 0 12px ' + rgba(c, 0.3) + ', inset 0 0 12px ' + rgba(c, 0.08) + ';' +
+        'transform-origin:center center;';
+      panel.appendChild(frame);
+
+      // ═══ 光线扫描条 ═══
+      var sweep = document.createElement('div');
+      sweep.style.cssText =
+        'position:absolute;top:0;left:0;width:40%;height:100%;z-index:21;pointer-events:none;opacity:0;' +
+        'background:linear-gradient(90deg, transparent, ' + rgba(c, 0.08) + ', ' + rgba(c, 0.25) + ', ' + rgba(c, 0.08) + ', transparent);' +
+        'filter:blur(6px);';
+      panel.appendChild(sweep);
+
+      // ═══ 收集子元素（只取直接子元素，排除辅助层） ═══
+      var children = [];
+      var childNodes = panel.children;
+      for (var i = 0; i < childNodes.length; i++) {
+        var ch = childNodes[i];
+        if (ch === frame || ch === sweep) continue;
+        if (ch.classList.contains('panel-hover-glow')) continue;
+        if (ch.classList.contains('unfold-scan-line') || ch.classList.contains('unfold-border-glow')) continue;
+        children.push(ch);
+      }
+
+      // ═══ 初始态：整个面板完全不可见，外框从一个点开始 ═══
+      gsap.set(panel, {
+        opacity: 0,
+        transformOrigin: '50% 50%',
+      });
+      // 隐藏所有子内容
+      children.forEach(function (ch) {
+        gsap.set(ch, { opacity: 0, y: 0 });
+      });
+
+      // ═══ 外框初始为一个点 ═══
+      gsap.set(frame, {
+        scaleX: 0,
+        scaleY: 0,
+        opacity: 1,
+      });
+
+      var tl = gsap.timeline({ delay: delay });
+
+      // ── Phase 1：面板可见 + 外框从点变成一条横线 (0 → 0.8s) ──
+      tl.to(panel, {
+        opacity: 1,
+        duration: 0.15,
+        ease: 'power1.in',
+      }, 0);
+
+      tl.to(frame, {
+        scaleX: 1,
+        scaleY: 0.015,
+        duration: 0.8,
+        ease: 'power3.inOut',
+      }, 0);
+
+      // 小辉光脉冲在横线展开时
+      tl.fromTo(frame, {
+        boxShadow: '0 0 20px ' + rgba(c, 0.6) + ', inset 0 0 20px ' + rgba(c, 0.2),
+      }, {
+        boxShadow: '0 0 8px ' + rgba(c, 0.3) + ', inset 0 0 8px ' + rgba(c, 0.05),
+        duration: 0.8,
+        ease: 'power2.out',
+      }, 0);
+
+      // ── Phase 2：线向上下展开成面 (0.7 → 1.8s) ──
+      tl.to(frame, {
+        scaleY: 1,
+        duration: 1.1,
+        ease: 'power2.out',
+      }, 0.7);
+
+      // 面板自身背景跟随显现（用 clip-path 从中间线向上下展开）
+      gsap.set(panel, {
+        clipPath: 'inset(50% 0% 50% 0%)',
+      });
+      tl.to(panel, {
+        clipPath: 'inset(0% 0% 0% 0%)',
+        duration: 1.1,
+        ease: 'power2.out',
+      }, 0.7);
+
+      // 扫描光横穿
+      tl.fromTo(sweep, {
+        opacity: 1, left: '-40%',
+      }, {
+        left: '120%',
+        duration: 0.9,
+        ease: 'power1.inOut',
+      }, 1.0);
+      tl.to(sweep, { opacity: 0, duration: 0.2 }, 1.8);
+
+      // ── Phase 3：内容元素依次从上一个后面滑出 (1.6s 起) ──
+      // 每个子元素从上一个元素的位置"滑出来"
+      var contentStart = 1.6;
+      var slideDur = 0.45;
+      var slideGap = 0.12;
+
+      children.forEach(function (ch, ci) {
+        var t = contentStart + ci * slideGap;
+
+        // 初始态：被前一个遮住，叠在上方位置
+        gsap.set(ch, {
+          opacity: 0,
+          y: -15,
+          scale: 0.97,
+          filter: 'blur(4px)',
+        });
+
+        tl.to(ch, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          filter: 'blur(0px)',
+          duration: slideDur,
+          ease: 'power2.out',
+        }, t);
+      });
+
+      // ── Phase 4：外框消退，交还原始样式 ──
+      var frameOutTime = contentStart + children.length * slideGap + 0.2;
+      tl.to(frame, {
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power2.inOut',
+      }, frameOutTime);
+
+      // ── 清理 ──
+      tl.call(function () {
+        if (frame.parentNode) frame.parentNode.removeChild(frame);
+        if (sweep.parentNode) sweep.parentNode.removeChild(sweep);
+        panel.style.clipPath = '';
+        panel.style.overflowX = '';
+        if (needSetPosition) panel.style.position = '';
+        panel.style.filter = '';
+      }, null, null, frameOutTime + 0.8);
+    });
   }
 
   if (header) {
@@ -130,11 +302,15 @@
     panel.addEventListener('mouseleave', function () {
       gsap.to(glowEl, { opacity: 0, duration: 0.5 });
     });
+    var _glowRAF = 0;
     panel.addEventListener('mousemove', function (e) {
-      if (!fxEnabled) return;
-      var rect = panel.getBoundingClientRect();
-      glowEl.style.setProperty('--glow-x', (e.clientX - rect.left) + 'px');
-      glowEl.style.setProperty('--glow-y', (e.clientY - rect.top) + 'px');
+      if (!fxEnabled || _glowRAF) return;
+      _glowRAF = requestAnimationFrame(function () {
+        var rect = panel.getBoundingClientRect();
+        glowEl.style.setProperty('--glow-x', (e.clientX - rect.left) + 'px');
+        glowEl.style.setProperty('--glow-y', (e.clientY - rect.top) + 'px');
+        _glowRAF = 0;
+      });
     });
   });
 
@@ -232,6 +408,231 @@
       },
     }));
   }
+
+  // ============================================================
+  //  9. 世界书编辑 — 文字飞行动画（弧线 + 打字浮现）
+  // ============================================================
+
+  /* 二次贝塞尔插值 */
+  function quadBezier(t, p0, p1, p2) {
+    var u = 1 - t;
+    return u * u * p0 + 2 * u * t * p1 + t * t * p2;
+  }
+
+  /* 打字机效果：逐字填入 input / textarea */
+  function typewriterFill(el, text, dur) {
+    if (!el || !text) return;
+    el.value = '';
+    var len = text.length;
+    var perChar = dur / len;
+    var idx = 0;
+    // 给元素加个辉光提示正在写入
+    el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+    el.style.boxShadow = '0 0 12px rgba(139,92,246,0.35), inset 0 0 6px rgba(139,92,246,0.1)';
+    el.style.borderColor = 'rgba(139,92,246,0.5)';
+    function tick() {
+      if (idx < len) {
+        el.value += text[idx];
+        idx++;
+        setTimeout(tick, perChar * 1000);
+      } else {
+        // 写完，渐退辉光
+        el.style.boxShadow = '';
+        el.style.borderColor = '';
+        setTimeout(function () { el.style.transition = ''; }, 350);
+      }
+    }
+    tick();
+  }
+
+  /* select 下拉框延迟赋值 + 闪光 */
+  function flashSetSelect(el, val) {
+    if (!el) return;
+    el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+    el.style.boxShadow = '0 0 12px rgba(139,92,246,0.35)';
+    el.style.borderColor = 'rgba(139,92,246,0.5)';
+    el.value = val;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    setTimeout(function () {
+      el.style.boxShadow = ''; el.style.borderColor = '';
+      setTimeout(function () { el.style.transition = ''; }, 350);
+    }, 500);
+  }
+
+  window.__flyToEditArea__ = function (entryEl, data) {
+    if (!gsap || !entryEl) return false;
+    if (window.__fxEnabled__ && !window.__fxEnabled__()) return false;
+
+    var editArea = document.getElementById('wbManualEditArea');
+    if (!editArea) return;
+
+    var er = entryEl.getBoundingClientRect();
+    var ar = editArea.getBoundingClientRect();
+
+    /* ── 构建文字碎片（带目标字段 ID） ── */
+    var chips = [];
+    if (data.comment)
+      chips.push({ t: '📌 ' + data.comment, c: '#c4b5fd', field: 'entryComment', val: data.comment });
+    if (data.content) {
+      var preview = data.content.length > 28 ? data.content.slice(0, 28) + '…' : data.content;
+      chips.push({ t: '📝 ' + preview, c: '#93c5fd', field: 'entryContent', val: data.content });
+    }
+    if (data.keys && data.keys.length)
+      chips.push({ t: '🔑 ' + data.keys.join(', '), c: '#6ee7b7', field: 'entryKeys', val: data.keys.join(', ') });
+    chips.push({ t: '⚙️ ' + (data.strategy || 'selective'), c: '#fcd34d', field: 'entryStrategy', val: data.strategy || 'selective' });
+    if (!chips.length) return;
+
+    /* ── 坐标 ── */
+    var sx = er.left + er.width * 0.4;
+    var sy = er.top  + er.height / 2;
+    var ex = ar.left + ar.width / 2;
+    var ey = Math.max(80, Math.min(ar.top + ar.height * 0.35, window.innerHeight - 80));
+
+    /* 弧线控制点（向左或向右偏移，制造弧度） */
+    var dx = ex - sx;
+    var dy = ey - sy;
+    var curveDir = dx > 0 ? -1 : 1;  // 弧线向反方向弯
+    var cpx = (sx + ex) / 2 + curveDir * Math.min(Math.abs(dy) * 0.5, 200);
+    var cpy = Math.min(sy, ey) - Math.abs(dy) * 0.25 - 60;  // 控制点在上方
+
+    /* ── 条目卡闪光脉冲 ── */
+    gsap.fromTo(entryEl,
+      { boxShadow: '0 0 0px rgba(139,92,246,0)' },
+      {
+        boxShadow: '0 0 28px rgba(139,92,246,0.55), inset 0 0 14px rgba(139,92,246,0.15)',
+        duration: 0.25, yoyo: true, repeat: 1, ease: 'power2.inOut',
+        clearProps: 'boxShadow',
+      }
+    );
+
+    /* ── 清空表单，等碎片到达后打字浮现 ── */
+    var fieldsToType = ['entryComment', 'entryContent', 'entryKeys'];
+    fieldsToType.forEach(function (id) {
+      var f = document.getElementById(id);
+      if (f) f.value = '';
+    });
+
+    /* ── 逐片弧线飞出 ── */
+    var flyDur = 0.65;  // 飞行时长
+
+    chips.forEach(function (s, i) {
+      var el = document.createElement('div');
+      el.textContent = s.t;
+      el.style.cssText =
+        'position:fixed;z-index:99999;pointer-events:none;' +
+        'font-size:0.74rem;font-weight:700;color:' + s.c + ';' +
+        'background:rgba(8,12,28,0.92);padding:5px 14px;border-radius:8px;' +
+        'border:1px solid ' + s.c + ';' +
+        'box-shadow:0 0 18px ' + s.c + '55,0 2px 8px rgba(0,0,0,0.6);' +
+        'white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;' +
+        'left:0;top:0;opacity:0;font-family:inherit;letter-spacing:0.02em;';
+
+      /* 粒子尾迹容器 */
+      var trail = document.createElement('div');
+      trail.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;';
+      el.appendChild(trail);
+
+      document.body.appendChild(el);
+
+      var stagger = i * 0.12;
+      var perChipOx = (i - (chips.length - 1) / 2) * 32;
+
+      // 每个碎片微调控制点
+      var myCpx = cpx + perChipOx * 1.5;
+      var myCpy = cpy - i * 18;
+      var myEx  = ex + perChipOx * 0.3;
+      var myEy  = ey + i * 6;
+
+      gsap.set(el, {
+        x: sx, y: sy, scale: 0.1, opacity: 0,
+        rotation: gsap.utils.random(-12, 12),
+      });
+
+      var tl = gsap.timeline({ delay: stagger });
+
+      /* Phase A — 从条目卡背后弹出 */
+      tl.to(el, {
+        opacity: 1, scale: 1, rotation: gsap.utils.random(-4, 4),
+        x: sx + perChipOx, y: sy - 35 - i * 8,
+        duration: 0.3,
+        ease: 'back.out(2.2)',
+      });
+
+      /* Phase B — 贝塞尔弧线飞行 */
+      var progress = { t: 0 };
+      var popX = sx + perChipOx;
+      var popY = sy - 35 - i * 8;
+
+      tl.to(progress, {
+        t: 1,
+        duration: flyDur,
+        ease: 'power2.inOut',
+        onUpdate: function () {
+          var p = progress.t;
+          var cx = quadBezier(p, popX, myCpx, myEx);
+          var cy = quadBezier(p, popY, myCpy, myEy);
+          gsap.set(el, {
+            x: cx, y: cy,
+            rotation: (1 - p) * gsap.utils.random(-6, 6),
+            scale: 1 + Math.sin(p * Math.PI) * 0.15,  // 飞行中微微胀大
+          });
+
+          /* 动态拖尾辉光 */
+          var glowStr = Math.sin(p * Math.PI) * 40;
+          el.style.boxShadow = '0 0 ' + (18 + glowStr) + 'px ' + s.c + '88, 0 0 ' + (8 + glowStr * 1.5) + 'px ' + s.c + '44, 0 2px 8px rgba(0,0,0,0.6)';
+        },
+      });
+
+      /* Phase C — 到达后融入消散 + 触发打字浮现 */
+      tl.to(el, {
+        opacity: 0, scale: 0.3,
+        duration: 0.25, ease: 'power2.in',
+        onComplete: function () {
+          el.remove();
+          /* 碎片到达 → 打字浮现对应字段 */
+          var target = document.getElementById(s.field);
+          if (target) {
+            if (target.tagName === 'SELECT') {
+              flashSetSelect(target, s.val);
+            } else {
+              var typeDur = Math.min(s.val.length * 0.018, 0.8);
+              typewriterFill(target, s.val, Math.max(typeDur, 0.2));
+            }
+          }
+        },
+      });
+    });
+
+    /* ── 编辑区接收光脉冲 ── */
+    var receiveT = chips.length * 0.12 + 0.3 + flyDur + 0.1;
+    gsap.delayedCall(receiveT, function () {
+      gsap.fromTo(editArea,
+        { boxShadow: '0 0 0 rgba(139,92,246,0)', borderColor: 'rgba(30,41,59,1)' },
+        {
+          boxShadow: '0 0 30px rgba(139,92,246,0.45), inset 0 0 20px rgba(139,92,246,0.1)',
+          borderColor: 'rgba(139,92,246,0.6)',
+          duration: 0.35, yoyo: true, repeat: 1, ease: 'power2.inOut',
+          clearProps: 'boxShadow,borderColor',
+        }
+      );
+
+      /* 其余非打字字段延迟赋值（数字、下拉等） */
+      var extras = [
+        { id: 'entryPosition', val: String(data.position || 4) },
+        { id: 'entryDepth', val: String(data.depth || 4) },
+        { id: 'entryRole', val: String(data.role || 0) },
+        { id: 'entryOrder', val: String(data.order || 100) },
+        { id: 'entryProb', val: String(data.prob || 100) },
+      ];
+      extras.forEach(function (item, idx) {
+        setTimeout(function () {
+          flashSetSelect(document.getElementById(item.id), item.val);
+        }, idx * 80);
+      });
+    });
+
+    return true;
+  };
 
   // ============================================================
   //  初始化状态
