@@ -50,6 +50,9 @@ import GsapAnimations from '../components/GsapAnimations.astro';
         <span class="fx-toggle-label">✨ 特效</span>
       </label>
       <span class="app-version-badge">V3 SPEC</span>
+      <span id="visitorCount" class="app-version-badge" style="margin-left:6px;background:rgba(139,92,246,0.13);border-color:rgba(139,92,246,0.3);color:#c4b5fd;min-width:60px;text-align:center;">
+        👥 <span id="visitorNum" style="font-variant-numeric:tabular-nums;">…</span>
+      </span>
     </div>
   </div>
 
@@ -1178,6 +1181,44 @@ window.__setImportedAvatar__ = function(base64) {
 
     // ★ 初始化顺序很重要：先加载 AI 配置（含预设），再加载草稿
     loadAIConfig();
+
+    // ★ Supabase 访客计数器
+    (function initVisitorCounter() {
+      var SUPABASE_URL = 'https://ccvskpgcbehhtdsnvtbd.supabase.co';
+      var SUPABASE_ANON_KEY = 'sb_publishable_pMtDNSU-27NxIDbIUYVxrQ_o-kIX6eU';
+
+      var numEl = document.getElementById('visitorNum');
+      var SESSION_KEY = 'st_v3_visited';
+      var alreadyCounted = sessionStorage.getItem(SESSION_KEY);
+
+      // 用 Supabase RPC 调用 increment_visitors 函数
+      // 如果本次会话已计数，则只读取不递增
+      var rpcName = alreadyCounted ? 'get_visitor_count' : 'increment_visitors';
+
+      fetch(SUPABASE_URL + '/rest/v1/rpc/' + rpcName, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+        },
+        body: '{}'
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        // RPC 返回的是一个数字
+        if (typeof data === 'number') {
+          numEl.textContent = data.toLocaleString();
+          sessionStorage.setItem(SESSION_KEY, '1');
+        } else {
+          numEl.textContent = '--';
+        }
+      })
+      .catch(function() {
+        numEl.textContent = '--';
+      });
+    })();
+
     var drafts = getAllDrafts();
     var lastId = localStorage.getItem(CURRENT_KEY);
     if (lastId && drafts[lastId]) loadDraft(lastId);
