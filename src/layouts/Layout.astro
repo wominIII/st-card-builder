@@ -431,6 +431,9 @@ const { title } = Astro.props;
         position: relative;
         width: 100%;
       }
+      .cs-wrap.cs-open {
+        z-index: 8000;
+      }
       .cs-trigger {
         display: flex;
         align-items: center;
@@ -476,7 +479,7 @@ const { title } = Astro.props;
         top: 100%;
         left: 0;
         right: 0;
-        z-index: 1000;
+        z-index: 9000;
         background: rgb(15, 20, 36);
         border: 1px solid rgba(99, 102, 241, 0.3);
         border-top: none;
@@ -1457,6 +1460,28 @@ const { title } = Astro.props;
       /* 面板 transform 不影响 overflow */
       .panel, .code-window {
         transform-origin: center center;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* 下拉展开时抬升所属面板，避免被后续面板覆盖 */
+      .panel.panel-elevated,
+      .code-window.panel-elevated {
+        z-index: 2000;
+      }
+
+      /* Portal 模式：下拉框传送到 body 时使用 fixed 定位 */
+      .cs-dropdown.cs-portalled {
+        position: fixed !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        z-index: 99999 !important;
+        max-height: 220px !important;
+        overflow-y: auto !important;
+        overflow: visible !important;
+        opacity: 1 !important;
+        transition: none !important;
       }
     </style>
   </head>
@@ -1467,6 +1492,40 @@ const { title } = Astro.props;
     <script is:inline>
     (function() {
       var ARROW_SVG = '<svg class="cs-arrow" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
+
+      /* ── Portal 工具函数 ── */
+      // 将下拉框传送到 body 并用 fixed 定位对齐触发器
+      function portalOpen(wrap, dropdown, trigger) {
+        var rect = trigger.getBoundingClientRect();
+        dropdown.classList.add('cs-portalled');
+        document.body.appendChild(dropdown);
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = rect.bottom + 'px';
+        dropdown.style.width = rect.width + 'px';
+      }
+
+      // 将下拉框收回 wrap
+      function portalClose(wrap, dropdown) {
+        dropdown.classList.remove('cs-portalled');
+        dropdown.style.left = '';
+        dropdown.style.top = '';
+        dropdown.style.width = '';
+        // 放回 wrap 内（trigger 之后）
+        if (dropdown.parentElement !== wrap) {
+          wrap.insertBefore(dropdown, wrap.querySelector('select'));
+        }
+      }
+
+      function getWrapPanel(el) {
+        return el ? el.closest('.panel, .code-window') : null;
+      }
+
+      function syncPanelElevated(wrap) {
+        var panel = getWrapPanel(wrap);
+        if (!panel) return;
+        var hasOpen = panel.querySelector('.cs-wrap.cs-open');
+        panel.classList.toggle('panel-elevated', !!hasOpen);
+      }
 
       function enhanceSelect(sel) {
         if (sel.classList.contains('cs-hidden')) return;
@@ -1515,18 +1574,46 @@ const { title } = Astro.props;
         var mo = new MutationObserver(function() { buildOptions(); });
         mo.observe(sel, { childList: true, attributes: true, subtree: true });
 
+        function openDrop() {
+          wrap.classList.add('cs-open');
+          portalOpen(wrap, dropdown, trigger);
+          syncPanelElevated(wrap);
+        }
+
+        function closeDrop() {
+          wrap.classList.remove('cs-open');
+          portalClose(wrap, dropdown);
+          syncPanelElevated(wrap);
+        }
+
+        function closeAllExcept(exceptWrap) {
+          document.querySelectorAll('.cs-wrap.cs-open').forEach(function(w) {
+            if (w !== exceptWrap) {
+              w.classList.remove('cs-open');
+              var dd = w._csDropdown || w.querySelector('.cs-dropdown');
+              if (dd) portalClose(w, dd);
+              syncPanelElevated(w);
+            }
+          });
+        }
+
+        // 保存引用方便外部访问
+        wrap._csDropdown = dropdown;
+
         trigger.addEventListener('click', function(e) {
           e.stopPropagation();
-          // 关闭其他已打开的
-          document.querySelectorAll('.cs-wrap.cs-open').forEach(function(w) {
-            if (w !== wrap) w.classList.remove('cs-open');
-          });
-          wrap.classList.toggle('cs-open');
+          closeAllExcept(wrap);
+          if (wrap.classList.contains('cs-open')) {
+            closeDrop();
+          } else {
+            openDrop();
+          }
         });
 
         dropdown.addEventListener('click', function(e) {
           var opt = e.target.closest('.cs-option');
           if (!opt) return;
+          e.stopPropagation();
           var val = opt.getAttribute('data-value');
           sel.value = val;
           sel.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1534,7 +1621,7 @@ const { title } = Astro.props;
           dropdown.querySelectorAll('.cs-option').forEach(function(o) { o.classList.remove('cs-selected'); });
           opt.classList.add('cs-selected');
           labelSpan.textContent = opt.textContent;
-          wrap.classList.remove('cs-open');
+          closeDrop();
         });
 
         // 键盘可访问
@@ -1543,17 +1630,43 @@ const { title } = Astro.props;
             e.preventDefault();
             trigger.click();
           } else if (e.key === 'Escape') {
-            wrap.classList.remove('cs-open');
+            closeDrop();
           }
         });
       }
 
-      // 点击外部关闭
+      // 点击外部关闭所有
       document.addEventListener('click', function() {
         document.querySelectorAll('.cs-wrap.cs-open').forEach(function(w) {
           w.classList.remove('cs-open');
+          var dd = w._csDropdown || w.querySelector('.cs-dropdown');
+          if (dd) portalClose(w, dd);
+          syncPanelElevated(w);
         });
       });
+
+      // 面板滚动时关闭已打开的下拉（避免位置偏移）
+      // 只监听 .panel / .code-window 的 scroll，不用 document 捕获
+      function attachPanelScrollClose() {
+        document.querySelectorAll('.panel, .code-window').forEach(function(p) {
+          if (p._csScrollBound) return;
+          p._csScrollBound = true;
+          p.addEventListener('scroll', function() {
+            document.querySelectorAll('.cs-wrap.cs-open').forEach(function(w) {
+              w.classList.remove('cs-open');
+              var dd = w._csDropdown || w.querySelector('.cs-dropdown');
+              if (dd) portalClose(w, dd);
+              syncPanelElevated(w);
+            });
+          });
+        });
+      }
+      // DOM ready 后绑定
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachPanelScrollClose);
+      } else {
+        attachPanelScrollClose();
+      }
 
       // 初始增强
       function init() {

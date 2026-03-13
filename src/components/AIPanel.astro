@@ -604,6 +604,8 @@
       for (var i = 0; i < children.length; i++) {
         gsap.set(children[i], { opacity: 0, y: 12 });
       }
+      var _childCount = children.length;
+      var _childDone = 0;
       gsap.fromTo(searchConfigDetail,
         { height: 0, opacity: 0 },
         {
@@ -614,12 +616,22 @@
           }
         }
       );
-      // 子元素依次淡入
+      // 子元素依次淡入，完成后清除 transform 防止产生层叠上下文
       for (var j = 0; j < children.length; j++) {
-        gsap.to(children[j], {
-          opacity: 1, y: 0, duration: 0.35, ease: 'power2.out',
-          delay: 0.1 + j * 0.06,
-        });
+        (function(idx) {
+          gsap.to(children[idx], {
+            opacity: 1, y: 0, duration: 0.35, ease: 'power2.out',
+            delay: 0.1 + idx * 0.06,
+            onComplete: function() {
+              children[idx].style.transform = '';
+              _childDone++;
+              if (_childDone >= _childCount) {
+                searchConfigDetail.style.transform = '';
+                searchConfigDetail.style.opacity = '';
+              }
+            }
+          });
+        })(j);
       }
     } else {
       searchConfigDetail.style.display = 'block';
@@ -636,6 +648,13 @@
           searchConfigDetail.style.overflow = '';
           searchConfigDetail.style.height = '';
           searchConfigDetail.style.opacity = '';
+          searchConfigDetail.style.transform = '';
+          // 清除子元素残留的 GSAP transform
+          var ch = searchConfigDetail.children;
+          for (var k = 0; k < ch.length; k++) {
+            ch[k].style.transform = '';
+            ch[k].style.opacity = '';
+          }
         }
       });
     } else {
