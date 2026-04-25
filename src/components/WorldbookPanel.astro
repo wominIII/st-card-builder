@@ -100,7 +100,7 @@
       </div>
       <div class="organize-title-wrap">
         <span class="organize-title">AI 智能整理</span>
-        <span class="organize-subtitle">自动优化深度 · 顺序 · 概率</span>
+        <span class="organize-subtitle">自动优化插入位置 · 深度 · 顺序 · 概率</span>
       </div>
       <button id="btnAiOrganize" class="btn-organize-magic">
         <span class="btn-magic-icon">⚡</span>
@@ -110,6 +110,24 @@
     <div id="organizeStatus" class="organize-status-bar"></div>
   </div>
   <div id="organizePreview" class="organize-preview-container" style="display: none;"></div>
+
+  <!-- ★ AI 触发词生成 -->
+  <div class="wb-keygen-wrap">
+    <div class="organize-header-row">
+      <div class="organize-icon-wrap wb-keygen-icon-wrap">
+        <span class="organize-icon">🗝️</span>
+      </div>
+      <div class="organize-title-wrap">
+        <span class="organize-title wb-keygen-title">AI 触发词生成</span>
+        <span class="organize-subtitle">为当前世界书条目批量补全更自然的触发词</span>
+      </div>
+      <button id="btnAiGenerateKeys" class="btn-organize-magic wb-keygen-btn">
+        <span class="btn-magic-icon">✨</span>
+        <span class="btn-magic-text">一键补触发词</span>
+      </button>
+    </div>
+    <div id="keygenStatus" class="organize-status-bar"></div>
+  </div>
 
   <!-- 条目列表 -->
   <div id="entriesList"></div>
@@ -241,11 +259,42 @@
     border: 1px solid rgba(51, 65, 85, 0.3);
   }
 
+  .wb-keygen-wrap {
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.09), rgba(14, 165, 233, 0.04));
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    box-shadow: 0 3px 16px rgba(56, 189, 248, 0.08);
+  }
+
+  .wb-keygen-icon-wrap {
+    background: linear-gradient(145deg, #38bdf8, #0284c7);
+    box-shadow: 0 3px 10px rgba(56, 189, 248, 0.28), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+
+  .wb-keygen-title {
+    color: #7dd3fc;
+    text-shadow: 0 0 18px rgba(56, 189, 248, 0.24);
+  }
+
+  .wb-keygen-btn {
+    background: linear-gradient(145deg, #0ea5e9 0%, #0284c7 52%, #0369a1 100%);
+    box-shadow: 0 3px 12px rgba(14, 165, 233, 0.32), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+
+  .wb-keygen-btn:hover {
+    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.42), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+
   /* ===== 预览容器 ===== */
   .organize-preview-container {
     background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(8, 12, 28, 0.99));
     border: 1px solid rgba(251, 191, 36, 0.25);
     border-radius: 12px;
+    margin-top: 5px;
     margin-bottom: 14px;
     overflow: hidden;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.04);

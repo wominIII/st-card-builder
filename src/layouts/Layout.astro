@@ -158,48 +158,68 @@ const { title } = Astro.props;
         letter-spacing: 0.05em;
       }
 
-      /* ========== 主容器布局 — 7 面板双行网格 ========== */
+      /* ========== 主容器布局 — 4 个工作栈 ========== */
       .app-container {
         display: grid;
-        grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr) minmax(360px, 1.2fr);
-        grid-template-rows: auto auto;
-        grid-template-areas:
-          "ai character worldbook preview"
-          "statusbar chat auditor preview";
-        gap: 16px;
+        grid-template-columns:
+          minmax(280px, 0.86fr)
+          minmax(330px, 1fr)
+          minmax(440px, 1.28fr)
+          minmax(420px, 1.16fr);
+        gap: 18px;
         max-width: 1920px;
         margin: 0 auto;
         align-items: start;
       }
 
-      /* 区域分配 — 全部 7 面板 */
-      .area-ai { grid-area: ai; }
-      .area-character { grid-area: character; }
-      .area-worldbook { grid-area: worldbook; }
-      .area-preview { grid-area: preview; }
-      .area-chat { grid-area: chat; }
-      .area-statusbar { grid-area: statusbar; }
-      .area-auditor { grid-area: auditor; }
+      .app-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .app-stack-play {
+        min-width: 430px;
+      }
 
       /* ========== 响应式 — 4 档自适应 ========== */
-      @media (max-width: 1600px) {
+      @media (max-width: 1680px) {
         .app-container {
-          grid-template-columns: 280px 1fr minmax(340px, 1fr);
-          grid-template-areas:
-            "ai character preview"
-            "worldbook chat preview"
-            "statusbar auditor preview";
+          grid-template-columns: minmax(280px, 0.9fr) minmax(430px, 1.25fr) minmax(380px, 1.05fr);
+        }
+        .app-stack-lore {
+          grid-column: 1;
+        }
+        .app-stack-config {
+          grid-column: 1;
+          grid-row: 1;
+        }
+        .app-stack-lore {
+          grid-row: 2;
+        }
+        .app-stack-play {
+          grid-column: 2;
+          grid-row: 1 / span 2;
+        }
+        .app-stack-inspect {
+          grid-column: 3;
+          grid-row: 1 / span 2;
         }
       }
 
       @media (max-width: 1200px) {
         .app-container {
           grid-template-columns: 1fr 1fr;
-          grid-template-areas:
-            "ai character"
-            "worldbook chat"
-            "statusbar auditor"
-            "preview preview";
+        }
+        .app-stack,
+        .app-stack-config,
+        .app-stack-lore,
+        .app-stack-play,
+        .app-stack-inspect {
+          grid-column: auto;
+          grid-row: auto;
+          min-width: 0;
         }
         .code-window {
           position: static !important;
@@ -210,14 +230,6 @@ const { title } = Astro.props;
       @media (max-width: 900px) {
         .app-container {
           grid-template-columns: 1fr;
-          grid-template-areas:
-            "ai"
-            "character"
-            "worldbook"
-            "chat"
-            "statusbar"
-            "auditor"
-            "preview";
         }
         .panel, .code-window {
           max-height: none !important;
@@ -258,10 +270,10 @@ const { title } = Astro.props;
       /* ========== 面板通用 ========== */
       .panel {
         background: linear-gradient(135deg, rgb(15, 23, 37), rgb(13, 18, 32));
-        padding: 20px;
-        border-radius: 16px;
+        padding: 16px;
+        border-radius: 12px;
         border: 1px solid rgba(99, 102, 241, 0.12);
-        max-height: calc(100vh - 40px);
+        max-height: min(720px, calc(100vh - 112px));
         overflow-y: auto;
         scrollbar-gutter: stable;
         box-shadow:
@@ -730,13 +742,13 @@ const { title } = Astro.props;
         background-color: rgba(5, 5, 16, 0.95);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border-radius: 16px;
+        border-radius: 12px;
         border: 1px solid rgba(30, 41, 59, 0.8);
         display: flex;
         flex-direction: column;
-        max-height: calc(100vh - 40px);
+        max-height: min(560px, calc(100vh - 112px));
         position: sticky;
-        top: 20px;
+        top: 10px;
         overflow: hidden;
         box-shadow:
           0 4px 24px rgba(0, 0, 0, 0.4),
