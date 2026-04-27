@@ -179,6 +179,10 @@ const { title } = Astro.props;
         min-width: 0;
       }
 
+      .app-stack-inspect {
+        gap: 25px;
+      }
+
       .app-stack-play {
         min-width: 430px;
       }
@@ -736,6 +740,63 @@ const { title } = Astro.props;
       }
       .entry-info h4 { margin: 0 0 4px 0; font-size: 0.88rem; }
       .entry-info p { margin: 0; font-size: 0.72rem; color: #94a3b8; }
+      .wb-inline-editor {
+        margin-top: 12px;
+        padding: 14px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(6, 10, 24, 0.92), rgba(15, 23, 42, 0.9));
+        border: 1px solid rgba(99, 102, 241, 0.24);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      }
+      .wb-inline-editor-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .wb-inline-editor-title {
+        color: #c7d2fe;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+      .wb-inline-editor-subtitle {
+        color: #64748b;
+        font-size: 0.7rem;
+      }
+      .wb-inline-editor textarea {
+        min-height: 140px;
+      }
+      .wb-inline-editor-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .wb-inline-editor-actions .btn {
+        width: auto;
+        margin: 0;
+      }
+      .wb-inline-cancel {
+        background: linear-gradient(135deg, #334155, #1e293b);
+        border-color: rgba(71, 85, 105, 0.35);
+      }
+      .wb-inline-cancel:hover {
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border-color: rgba(100, 116, 139, 0.45);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.28);
+      }
+      .wb-entry-preview {
+        margin-top: 8px;
+        color: #cbd5e1;
+        font-size: 0.75rem;
+        line-height: 1.55;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
 
       /* ========== 代码预览窗口 ========== */
       .code-window {
@@ -790,6 +851,12 @@ const { title } = Astro.props;
         flex-grow: 1;
         overflow: auto;
         padding: 16px;
+      }
+
+      .area-preview {
+        margin-top: -9px;
+        min-height: min(600px, calc(100vh - 112px));
+        max-height: min(760px, calc(100vh - 112px));
       }
       .cyber-pre {
         margin: 0;

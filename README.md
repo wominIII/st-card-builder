@@ -1,4 +1,4 @@
-# 🌌 SillyTavern V3 卡片构建器 (Ultimate Card Builder)
+# 🌌 SillyTavern V4 卡片构建器 (Ultimate Card Builder)
 
 ![Astro](https:
 ![Vanilla JS](https:
@@ -16,7 +16,7 @@
 
 ### 📖 世界书控制 (Worldbook CRUD)
 - 告别繁琐的酒馆内编辑，支持在卡片创建期就注入强大的规则。
-- 完整支持 V3 规范下的高阶参数：`Strategy (触发策略)`、`Depth (挂载深度)`、`Order (插入顺序)`、`Role (系统/用户/AI)` 及 `Probability (触发概率)`。
+- 完整支持酒馆角色卡规范下的高阶参数：`Strategy (触发策略)`、`Depth (挂载深度)`、`Order (插入顺序)`、`Role (系统/用户/AI)` 及 `Probability (触发概率)`。
 
 ### 📊 动态状态栏一键注入 (Status Bar Injection)
 - **半 AI 构思**：只需输入角色描述，AI 会自动为你构思出极具沉浸感的监控字段（如赛博朋克风的“义体完整度、污染指数”）。

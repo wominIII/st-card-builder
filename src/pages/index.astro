@@ -8,11 +8,12 @@ import PreviewPanel from '../components/PreviewPanel.astro';
 import ChatPlayground from '../components/ChatPlayground.astro';
 import WorldbookAuditor from '../components/WorldbookAuditor.astro';
 import VariableCardPanel from '../components/VariableCardPanel.astro';
+import WorkspaceFooterPanel from '../components/WorkspaceFooterPanel.astro';
 import ParticleCanvas from '../components/ParticleCanvas.astro';
 import GsapAnimations from '../components/GsapAnimations.astro';
 ---
 
-<Layout title="SillyTavern V3 卡片构建器">
+<Layout title="SillyTavern V4 卡片构建器">
   <ParticleCanvas />
   <div class="app-header">
     <div class="app-brand">
@@ -36,12 +37,12 @@ import GsapAnimations from '../components/GsapAnimations.astro';
         </svg>
       </span>
       <div>
-        <h1 class="app-title">V3 卡片构建器</h1>
+        <h1 class="app-title">V4 卡片构建器</h1>
         <p class="app-subtitle">未完成版本</p>
       </div>
     </div>
     <div class="app-header-actions">
-      <span class="app-version-badge">V3 SPEC</span>
+      <span class="app-version-badge">V4 BUILD</span>
       <span id="visitorCount" class="app-version-badge" style="margin-left:6px;background:rgba(139,92,246,0.13);border-color:rgba(139,92,246,0.3);color:#c4b5fd;min-width:60px;text-align:center;">
         👥 <span id="visitorNum" style="font-variant-numeric:tabular-nums;">…</span>
       </span>
@@ -64,6 +65,7 @@ import GsapAnimations from '../components/GsapAnimations.astro';
     <div class="app-stack app-stack-inspect">
       <PreviewPanel />
       <WorldbookAuditor />
+      <WorkspaceFooterPanel />
     </div>
   </div>
 
@@ -76,8 +78,8 @@ import GsapAnimations from '../components/GsapAnimations.astro';
     var FIELD_DICT = {
       "name": { label: "角色名", tip: "角色的显示名称", type: "string", required: true },
       "description": { label: "角色描述(顶层)", tip: "V2兼容字段，与data.description同步", type: "string" },
-      "personality": { label: "性格(顶层)", tip: "V3中通常留空", type: "string" },
-      "scenario": { label: "场景(顶层)", tip: "V3中通常留空", type: "string" },
+      "personality": { label: "性格(顶层)", tip: "通常留空，推荐写入角色描述", type: "string" },
+      "scenario": { label: "场景(顶层)", tip: "通常留空，推荐用世界书承载场景", type: "string" },
       "first_mes": { label: "开场白(顶层)", tip: "角色说的第一句话", type: "string" },
       "mes_example": { label: "对话示例(顶层)", tip: "示范角色说话风格", type: "string" },
       "creatorcomment": { label: "作者注释(顶层)", tip: "V2兼容字段", type: "string" },
@@ -87,7 +89,7 @@ import GsapAnimations from '../components/GsapAnimations.astro';
       "tags": { label: "标签(顶层)", tip: "分类标签数组", type: "array" },
       "spec": { label: "卡片规格", tip: "固定为chara_card_v3", type: "string", required: true, enum: ["chara_card_v3"] },
       "spec_version": { label: "规格版本", tip: "固定为3.0", type: "string", required: true, enum: ["3.0"] },
-      "data.name": { label: "角色名", tip: "V3主数据层角色名", type: "string", required: true },
+      "data.name": { label: "角色名", tip: "主数据层角色名", type: "string", required: true },
       "data.description": { label: "角色描述", tip: "核心描述：外貌、性格、背景", type: "string", required: true },
       "data.personality": { label: "性格", tip: "推荐写在description里", type: "string" },
       "data.scenario": { label: "场景", tip: "推荐用世界书代替", type: "string" },
@@ -100,7 +102,7 @@ import GsapAnimations from '../components/GsapAnimations.astro';
       "data.creator": { label: "创作者", tip: "卡片制作者名字", type: "string" },
       "data.character_version": { label: "卡片版本", tip: "迭代版本号", type: "string" },
       "data.alternate_greetings": { label: "备选开场白", tip: "多个可选开场白", type: "array" },
-      "data.extensions": { label: "扩展数据", tip: "V3扩展字段容器", type: "object" },
+      "data.extensions": { label: "扩展数据", tip: "扩展字段容器", type: "object" },
       "data.extensions.world": { label: "关联世界书", tip: "关联的世界书名称", type: "string" },
       "data.extensions.regex_scripts": { label: "正则脚本列表", tip: "嵌入卡片的正则替换脚本", type: "array" },
       "data.extensions.regex_scripts[].id": { label: "脚本ID", tip: "唯一标识符", type: "string" },
@@ -124,7 +126,7 @@ import GsapAnimations from '../components/GsapAnimations.astro';
       "data.character_book.entries[].enabled": { label: "是否启用", tip: "false则完全不生效", type: "boolean" },
       "data.character_book.entries[].position": { label: "插入位置(文本)", tip: "V2兼容字段", type: "string" },
       "data.character_book.entries[].use_regex": { label: "正则匹配", tip: "触发词当作正则表达式", type: "boolean" },
-      "data.character_book.entries[].extensions": { label: "词条扩展参数", tip: "V3高级控制参数", type: "object" },
+      "data.character_book.entries[].extensions": { label: "词条扩展参数", tip: "高级控制参数", type: "object" },
       "data.character_book.entries[].extensions.position": { label: "插入位置", tip: "0=角色前 4=按深度(最常用)", type: "number", enum: [0,1,2,3,4,5,6] },
       "data.character_book.entries[].extensions.probability": { label: "触发概率", tip: "0~100", type: "number", range: { min: 0, max: 100 } },
       "data.character_book.entries[].extensions.useProbability": { label: "启用概率", tip: "false则忽略概率值", type: "boolean" },
@@ -202,16 +204,7 @@ import GsapAnimations from '../components/GsapAnimations.astro';
     var charDesc             = document.getElementById('charDesc');
     var firstMes             = document.getElementById('firstMes');
     var creatorNotes         = document.getElementById('creatorNotes');
-    var entryComment         = document.getElementById('entryComment');
-    var entryContent         = document.getElementById('entryContent');
-    var entryKeys            = document.getElementById('entryKeys');
-    var entryStrategy        = document.getElementById('entryStrategy');
-    var entryPosition        = document.getElementById('entryPosition');
-    var entryDepth           = document.getElementById('entryDepth');
-    var entryRole            = document.getElementById('entryRole');
-    var entryOrder           = document.getElementById('entryOrder');
-    var entryProb            = document.getElementById('entryProb');
-    var btnAddEntry          = document.getElementById('btnAddEntry');
+    var btnCreateEntry       = document.getElementById('btnCreateEntry');
     var entriesList          = document.getElementById('entriesList');
     var btnDownloadJson      = document.getElementById('btnDownloadJson');
     var btnExportPNG         = document.getElementById('btnExportPNG');
@@ -227,6 +220,7 @@ import GsapAnimations from '../components/GsapAnimations.astro';
     var currentDraftId       = "";
     var parsedPresetList     = [];
     var editingIndex         = -1;
+    var isCreatingEntry      = false;
     var statusBarActive      = true;
     var cachedSearchResults  = null;
 
@@ -890,7 +884,7 @@ window.__setImportedAvatar__ = function(base64) {
           var existingTitles = worldbookEntries.map(function(e) { return e.comment; }).join('、');
           var existingRef    = existingTitles ? '\n【已有条目(禁止重复)】：' + existingTitles : '';
 
-          var skSys = '你是一个酒馆V3世界书骨架生成器。快速产出【' + batchSize + '条】简短骨架。'
+          var skSys = '你是一个 SillyTavern 世界书骨架生成器。快速产出【' + batchSize + '条】简短骨架。'
             + '\n每条只需：comment(标题)、content(一句话20-40字)、keys(1-3个触发词)、strategy("selective"或"constant")'
             + '\n【角色】：' + charName.value.trim() + ' | ' + charDesc.value.trim().substring(0, 300)
             + existingRef
@@ -958,7 +952,7 @@ window.__setImportedAvatar__ = function(base64) {
       var presetBlock = presetsStr ? '\n\n【文风约束】：\n' + presetsStr : '';
       var includeChar = wbIncludeCharData && wbIncludeCharData.checked;
       var charBlock   = includeChar ? '\n【角色】：' + charName.value.trim() + ' | ' + charDesc.value.trim() + '\n' : '';
-      var sysPrompt   = '你是一个酒馆V3世界书词条构建大师。请生成【仅仅1条】详细完整的设定。' + stepInfo + charBlock + '\n' + ctxStr + '\n' + presetBlock + searchInjection + '\n【输出】：1个JSON对象 { "comment": "标题", "content": "详细设定(至少100字)", "keys": ["触发词"], "strategy": "selective 或 constant", "position": 4 }';
+      var sysPrompt   = '你是一个 SillyTavern 世界书词条构建大师。请生成【仅仅1条】详细完整的设定。' + stepInfo + charBlock + '\n' + ctxStr + '\n' + presetBlock + searchInjection + '\n【输出】：1个JSON对象 { "comment": "标题", "content": "详细设定(至少100字)", "keys": ["触发词"], "strategy": "selective 或 constant", "position": 4 }';
       var userPrompt  = customDirection ? '【方向】：' + customDirection : '【自由发挥，拒绝重复】';
       var headers     = { 'Content-Type': 'application/json' };
       if (key) headers['Authorization'] = 'Bearer ' + key;
@@ -979,27 +973,219 @@ window.__setImportedAvatar__ = function(base64) {
     // ============================================================
     //  世界书条目管理
     // ============================================================
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getDefaultWBEntry() {
+      return {
+        comment: '',
+        content: '',
+        keys: [],
+        strategy: 'selective',
+        position: 4,
+        depth: 4,
+        role: 0,
+        order: 100,
+        prob: 100,
+      };
+    }
+
+    function normalizeWBEntry(entry) {
+      var base = getDefaultWBEntry();
+      entry = entry || {};
+      return {
+        comment: String(entry.comment || ''),
+        content: String(entry.content || ''),
+        keys: Array.isArray(entry.keys) ? entry.keys.filter(function(k) { return String(k || '').trim(); }) : [],
+        strategy: ['constant', 'selective', 'vectorized'].indexOf(entry.strategy) >= 0 ? entry.strategy : base.strategy,
+        position: clampInt(entry.position, base.position, 0, 6),
+        depth: clampInt(entry.depth, base.depth, 0, 999),
+        role: clampInt(entry.role, base.role, 0, 2),
+        order: clampInt(entry.order, base.order, 0, 999),
+        prob: clampInt(entry.prob, base.prob, 1, 100),
+      };
+    }
+
+    function renderSelectOptions(options, selectedValue) {
+      var selected = String(selectedValue);
+      var html = '';
+      options.forEach(function(option) {
+        html += '<option value="' + escapeHtml(option.value) + '"' + (selected === String(option.value) ? ' selected' : '') + '>' + escapeHtml(option.label) + '</option>';
+      });
+      return html;
+    }
+
+    function renderInlineEditor(index, entry, isNew) {
+      entry = normalizeWBEntry(entry);
+      var editorId = isNew ? 'wb_editor_new' : 'wb_editor_' + index;
+      var title = isNew ? '✍️ 新建世界书条目' : '✍️ 编辑当前条目';
+      var subtitle = isNew ? '手动录入会直接插入到条目列表里。' : '保存后会直接覆盖这条世界书条目。';
+      var strategyOptions = renderSelectOptions([
+        { value: 'constant', label: '常驻' },
+        { value: 'selective', label: '关键词' },
+        { value: 'vectorized', label: '向量化' },
+      ], entry.strategy);
+      var positionOptions = renderSelectOptions([
+        { value: '0', label: '0 — 之前' },
+        { value: '1', label: '1 — 之后' },
+        { value: '2', label: '2 — 前 EM' },
+        { value: '3', label: '3 — 后 EM' },
+        { value: '4', label: '4 — 深度' },
+        { value: '5', label: '5 — 之前 AN' },
+        { value: '6', label: '6 — 之后 AN' },
+      ], entry.position);
+      var roleOptions = renderSelectOptions([
+        { value: '0', label: '系统' },
+        { value: '1', label: '用户' },
+        { value: '2', label: '助手' },
+      ], entry.role);
+      return ''
+        + '<div class="wb-inline-editor" id="' + editorId + '" data-editor-index="' + index + '">'
+        +   '<div class="wb-inline-editor-head">'
+        +     '<div>'
+        +       '<div class="wb-inline-editor-title">' + title + '</div>'
+        +       '<div class="wb-inline-editor-subtitle">' + subtitle + '</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="form-group">'
+        +     '<label>条目标题</label>'
+        +     '<input type="text" data-field="comment" placeholder="例如：===特殊武器===" value="' + escapeHtml(entry.comment) + '" />'
+        +   '</div>'
+        +   '<div class="form-group">'
+        +     '<label>设定内容</label>'
+        +     '<textarea data-field="content" placeholder="具体设定详情...">' + escapeHtml(entry.content) + '</textarea>'
+        +   '</div>'
+        +   '<div class="form-group">'
+        +     '<label>触发词 — 多个用英文逗号隔开</label>'
+        +     '<input type="text" data-field="keys" placeholder="空为常驻，有词为触发" value="' + escapeHtml((entry.keys || []).join(', ')) + '" />'
+        +   '</div>'
+        +   '<div class="grid-2">'
+        +     '<div class="form-group">'
+        +       '<label>触发策略</label>'
+        +       '<select data-field="strategy">' + strategyOptions + '</select>'
+        +     '</div>'
+        +     '<div class="form-group">'
+        +       '<label>插入位置</label>'
+        +       '<select data-field="position">' + positionOptions + '</select>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="grid-3">'
+        +     '<div class="form-group">'
+        +       '<label>深度</label>'
+        +       '<input type="number" data-field="depth" value="' + escapeHtml(entry.depth) + '" min="0" />'
+        +     '</div>'
+        +     '<div class="form-group">'
+        +       '<label>角色</label>'
+        +       '<select data-field="role">' + roleOptions + '</select>'
+        +     '</div>'
+        +     '<div class="form-group">'
+        +       '<label>顺序</label>'
+        +       '<input type="number" data-field="order" value="' + escapeHtml(entry.order) + '" />'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="form-group">'
+        +     '<label>概率 (%)</label>'
+        +     '<input type="number" data-field="prob" value="' + escapeHtml(entry.prob) + '" min="1" max="100" />'
+        +   '</div>'
+        +   '<div class="wb-inline-editor-actions">'
+        +     '<button class="btn btn-add btn-save-inline" data-index="' + index + '">' + (isNew ? '➕ 保存新条目' : '💾 保存修改') + '</button>'
+        +     '<button class="btn wb-inline-cancel btn-cancel-inline" data-index="' + index + '">取消</button>'
+        +   '</div>'
+        + '</div>';
+    }
+
+    function getInlineEditorRoot(index) {
+      return document.getElementById(index < 0 ? 'wb_editor_new' : 'wb_editor_' + index);
+    }
+
+    function readInlineEditorValue(root, field) {
+      var el = root ? root.querySelector('[data-field="' + field + '"]') : null;
+      return el ? el.value : '';
+    }
+
+    function readInlineEditorEntry(root) {
+      var base = getDefaultWBEntry();
+      return {
+        comment: readInlineEditorValue(root, 'comment').trim(),
+        content: readInlineEditorValue(root, 'content').trim(),
+        keys: readInlineEditorValue(root, 'keys').split(/[,，]/).map(function(k) { return k.trim(); }).filter(function(k) { return k; }),
+        strategy: readInlineEditorValue(root, 'strategy') || base.strategy,
+        position: clampInt(readInlineEditorValue(root, 'position'), base.position, 0, 6),
+        depth: clampInt(readInlineEditorValue(root, 'depth'), base.depth, 0, 999),
+        role: clampInt(readInlineEditorValue(root, 'role'), base.role, 0, 2),
+        order: clampInt(readInlineEditorValue(root, 'order'), base.order, 0, 999),
+        prob: clampInt(readInlineEditorValue(root, 'prob'), base.prob, 1, 100),
+      };
+    }
+
+    function focusInlineEditor(editorId) {
+      setTimeout(function() {
+        var editor = document.getElementById(editorId);
+        if (!editor) return;
+        editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        var target = editor.querySelector('[data-field="comment"]');
+        if (target) target.focus();
+      }, 0);
+    }
+
+    function updateCreateEntryButtonState() {
+      if (!btnCreateEntry) return;
+      btnCreateEntry.textContent = isCreatingEntry ? '收起新建条目' : '➕ 新建手动条目';
+    }
+
     function resetWBForm() {
-      editingIndex = -1; entryComment.value = ''; entryContent.value = ''; entryKeys.value = '';
-      entryStrategy.value = 'selective'; entryPosition.value = '4'; entryDepth.value = '4';
-      entryRole.value = '0'; entryOrder.value = '100'; entryProb.value = '100';
-      btnAddEntry.textContent = '➕ 保存到列表'; btnAddEntry.style.backgroundColor = '#059669';
+      editingIndex = -1;
+      isCreatingEntry = false;
+      updateCreateEntryButtonState();
+    }
+
+    function toggleCreateEntryForm() {
+      if (isCreatingEntry) {
+        resetWBForm();
+        renderEntriesList();
+        return;
+      }
+      editingIndex = -1;
+      isCreatingEntry = true;
+      renderEntriesList();
+      updateCreateEntryButtonState();
+      focusInlineEditor('wb_editor_new');
     }
 
     function editEntry(index) {
-      var entryEl = entriesList.children[index];
-      editingIndex = index; var e = worldbookEntries[index];
-      btnAddEntry.textContent = '💾 确认覆盖'; btnAddEntry.style.backgroundColor = '#d97706';
-      if (window.__flyToEditArea__ && entryEl && window.__flyToEditArea__(entryEl, e)) {
-        /* 动画模式：碎片飞入后打字浮现 */
-      } else {
-        /* 无动画回退：直接填入 */
-        entryComment.value = e.comment || ''; entryContent.value = e.content || '';
-        entryKeys.value = (e.keys || []).join(', '); entryStrategy.value = e.strategy || 'selective';
-        entryPosition.value = String(e.position || 4); entryDepth.value = String(e.depth || 4);
-        entryRole.value = String(e.role || 0); entryOrder.value = String(e.order || 100); entryProb.value = String(e.prob || 100);
+      if (editingIndex === index && !isCreatingEntry) {
+        resetWBForm();
+        renderEntriesList();
+        return;
       }
-      btnAddEntry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      editingIndex = index;
+      isCreatingEntry = false;
+      renderEntriesList();
+      updateCreateEntryButtonState();
+      focusInlineEditor('wb_editor_' + index);
+    }
+
+    function cancelInlineEdit() {
+      resetWBForm();
+      renderEntriesList();
+    }
+
+    function saveInlineEntry(index) {
+      var editorRoot = getInlineEditorRoot(index);
+      if (!editorRoot) return;
+      var nextEntry = readInlineEditorEntry(editorRoot);
+      if (!nextEntry.content.trim()) return alert('内容不能为空！');
+      if (index >= 0) worldbookEntries[index] = nextEntry;
+      else worldbookEntries.push(nextEntry);
+      resetWBForm();
+      renderEntriesList();
+      debouncedUpdateAndSave();
     }
 
     async function aiRewriteEntry(index, req, btn) {
@@ -1015,7 +1201,7 @@ window.__setImportedAvatar__ = function(base64) {
         var sr = await performSearchIfEnabled(sq);
         searchInjection = sr.searchText || '';
       }
-      var sys = '你是一个酒馆V3词条润色大师。修改一个【已存在的词条】。\n【原词条】: 标题: ' + old.comment + ' | 策略: ' + old.strategy + ' | 触发词: ' + old.keys.join(',') + '\n内容: ' + old.content + (presetsStr ? '\n【文风】：\n' + presetsStr : '') + expandHint + searchInjection + '\n【任务】：重写。输出JSON：{ "comment": "标题", "content": "详细设定", "keys": ["触发词"], "strategy": "selective 或 constant", "position": ' + old.position + ' }';
+      var sys = '你是一个 SillyTavern 词条润色大师。修改一个【已存在的词条】。\n【原词条】: 标题: ' + old.comment + ' | 策略: ' + old.strategy + ' | 触发词: ' + old.keys.join(',') + '\n内容: ' + old.content + (presetsStr ? '\n【文风】：\n' + presetsStr : '') + expandHint + searchInjection + '\n【任务】：重写。输出JSON：{ "comment": "标题", "content": "详细设定", "keys": ["触发词"], "strategy": "selective 或 constant", "position": ' + old.position + ' }';
       try {
         var h = { 'Content-Type': 'application/json' }; if (key) h['Authorization'] = 'Bearer ' + key;
         var res = await fetch(url, { method: 'POST', headers: h, body: JSON.stringify({ model: model, messages: [{ role: "system", content: sys }, { role: "user", content: isSkeleton ? '将骨架展开为完整设定。' + (req ? ' 额外要求：' + req : '') : '修改要求：' + req }], temperature: 0.8 }) });
@@ -1031,29 +1217,41 @@ window.__setImportedAvatar__ = function(base64) {
     }
 
     function renderEntriesList() {
-      entriesList.innerHTML = worldbookEntries.length ? '' : '<span style="color:#475569;font-size:0.8rem;">暂无条目</span>';
+      entriesList.innerHTML = '';
       var posMap = ["0前","1后","2前EM","3后EM","4深度","5前AN","6后AN"];
+      if (isCreatingEntry) {
+        var createDiv = document.createElement('div');
+        createDiv.className = 'entry-item fade-in';
+        createDiv.innerHTML = renderInlineEditor(-1, getDefaultWBEntry(), true);
+        entriesList.appendChild(createDiv);
+      }
+      if (!worldbookEntries.length && !isCreatingEntry) {
+        entriesList.innerHTML = '<span style="color:#475569;font-size:0.8rem;">暂无条目</span>';
+      }
       worldbookEntries.forEach(function(entry, index) {
+        entry = normalizeWBEntry(entry);
         var isSk = entry.content.length < 60;
+        var safeComment = escapeHtml(entry.comment || '未命名');
+        var safeKeys = escapeHtml((entry.keys || []).join(', ') || '无');
+        var preview = entry.content ? '<div class="wb-entry-preview">' + escapeHtml(entry.content) + '</div>' : '';
         var skBadge = isSk ? '<span style="font-size:0.6rem;background:rgba(245,158,11,0.15);color:#f59e0b;padding:1px 6px;border-radius:99px;margin-left:6px;border:1px solid rgba(245,158,11,0.25);">🦴 骨架</span>' : '';
         var div = document.createElement('div'); div.className = 'entry-item fade-in';
-        div.innerHTML = '<div class="entry-item-header"><div class="entry-info"><h4>' + (entry.comment || '未命名') + ' <span style="color:#8b5cf6;font-size:0.7rem;opacity:0.8;">[' + entry.strategy + ']</span>' + skBadge + '</h4><p>位置: ' + (posMap[entry.position] || entry.position) + ' | 顺序: ' + entry.order + ' | 深度: ' + entry.depth + ' | 概率: ' + entry.prob + '%</p><p>触发词: ' + ((entry.keys || []).join(', ') || '无') + '</p>' + (isSk ? '<p style="color:#f59e0b;font-size:0.7rem;margin-top:4px;">💡 点击「✨ AI重写」展开为完整设定</p>' : '') + '</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:160px;"><button class="btn btn-edit" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;background-color:#3b82f6;">✏️ 编辑</button><button class="btn btn-toggle-reroll" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;background:linear-gradient(135deg,#8b5cf6,#6d28d9);">✨ AI重写</button><button class="btn btn-delete" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;">🗑️</button></div></div><div id="reroll_area_' + index + '" style="display:none;width:100%;margin-top:12px;padding-top:12px;border-top:1px dashed #334155;"><input type="text" id="reroll_prompt_' + index + '" placeholder="' + (isSk ? '可留空直接展开，或输入额外要求...' : '怎么修改？') + '" style="width:100%;padding:8px;margin-bottom:8px;" /><button class="btn btn-submit-reroll" data-index="' + index + '" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);padding:8px;font-size:0.85rem;">' + (isSk ? '🦴→📖 展开为完整设定' : '🎲 确定覆盖重写') + '</button></div>';
+        div.innerHTML = '<div class="entry-item-header"><div class="entry-info"><h4>' + safeComment + ' <span style="color:#8b5cf6;font-size:0.7rem;opacity:0.8;">[' + entry.strategy + ']</span>' + skBadge + '</h4><p>位置: ' + (posMap[entry.position] || entry.position) + ' | 顺序: ' + entry.order + ' | 深度: ' + entry.depth + ' | 概率: ' + entry.prob + '%</p><p>触发词: ' + safeKeys + '</p>' + (isSk ? '<p style="color:#f59e0b;font-size:0.7rem;margin-top:4px;">💡 点击「✨ AI重写」展开为完整设定</p>' : '') + '</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:160px;"><button class="btn btn-edit" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;background-color:#3b82f6;">✏️ 编辑</button><button class="btn btn-toggle-reroll" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;background:linear-gradient(135deg,#8b5cf6,#6d28d9);">✨ AI重写</button><button class="btn btn-delete" data-index="' + index + '" style="width:auto;padding:4px 8px;font-size:0.75rem;">🗑️</button></div></div>' + preview + (editingIndex === index ? renderInlineEditor(index, entry, false) : '') + '<div id="reroll_area_' + index + '" style="display:none;width:100%;margin-top:12px;padding-top:12px;border-top:1px dashed #334155;"><input type="text" id="reroll_prompt_' + index + '" placeholder="' + (isSk ? '可留空直接展开，或输入额外要求...' : '怎么修改？') + '" style="width:100%;padding:8px;margin-bottom:8px;" /><button class="btn btn-submit-reroll" data-index="' + index + '" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);padding:8px;font-size:0.85rem;">' + (isSk ? '🦴→📖 展开为完整设定' : '🎲 确定覆盖重写') + '</button></div>';
+        div.querySelector('.entry-info h4').title = entry.comment || '';
         entriesList.appendChild(div);
       });
+      updateCreateEntryButtonState();
       document.querySelectorAll('.btn-edit').forEach(function(b) { b.addEventListener('click', function(e) { editEntry(parseInt(e.currentTarget.getAttribute('data-index'))); }); });
+      document.querySelectorAll('.btn-save-inline').forEach(function(b) { b.addEventListener('click', function(e) { saveInlineEntry(parseInt(e.currentTarget.getAttribute('data-index'))); }); });
+      document.querySelectorAll('.btn-cancel-inline').forEach(function(b) { b.addEventListener('click', function() { cancelInlineEdit(); }); });
       document.querySelectorAll('.btn-toggle-reroll').forEach(function(b) { b.addEventListener('click', function(e) { var a = document.getElementById('reroll_area_' + e.currentTarget.getAttribute('data-index')); a.style.display = a.style.display === 'none' ? 'block' : 'none'; }); });
       document.querySelectorAll('.btn-submit-reroll').forEach(function(b) { b.addEventListener('click', async function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); var req = document.getElementById('reroll_prompt_' + idx).value.trim(); var isSk = worldbookEntries[idx].content.length < 60; if (!isSk && !req) return alert('请填写修改要求！'); await aiRewriteEntry(idx, req, e.currentTarget); }); });
-      document.querySelectorAll('.btn-delete').forEach(function(b) { b.addEventListener('click', function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if (editingIndex === idx) resetWBForm(); renderEntriesList(); debouncedUpdateAndSave(); }); });
+      document.querySelectorAll('.btn-delete').forEach(function(b) { b.addEventListener('click', function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if (editingIndex === idx) resetWBForm(); else if (editingIndex > idx) editingIndex--; renderEntriesList(); debouncedUpdateAndSave(); }); });
       // 通知审计官：世界书条目已变化
       window.dispatchEvent(new CustomEvent('worldbook-changed'));
     }
 
-    btnAddEntry.addEventListener('click', function() {
-      if (!entryContent.value.trim()) return alert('内容不能为空！');
-      var ne = { comment: entryComment.value.trim(), content: entryContent.value.trim(), keys: entryKeys.value.split(',').map(function(k) { return k.trim(); }).filter(function(k) { return k; }), strategy: entryStrategy.value, position: parseInt(entryPosition.value), depth: parseInt(entryDepth.value) || 4, role: parseInt(entryRole.value) || 0, order: parseInt(entryOrder.value) || 100, prob: parseInt(entryProb.value) || 100 };
-      if (editingIndex >= 0) worldbookEntries[editingIndex] = ne; else worldbookEntries.push(ne);
-      resetWBForm(); renderEntriesList(); debouncedUpdateAndSave();
-    });
+    if (btnCreateEntry) btnCreateEntry.addEventListener('click', toggleCreateEntryForm);
 
     // ============================================================
     //  AI 智能整理世界书参数

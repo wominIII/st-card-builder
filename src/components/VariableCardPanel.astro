@@ -270,6 +270,8 @@
 <!-- ★★★ 样式 ★★★ -->
 <style is:global>
   .varcard-panel {
+    min-height: 760px;
+    max-height: min(870px, calc(100vh - 112px));
     overflow-x: hidden;
     overflow-y: auto;
     padding-bottom: 22px;
@@ -450,7 +452,7 @@
 
   .vc-graph-viewport {
     position: relative;
-    height: 620px;
+    height: clamp(680px, 64vh, 820px);
     overflow: hidden;
     border: 1px solid rgba(30,41,59,0.95);
     border-radius: 8px;
@@ -1842,24 +1844,25 @@
 
   var VARLIST_TPL = '---\n<status_current_variables>\n{{format_message_variable::stat_data}}\n</status_current_variables>';
 
-  var FORMAT_TPL = '---\n变量输出格式:\n  rule:\n    - you must output the update analysis and the actual update commands at once in the end of the next reply\n    - the update commands works like the **JSON Patch (RFC 6902)** standard, must be a valid JSON array containing operation objects, but supports the following operations instead:\n      - replace: replace the value of existing paths\n      - delta: update the value of existing number paths by a delta value\n      - insert: insert new items into an object or array (using `-` as array index intends appending to the end)\n      - remove\n      - move\n    - don\'t update field names starts with `_` as they are readonly\n  format: |-\n    <UpdateVariable>\n    <Analysis>$(IN ENGLISH, no more than 80 words)\n    - ${calculate time passed: ...}\n    - ${decide whether dramatic updates are allowed as it\'s in a special case or the time passed is more than usual: yes/no}\n    - ${analyze every variable based on its corresponding `check`, according only to current reply instead of previous plots: ...}\n    </Analysis>\n    <JSONPatch>\n    [\n      { "op": "replace", "path": "${/path/to/variable}", "value": "${new_value}" },\n      { "op": "delta", "path": "${/path/to/number/variable}", "value": "${positive_or_negative_delta}" },\n      { "op": "insert", "path": "${/path/to/object/new_key}", "value": "${new_value}" },\n      { "op": "insert", "path": "${/path/to/array/-}", "value": "${new_value}" },\n      { "op": "remove", "path": "${/path/to/object/key}" },\n      { "op": "remove", "path": "${/path/to/array/0}" },\n      { "op": "move", "from": "${/path/to/variable}", "to": "${/path/to/another/path}" },\n      ...\n    ]\n    </JSONPatch>\n    </UpdateVariable>';
+  var FORMAT_TPL = '---\n变量输出格式:\n  rule:\n    - you must output the update analysis, JSONPatch commands, and visual DisplayPatch at once in the end of the next reply\n    - JSONPatch works like the **JSON Patch (RFC 6902)** standard, must be a valid JSON array containing operation objects, but supports the following operations instead:\n      - replace: replace the value of existing paths\n      - delta: update the value of existing number paths by a delta value\n      - insert: insert new items into an object or array (using `-` as array index intends appending to the end)\n      - remove\n      - move\n    - don\'t update field names starts with `_` as they are readonly\n    - DisplayPatch must mirror every JSONPatch operation with one visible <article> card; do not output raw JSON inside DisplayPatch\n    - DisplayPatch values should be concise human-readable text; if a value is an object or array, summarize it as readable text\n    - if DisplayPatch text contains < or >, rewrite them as Chinese brackets to avoid breaking HTML\n  format: |-\n    <UpdateVariable>\n    <Analysis>$(IN ENGLISH, no more than 80 words)\n    - ${calculate time passed: ...}\n    - ${decide whether dramatic updates are allowed as it\'s in a special case or the time passed is more than usual: yes/no}\n    - ${analyze every variable based on its corresponding `check`, according only to current reply instead of previous plots: ...}\n    </Analysis>\n    <JSONPatch>\n    [\n      { "op": "replace", "path": "${/path/to/variable}", "value": "${new_value}" },\n      { "op": "delta", "path": "${/path/to/number/variable}", "value": "${positive_or_negative_delta}" },\n      { "op": "insert", "path": "${/path/to/object/new_key}", "value": "${new_value}" },\n      { "op": "insert", "path": "${/path/to/array/-}", "value": "${new_value}" },\n      { "op": "remove", "path": "${/path/to/object/key}" },\n      { "op": "remove", "path": "${/path/to/array/0}" },\n      { "op": "move", "from": "${/path/to/variable}", "to": "${/path/to/another/path}" },\n      ...\n    ]\n    </JSONPatch>\n    </UpdateVariable>\n    <DisplayPatch>\n    <article class="mvu-change-card"><b>已更新</b><strong>${/path/to/variable}</strong><em>${new_value}</em></article>\n    <article class="mvu-change-card is-delta"><b>数值变化</b><strong>${/path/to/number/variable}</strong><em>${positive_or_negative_delta}</em></article>\n    <article class="mvu-change-card is-insert"><b>已新增</b><strong>${/path/to/object/new_key}</strong><em>${new_value}</em></article>\n    <article class="mvu-change-card is-remove"><b>已移除</b><strong>${/path/to/variable}</strong><em>已删除</em></article>\n    <article class="mvu-change-card"><b>已移动</b><strong>${/path/from}</strong><em>→ ${/path/to}</em></article>\n    </DisplayPatch>';
 
-  var MVU_DISPLAY_HTML = '<div style="margin:10px 0;border-radius:8px;border:1px solid rgba(56,189,248,0.24);background:linear-gradient(135deg,rgba(8,47,73,0.42),rgba(15,23,42,0.72));overflow:hidden;box-shadow:0 8px 24px rgba(2,6,23,0.18)">'
-    + '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(15,23,42,0.72);border-bottom:1px solid rgba(56,189,248,0.16)">'
-    + '<span style="display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(34,211,238,0.16);color:#67e8f9;font-size:12px">↻</span>'
-    + '<strong style="color:#e0f2fe;font-size:0.78rem">状态变量已更新</strong>'
-    + '<span style="margin-left:auto;color:#86efac;font-size:0.58rem;font-weight:700;border:1px solid rgba(52,211,153,0.22);border-radius:999px;padding:1px 7px;background:rgba(6,78,59,0.16)">MVU</span>'
-    + '</div>'
-    + '<div style="padding:8px 12px;color:#cbd5e1;font-size:0.7rem;line-height:1.55;white-space:pre-line;border-bottom:1px solid rgba(56,189,248,0.12)">$1</div>'
-    + '<details style="padding:8px 12px">'
-    + '<summary style="cursor:pointer;color:#7dd3fc;font-size:0.68rem;font-weight:700">查看本轮变量补丁</summary>'
-    + '<pre style="margin:8px 0 0;padding:8px;border-radius:6px;background:rgba(2,6,23,0.48);border:1px solid rgba(148,163,184,0.12);color:#c4b5fd;font-size:0.66rem;line-height:1.45;overflow-x:auto;white-space:pre-wrap">$2</pre>'
-    + '</details>'
+  var MVU_DISPLAY_HTML = '<style>'
+    + '.mvu-report{margin:14px 0;border-radius:16px;border:1px solid rgba(245,158,11,.42);background:linear-gradient(180deg,rgba(31,22,12,.98),rgba(14,10,8,.98));overflow:hidden;box-shadow:0 18px 46px rgba(0,0,0,.42);font-family:Georgia,serif;position:relative;color:#f8fafc}'
+    + '.mvu-report:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(245,158,11,.035),rgba(245,158,11,.035) 2px,transparent 2px,transparent 5px);pointer-events:none}'
+    + '.mvu-body{position:relative;padding:16px 18px 18px}.mvu-kicker{margin:0 0 12px;color:#facc15;font-size:.76rem;font-weight:900;letter-spacing:1px}'
+    + '.mvu-change-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mvu-change-card{min-width:0;padding:13px 15px;border-radius:13px;border:1px solid rgba(245,158,11,.36);background:linear-gradient(145deg,rgba(86,55,16,.35),rgba(22,16,10,.82));box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}'
+    + '.mvu-change-card b{display:inline-flex;margin:0 0 8px;padding:3px 8px;border-radius:999px;background:rgba(245,158,11,.16);color:#fde68a;font-size:.68rem;font-style:normal}.mvu-change-card strong{display:block;color:#fef3c7;font-size:.88rem;line-height:1.45;word-break:break-word}.mvu-change-card em{display:block;margin-top:7px;color:#fff;font-size:.95rem;font-style:normal;font-weight:800;line-height:1.55;word-break:break-word}.mvu-change-card.is-insert{border-color:rgba(34,197,94,.42);background:linear-gradient(145deg,rgba(20,83,45,.32),rgba(14,18,12,.82))}.mvu-change-card.is-insert b{background:rgba(34,197,94,.18);color:#bbf7d0}.mvu-change-card.is-delta{border-color:rgba(56,189,248,.4);background:linear-gradient(145deg,rgba(8,47,73,.34),rgba(14,18,20,.82))}.mvu-change-card.is-delta b{background:rgba(56,189,248,.16);color:#bae6fd}.mvu-change-card.is-remove{opacity:.82;border-color:rgba(248,113,113,.4)}'
+    + '.mvu-raw{position:relative;margin-top:14px}.mvu-raw summary{cursor:pointer;color:#fbbf24;font-size:.74rem;font-weight:800}.mvu-raw pre{margin:10px 0 0;padding:12px 14px;border-radius:10px;background:rgba(2,6,23,.58);border:1px solid rgba(245,158,11,.16);color:#fde68a;font-size:.72rem;line-height:1.55;overflow-x:auto;white-space:pre-wrap}'
+    + '@media(max-width:720px){.mvu-change-grid{grid-template-columns:1fr}.mvu-body{padding:14px}}'
+    + '</style>'
+    + '<div class="mvu-report">'
+    + '<div class="mvu-body"><div class="mvu-kicker">变量变更</div><div class="mvu-change-grid">$3</div>'
+    + '<details class="mvu-raw"><summary>查看技术补丁</summary><pre>$2</pre></details></div>'
     + '</div>';
 
   var REGEX_SCRIPTS = [
-    { id:'mvu_hide', scriptName:'[不发送]去除变量更新', findRegex:'<UpdateVariable>[\\s\\S]*?</UpdateVariable>', replaceString:'', trimStrings:[], placement:[2], disabled:false, markdownOnly:false, promptOnly:true, runOnEdit:true, substituteRegex:false, minDepth:null, maxDepth:null },
-    { id:'mvu_display', scriptName:'[美化]变量更新状态卡', findRegex:'<UpdateVariable>\\s*<Analysis>([\\s\\S]*?)</Analysis>\\s*<JSONPatch>([\\s\\S]*?)</JSONPatch>\\s*</UpdateVariable>', replaceString:MVU_DISPLAY_HTML, trimStrings:[], placement:[2], disabled:false, markdownOnly:true, promptOnly:false, runOnEdit:true, substituteRegex:false, minDepth:null, maxDepth:null }
+    { id:'mvu_hide', scriptName:'[不发送]去除变量更新', findRegex:'<UpdateVariable>[\\s\\S]*?</UpdateVariable>\\s*<DisplayPatch>[\\s\\S]*?</DisplayPatch>', replaceString:'', trimStrings:[], placement:[2], disabled:false, markdownOnly:false, promptOnly:true, runOnEdit:true, substituteRegex:false, minDepth:null, maxDepth:null },
+    { id:'mvu_display', scriptName:'[美化]变量更新状态卡', findRegex:'<UpdateVariable>\\s*<Analysis>([\\s\\S]*?)</Analysis>\\s*<JSONPatch>([\\s\\S]*?)</JSONPatch>\\s*</UpdateVariable>\\s*<DisplayPatch>\\s*([\\s\\S]*?)\\s*</DisplayPatch>', replaceString:MVU_DISPLAY_HTML, trimStrings:[], placement:[2], disabled:false, markdownOnly:true, promptOnly:false, runOnEdit:true, substituteRegex:false, minDepth:null, maxDepth:null }
   ];
 
   /* ============================================================

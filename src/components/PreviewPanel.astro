@@ -253,10 +253,10 @@
   // ── 把解析好的 JSON 应用到各面板 ─────────────────────────
   function applyImportedCard(json, filename) {
     try {
-      // 兼容 V2（顶层直接是数据）和 V3（有 data 层）
+      // 兼容旧版（顶层直接是数据）和新版（有 data 层）
       var normalized = normalizeCardJSON(json);
       if (!normalized) {
-        showImportStatus('❌ 无法识别卡片格式，请确认是 V2/V3 角色卡', 'error');
+        showImportStatus('❌ 无法识别卡片格式，请确认是支持的角色卡文件', 'error');
         return;
       }
 
@@ -279,9 +279,9 @@
     }
   }
 
-  // ── 兼容 V2 / V3 格式，统一转成 V3 结构 ─────────────────
+  // ── 兼容旧版 / 新版格式，统一转成标准结构 ─────────────────
   function normalizeCardJSON(json) {
-    // 已经是 V3
+    // 已经是标准数据层结构
     if (json && json.spec === 'chara_card_v3' && json.data) {
       return json;
     }

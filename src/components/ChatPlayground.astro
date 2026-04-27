@@ -449,42 +449,153 @@
 
   /* 变量更新组件 */
   .chat-var-update {
-    margin: 8px 0 4px;
-    border-radius: 8px;
-    background: rgba(139, 92, 246, 0.06);
-    border: 1px solid rgba(139, 92, 246, 0.15);
+    margin: 12px 0 6px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(30, 22, 15, 0.98), rgba(16, 11, 9, 0.98));
+    border: 1px solid rgba(245, 158, 11, 0.34);
+    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.38);
     overflow: hidden;
+    font-family: 'Courier New', monospace;
+    position: relative;
+  }
+  .chat-var-update::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      180deg,
+      rgba(245, 158, 11, 0.02),
+      rgba(245, 158, 11, 0.02) 2px,
+      transparent 2px,
+      transparent 4px
+    );
   }
   .cvu-header {
-    padding: 5px 10px;
-    background: rgba(139, 92, 246, 0.1);
-    color: #c4b5fd;
-    font-size: 0.72rem;
+    position: relative;
+    z-index: 1;
+    padding: 11px 14px;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.03));
+    color: #fbbf24;
+    font-size: 0.84rem;
     font-weight: 700;
-    cursor: pointer;
-    user-select: none;
+    letter-spacing: 1.6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(245, 158, 11, 0.16);
   }
-  .cvu-header:hover { background: rgba(139, 92, 246, 0.16); }
-  .cvu-body { display: none; }
-  .cvu-body.open { display: block; }
+  .cvu-header-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .cvu-header-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #f59e0b;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.75);
+    flex-shrink: 0;
+  }
+  .cvu-header-tag {
+    color: rgba(251, 191, 36, 0.74);
+    font-size: 0.62rem;
+    letter-spacing: 1.2px;
+    white-space: nowrap;
+  }
+  .cvu-body {
+    display: block;
+    position: relative;
+    z-index: 1;
+  }
   .cvu-analysis {
-    padding: 6px 10px;
-    color: #94a3b8;
-    font-size: 0.68rem;
-    line-height: 1.5;
-    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+    padding: 12px 14px 8px;
+    color: #f8fafc;
+    font-size: 0.74rem;
+    line-height: 1.7;
     white-space: pre-line;
   }
-  .cvu-patch {
-    padding: 6px 10px;
-    margin: 0;
-    color: #a5b4fc;
-    font-size: 0.65rem;
+  .cvu-analysis-label {
+    display: block;
+    margin-bottom: 7px;
+    color: rgba(251, 191, 36, 0.9);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .cvu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0 14px 12px;
+  }
+  .cvu-stat {
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    background: rgba(245, 158, 11, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  }
+  .cvu-stat-label {
+    display: block;
+    margin-bottom: 6px;
+    color: rgba(251, 191, 36, 0.82);
+    font-size: 0.64rem;
+    font-weight: 700;
     line-height: 1.4;
+  }
+  .cvu-stat-value {
+    display: block;
+    color: #fff7ed;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+  .cvu-stat-path {
+    display: block;
+    margin-top: 6px;
+    color: rgba(251, 191, 36, 0.45);
+    font-size: 0.56rem;
+    letter-spacing: 0.4px;
+    word-break: break-word;
+  }
+  .cvu-empty {
+    padding: 0 14px 12px;
+    color: #cbd5e1;
+    font-size: 0.7rem;
+  }
+  .cvu-debug {
+    padding: 0 14px 14px;
+  }
+  .cvu-debug summary {
+    cursor: pointer;
+    color: #fbbf24;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  .cvu-patch {
+    padding: 12px 14px;
+    margin: 10px 0 0;
+    color: #fde68a;
+    font-size: 0.68rem;
+    line-height: 1.55;
     overflow-x: auto;
-    background: transparent;
+    background: rgba(2, 6, 23, 0.56);
+    border: 1px solid rgba(245, 158, 11, 0.16);
+    border-radius: 10px;
     white-space: pre-wrap;
     font-family: 'Cascadia Code', 'Fira Code', monospace;
+  }
+  @media (max-width: 640px) {
+    .cvu-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   
@@ -829,6 +940,71 @@
 
   var UV_RE = /<UpdateVariable>\s*<Analysis>([\s\S]*?)<\/Analysis>\s*<JSONPatch>([\s\S]*?)<\/JSONPatch>\s*<\/UpdateVariable>/;
 
+  function decodeJsonPointerPart(part) {
+    return String(part || '').replace(/~1/g, '/').replace(/~0/g, '~');
+  }
+
+  function splitPatchPath(path) {
+    return String(path || '')
+      .replace(/^\/+/, '')
+      .split('/')
+      .filter(Boolean)
+      .map(decodeJsonPointerPart);
+  }
+
+  function compactPatchValue(value) {
+    if (value === undefined) return '未提供';
+    if (value === null) return 'null';
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    var text = typeof value === 'string' ? value : JSON.stringify(value);
+    return text.length > 64 ? text.slice(0, 61) + '...' : text;
+  }
+
+  function patchOpLabel(op) {
+    var map = {
+      replace: '已更新',
+      insert: '已新增',
+      delta: '数值变化',
+      remove: '已移除',
+      move: '已移动'
+    };
+    return map[op] || '状态变更';
+  }
+
+  function patchDisplayValue(item) {
+    if (!item || !item.op) return '未知';
+    if (item.op === 'delta') {
+      var num = Number(item.value);
+      if (Number.isFinite(num)) return (num > 0 ? '+' : '') + num;
+      return compactPatchValue(item.value);
+    }
+    if (item.op === 'remove') return '已移除';
+    if (item.op === 'move') {
+      var target = splitPatchPath(item.to).join(' / ');
+      return target ? '→ ' + target : '已移动';
+    }
+    return compactPatchValue(item.value);
+  }
+
+  function parsePatchCards(patchText) {
+    try {
+      var parsed = JSON.parse(patchText);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(function(item) {
+        var pathParts = splitPatchPath(item.path || item.to || '');
+        var leaf = pathParts[pathParts.length - 1] || item.op || '变量';
+        var group = pathParts.slice(0, -1).join(' / ') || '根节点';
+        return {
+          label: leaf,
+          value: patchDisplayValue(item),
+          meta: patchOpLabel(item.op) + ' · ' + group
+        };
+      });
+    } catch (err) {
+      return [];
+    }
+  }
+
   function renderChatText(el, text) {
     var m = text.match(UV_RE);
     if (!m) { el.textContent = text; return; }
@@ -850,23 +1026,55 @@
     card.className = 'chat-var-update';
     var hdr = document.createElement('div');
     hdr.className = 'cvu-header';
-    hdr.textContent = '📊 变量更新 ▸';
+    hdr.innerHTML = '<div class="cvu-header-main"><span class="cvu-header-dot"></span><span>STATUS REPORT</span></div>'
+      + '<span class="cvu-header-tag">MVU LIVE</span>';
     var body = document.createElement('div');
-    body.className = 'cvu-body';
+    body.className = 'cvu-body open';
     var ana = document.createElement('div');
     ana.className = 'cvu-analysis';
-    ana.textContent = m[1].trim();
+    ana.innerHTML = '<span class="cvu-analysis-label">Sync Summary</span>';
+    ana.appendChild(document.createTextNode(m[1].trim()));
+    body.appendChild(ana);
+    var cards = parsePatchCards(m[2].trim());
+    if (cards.length) {
+      var grid = document.createElement('div');
+      grid.className = 'cvu-grid';
+      cards.forEach(function(item) {
+        var stat = document.createElement('article');
+        stat.className = 'cvu-stat';
+        var label = document.createElement('span');
+        label.className = 'cvu-stat-label';
+        label.textContent = item.label;
+        var value = document.createElement('span');
+        value.className = 'cvu-stat-value';
+        value.textContent = item.value;
+        var meta = document.createElement('span');
+        meta.className = 'cvu-stat-path';
+        meta.textContent = item.meta;
+        stat.appendChild(label);
+        stat.appendChild(value);
+        stat.appendChild(meta);
+        grid.appendChild(stat);
+      });
+      body.appendChild(grid);
+    } else {
+      var empty = document.createElement('div');
+      empty.className = 'cvu-empty';
+      empty.textContent = '本轮没有可提炼成状态卡的结构化字段，已保留原始补丁供调试查看。';
+      body.appendChild(empty);
+    }
+    var debug = document.createElement('details');
+    debug.className = 'cvu-debug';
+    var debugSummary = document.createElement('summary');
+    debugSummary.textContent = '查看原始补丁（调试）';
     var patch = document.createElement('pre');
     patch.className = 'cvu-patch';
     patch.textContent = m[2].trim();
-    body.appendChild(ana);
-    body.appendChild(patch);
+    debug.appendChild(debugSummary);
+    debug.appendChild(patch);
+    body.appendChild(debug);
     card.appendChild(hdr);
     card.appendChild(body);
-    hdr.addEventListener('click', function() {
-      var open = body.classList.toggle('open');
-      hdr.textContent = open ? '📊 变量更新 ▾' : '📊 变量更新 ▸';
-    });
     el.appendChild(card);
 
     if (after.trim()) {
