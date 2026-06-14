@@ -1,9 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import AIPanel from '../components/AIPanel.astro';
+import AIConfigPanel from '../components/AIConfigPanel.astro';
+import AIGenerationPanel from '../components/AIGenerationPanel.astro';
 import CharacterPanel from '../components/CharacterPanel.astro';
 import WorldbookPanel from '../components/WorldbookPanel.astro';
-import StatusBarPanel from '../components/StatusBarPanel.astro';
+import NovelWorldbookWorkshopPanel from '../components/NovelWorldbookWorkshopPanel.astro';
 import PreviewPanel from '../components/PreviewPanel.astro';
 import ChatPlayground from '../components/ChatPlayground.astro';
 import WorldbookAuditor from '../components/WorldbookAuditor.astro';
@@ -16,62 +17,583 @@ import GsapAnimations from '../components/GsapAnimations.astro';
 <Layout title="SillyTavern V4 卡片构建器">
   <ParticleCanvas />
   <div class="app-header">
-    <div class="app-brand">
-      <span class="app-logo">
-        <svg class="logo-icon" viewBox="0 -1 24 26" width="22" height="22" fill="none">
-          <g transform="translate(0, 0)">
-          <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="url(#logoGrad)" stroke="url(#logoStroke)" stroke-width="0.8" />
-          <path class="logo-spark" d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="none" stroke="rgba(165,243,252,0.6)" stroke-width="0.6" />
-          <defs>
-            <linearGradient id="logoGrad" x1="4" y1="2" x2="20" y2="20">
-              <stop offset="0%" stop-color="#a78bfa" />
-              <stop offset="50%" stop-color="#6366f1" />
-              <stop offset="100%" stop-color="#38bdf8" />
-            </linearGradient>
-            <linearGradient id="logoStroke" x1="4" y1="2" x2="20" y2="20">
-              <stop offset="0%" stop-color="#c4b5fd" />
-              <stop offset="100%" stop-color="#67e8f9" />
-            </linearGradient>
-          </defs>
-          </g>
-        </svg>
-      </span>
-      <div>
-        <h1 class="app-title">V4 卡片构建器</h1>
-        <p class="app-subtitle">未完成版本</p>
+    <div class="app-header-bar">
+      <div class="app-brand">
+        <span class="app-logo">
+          <svg class="logo-icon" viewBox="0 -1 24 26" width="22" height="22" fill="none">
+            <g transform="translate(0, 0)">
+            <path d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="url(#logoGrad)" stroke="url(#logoStroke)" stroke-width="0.8" />
+            <path class="logo-spark" d="M12 2L14.09 8.26L20 9.27L15.55 13.97L16.91 20L12 16.9L7.09 20L8.45 13.97L4 9.27L9.91 8.26L12 2Z" fill="none" stroke="rgba(165,243,252,0.6)" stroke-width="0.6" />
+            <defs>
+              <linearGradient id="logoGrad" x1="4" y1="2" x2="20" y2="20">
+                <stop offset="0%" stop-color="#a78bfa" />
+                <stop offset="50%" stop-color="#6366f1" />
+                <stop offset="100%" stop-color="#38bdf8" />
+              </linearGradient>
+              <linearGradient id="logoStroke" x1="4" y1="2" x2="20" y2="20">
+                <stop offset="0%" stop-color="#c4b5fd" />
+                <stop offset="100%" stop-color="#67e8f9" />
+              </linearGradient>
+            </defs>
+            </g>
+          </svg>
+        </span>
+        <div>
+          <h1 class="app-title">V4 卡片构建器</h1>
+          <p class="app-subtitle">未完成版本</p>
+        </div>
+      </div>
+      <div class="app-header-actions">
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换浅色或深色模式">
+          <span class="theme-toggle-label">界面模式</span>
+          <span class="theme-toggle-value">
+            <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+            <span id="themeToggleText">深色</span>
+          </span>
+        </button>
+        <span class="app-version-badge">V4 BUILD</span>
+        <span id="visitorCount" class="app-version-badge visitor-badge">
+          👥 <span id="visitorNum" style="font-variant-numeric:tabular-nums;">…</span>
+        </span>
+      </div>
+      <div class="app-tabs-nav" role="tablist" aria-label="主功能分区">
+        <button class="app-tab is-active" id="tab-basic" type="button" role="tab" aria-selected="true" aria-controls="panel-basic" data-tab-target="basic">
+          <span class="app-tab-icon">🧩</span>
+          <span class="app-tab-copy">
+            <strong>角色设定</strong>
+            <small>卡片基础信息</small>
+          </span>
+        </button>
+        <button class="app-tab" id="tab-ai-config" type="button" role="tab" aria-selected="false" aria-controls="panel-ai-config" data-tab-target="ai-config">
+          <span class="app-tab-icon">✨</span>
+          <span class="app-tab-copy">
+            <strong>AI 引擎配置</strong>
+            <small>接口 / 模型 / 搜索 / 预设</small>
+          </span>
+        </button>
+        <button class="app-tab" id="tab-ai-generate" type="button" role="tab" aria-selected="false" aria-controls="panel-ai-generate" data-tab-target="ai-generate">
+          <span class="app-tab-icon">🦴</span>
+          <span class="app-tab-copy">
+            <strong>骨架生成</strong>
+            <small>角色 + 世界书起稿</small>
+          </span>
+        </button>
+        <button class="app-tab" id="tab-workshop" type="button" role="tab" aria-selected="false" aria-controls="panel-workshop" data-tab-target="workshop">
+          <span class="app-tab-icon">📚</span>
+          <span class="app-tab-copy">
+            <strong>小说世界书工坊</strong>
+            <small>长文整理 / 门控 / 阶段化</small>
+          </span>
+        </button>
+        <button class="app-tab" id="tab-worldbook" type="button" role="tab" aria-selected="false" aria-controls="panel-worldbook" data-tab-target="worldbook">
+          <span class="app-tab-icon">📖</span>
+          <span class="app-tab-copy">
+            <strong>世界书编辑</strong>
+            <small>条目 / 整理 / 触发词</small>
+          </span>
+        </button>
+        <button class="app-tab" id="tab-variable" type="button" role="tab" aria-selected="false" aria-controls="panel-variable" data-tab-target="variable">
+          <span class="app-tab-icon">🎛️</span>
+          <span class="app-tab-copy">
+            <strong>变量系统</strong>
+            <small>MVU / 节点 / 注入</small>
+          </span>
+        </button>
+        <button class="app-tab" id="tab-debug" type="button" role="tab" aria-selected="false" aria-controls="panel-debug" data-tab-target="debug">
+          <span class="app-tab-icon">🧪</span>
+          <span class="app-tab-copy">
+            <strong>调试预览</strong>
+            <small>预览 / 审计</small>
+          </span>
+        </button>
+        <button class="app-tab" id="tab-play" type="button" role="tab" aria-selected="false" aria-controls="panel-play" data-tab-target="play">
+          <span class="app-tab-icon">🚀</span>
+          <span class="app-tab-copy">
+            <strong>试玩导出</strong>
+            <small>聊天 / 收尾</small>
+          </span>
+        </button>
+      </div>
+      <div class="app-tabs-status">
+        <span class="app-tabs-status-dot"></span>
+        <span>切换 Tab 不会丢失当前编辑状态</span>
       </div>
     </div>
-    <div class="app-header-actions">
-      <span class="app-version-badge">V4 BUILD</span>
-      <span id="visitorCount" class="app-version-badge" style="margin-left:6px;background:rgba(139,92,246,0.13);border-color:rgba(139,92,246,0.3);color:#c4b5fd;min-width:60px;text-align:center;">
-        👥 <span id="visitorNum" style="font-variant-numeric:tabular-nums;">…</span>
-      </span>
-    </div>
   </div>
+  <div class="app-header-spacer" aria-hidden="true"></div>
 
-  <div class="app-container">
-    <div class="app-stack app-stack-config">
-      <AIPanel />
-      <StatusBarPanel />
-    </div>
-    <div class="app-stack app-stack-lore">
-      <CharacterPanel />
-      <WorldbookPanel />
-    </div>
-    <div class="app-stack app-stack-play">
-      <ChatPlayground />
-      <VariableCardPanel />
-    </div>
-    <div class="app-stack app-stack-inspect">
-      <PreviewPanel />
-      <WorldbookAuditor />
-      <WorkspaceFooterPanel />
+  <div class="app-shell">
+    <div class="app-tab-panels">
+      <section class="app-tab-panel is-active" id="panel-basic" role="tabpanel" aria-labelledby="tab-basic" data-tab-panel="basic">
+        <div class="app-tab-grid app-tab-grid-single">
+          <CharacterPanel />
+        </div>
+      </section>
+
+      <section class="app-tab-panel" id="panel-ai-config" role="tabpanel" aria-labelledby="tab-ai-config" data-tab-panel="ai-config" hidden>
+        <div class="app-tab-grid app-tab-grid-single">
+          <AIConfigPanel />
+        </div>
+      </section>
+
+      <section class="app-tab-panel" id="panel-ai-generate" role="tabpanel" aria-labelledby="tab-ai-generate" data-tab-panel="ai-generate" hidden>
+        <div class="app-tab-grid app-tab-grid-single">
+          <AIGenerationPanel />
+        </div>
+      </section>
+
+      <section class="app-tab-panel" id="panel-workshop" role="tabpanel" aria-labelledby="tab-workshop" data-tab-panel="workshop" hidden>
+        <div class="app-tab-grid app-tab-grid-single">
+          <NovelWorldbookWorkshopPanel />
+        </div>
+      </section>
+
+      <section class="app-tab-panel" id="panel-worldbook" role="tabpanel" aria-labelledby="tab-worldbook" data-tab-panel="worldbook" hidden>
+        <div class="app-tab-grid app-tab-grid-worldbook">
+          <WorldbookPanel />
+        </div>
+      </section>
+
+      <section class="app-tab-panel" id="panel-variable" role="tabpanel" aria-labelledby="tab-variable" data-tab-panel="variable" hidden>
+        <div class="app-tab-grid app-tab-grid-variable">
+          <VariableCardPanel />
+        </div>
+      </section>
+
+      <section class="app-tab-panel" id="panel-debug" role="tabpanel" aria-labelledby="tab-debug" data-tab-panel="debug" hidden>
+        <div class="app-tab-grid app-tab-grid-debug">
+          <div class="app-tab-column">
+            <PreviewPanel />
+          </div>
+          <div class="app-tab-column">
+            <WorldbookAuditor />
+          </div>
+        </div>
+      </section>
+
+      <section class="app-tab-panel" id="panel-play" role="tabpanel" aria-labelledby="tab-play" data-tab-panel="play" hidden>
+        <div class="app-tab-grid app-tab-grid-play">
+          <div class="app-tab-column app-tab-column-main">
+            <ChatPlayground />
+          </div>
+          <div class="app-tab-column app-tab-column-side">
+            <WorkspaceFooterPanel />
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 
   <GsapAnimations />
 
   <style is:global>
+    :root {
+      --app-fixed-header-height: 106px;
+    }
+
+    .visitor-badge {
+      margin-left: 6px;
+      background: color-mix(in srgb, var(--accent-2) 13%, transparent);
+      border-color: rgba(139, 92, 246, 0.3);
+      color: color-mix(in srgb, var(--accent-2) 62%, var(--text-main));
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 144px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 16px;
+      background: var(--surface-elevated);
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-1px);
+      border-color: rgba(96, 165, 250, 0.34);
+      box-shadow: 0 10px 24px rgba(2, 6, 23, 0.26);
+    }
+
+    .theme-toggle-label {
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--text-muted) 84%, transparent);
+      white-space: nowrap;
+    }
+
+    .theme-toggle-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: none;
+      background: var(--surface-elevated-strong);
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--text-main);
+      box-shadow:
+        0 10px 24px rgba(14, 165, 233, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    .theme-toggle-icon {
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+
+    .app-header {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(calc(100% - 24px), 1920px);
+      z-index: 1200;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 14px 18px;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, color-mix(in srgb, var(--surface-overlay-strong) 92%, transparent), color-mix(in srgb, var(--surface-overlay) 96%, transparent)),
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.08), transparent 24%);
+      border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--header-border));
+      box-shadow: var(--header-shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    .app-header-bar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .app-header-spacer {
+      height: var(--app-fixed-header-height);
+      width: 100%;
+    }
+
+    .app-shell {
+      max-width: 1920px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .app-tabs-status {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(16, 185, 129, 0.18);
+      background: color-mix(in srgb, var(--accent-green) 16%, transparent);
+      color: color-mix(in srgb, var(--accent-green) 68%, var(--text-main));
+      font-size: 0.68rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .app-tabs-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.65);
+    }
+
+    .app-tabs-nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 10px;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 2px 6px;
+      scrollbar-width: thin;
+    }
+
+    .app-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: auto;
+      min-width: max-content;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 999px;
+      background: var(--surface-elevated);
+      color: var(--text-soft);
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    :root[data-theme="light"] .app-tabs-kicker {
+      background: rgba(255, 255, 255, 0.72);
+      color: #0369a1;
+      border-color: rgba(56, 189, 248, 0.24);
+    }
+    :root[data-theme="light"] .app-tabs-title {
+      color: #0f172a;
+    }
+    :root[data-theme="light"] .app-tabs-subtitle {
+      color: #64748b;
+    }
+    :root[data-theme="light"] .app-tabs-status {
+      background: rgba(236, 253, 245, 0.9);
+      color: #047857;
+      border-color: rgba(16, 185, 129, 0.22);
+    }
+    :root[data-theme="light"] .app-tabs-status-dot {
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.28);
+    }
+    .app-tab:hover {
+      transform: translateY(-1px);
+      border-color: rgba(96, 165, 250, 0.34);
+      box-shadow: 0 10px 24px rgba(2, 6, 23, 0.26);
+    }
+
+    .app-tab.is-active {
+      border-color: rgba(96, 165, 250, 0.42);
+      background: var(--surface-elevated-strong);
+      box-shadow:
+        0 14px 28px rgba(14, 165, 233, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    :root[data-theme="light"] .app-tab:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: 0 12px 26px rgba(99, 102, 241, 0.12);
+    }
+    :root[data-theme="light"] .app-tab.is-active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(56, 189, 248, 0.08));
+      color: #1e293b;
+      border-color: rgba(99, 102, 241, 0.34);
+      box-shadow: 0 14px 30px rgba(99, 102, 241, 0.14);
+    }
+
+    .app-tab-icon {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--surface-overlay-strong) 90%, transparent);
+      border: none;
+      font-size: 0.84rem;
+      flex-shrink: 0;
+    }
+
+    .app-tab.is-active .app-tab-icon {
+      background: linear-gradient(135deg, rgba(14, 116, 144, 0.45), rgba(79, 70, 229, 0.4));
+    }
+
+    .app-tab-copy {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .app-tab-copy strong {
+      color: var(--text-main);
+      font-size: 0.76rem;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .app-tab-copy small {
+      display: none;
+    }
+    :root[data-theme="light"] .app-tab-copy strong {
+      color: #0f172a;
+    }
+    :root[data-theme="light"] .app-tab-copy small {
+      color: #64748b;
+    }
+
+    .app-tab-panels {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .app-tab-panel {
+      min-width: 0;
+    }
+
+    :root[data-theme="light"] .app-shell .panel,
+    :root[data-theme="light"] .app-shell .code-window {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 248, 255, 0.98)) !important;
+      border-color: rgba(148, 163, 184, 0.28) !important;
+      box-shadow:
+        0 18px 40px rgba(148, 163, 184, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+      color: #0f172a !important;
+    }
+
+    :root[data-theme="light"] .app-shell .panel h2,
+    :root[data-theme="light"] .app-shell .panel h3,
+    :root[data-theme="light"] .app-shell .code-window .code-header,
+    :root[data-theme="light"] .app-shell .entry-info h4,
+    :root[data-theme="light"] .app-shell .status-text {
+      color: #0f172a !important;
+    }
+
+    :root[data-theme="light"] .app-shell .panel p,
+    :root[data-theme="light"] .app-shell .panel span,
+    :root[data-theme="light"] .app-shell .entry-info p,
+    :root[data-theme="light"] .app-shell .cyber-pre {
+      color: #475569;
+    }
+
+    :root[data-theme="light"] .app-shell .panel h2 {
+      border-bottom-color: rgba(148, 163, 184, 0.28) !important;
+    }
+
+    :root[data-theme="light"] .app-shell .draft-manager,
+    :root[data-theme="light"] .app-shell .entry-item,
+    :root[data-theme="light"] .app-shell .preset-item,
+    :root[data-theme="light"] .app-shell .wb-inline-editor,
+    :root[data-theme="light"] .app-shell .code-header,
+    :root[data-theme="light"] .app-shell .code-content-wrapper {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.98)) !important;
+      color: #0f172a !important;
+      border-color: rgba(148, 163, 184, 0.24) !important;
+    }
+
+    :root[data-theme="light"] .app-shell .entry-item:hover {
+      border-color: rgba(99, 102, 241, 0.24) !important;
+    }
+
+    .app-tab-grid {
+      display: grid;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .app-tab-grid-basic {
+      grid-template-columns: minmax(440px, 1.22fr) minmax(320px, 0.78fr);
+    }
+
+    .app-tab-grid-single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .app-tab-grid-worldbook,
+    .app-tab-grid-variable {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .app-tab-grid-debug {
+      grid-template-columns: minmax(360px, 1.04fr) minmax(360px, 0.96fr);
+    }
+
+    .app-tab-grid-play {
+      grid-template-columns: minmax(460px, 1.18fr) minmax(320px, 0.82fr);
+    }
+
+    .app-tab-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .app-tab-column-side {
+      align-self: stretch;
+    }
+
+    .app-tab-panel[hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 1320px) {
+      :root {
+        --app-fixed-header-height: 156px;
+      }
+
+      .app-header-bar {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .app-tabs-nav {
+        order: 3;
+        flex: 1 1 100%;
+      }
+
+      .app-tab-grid-basic,
+      .app-tab-grid-debug,
+      .app-tab-grid-play {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --app-fixed-header-height: 172px;
+      }
+
+      .app-header {
+        top: 8px;
+        width: calc(100% - 16px);
+        padding: 14px;
+        border-radius: 18px;
+      }
+
+      .app-header-bar {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .app-tabs-status {
+        white-space: normal;
+        order: 4;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .app-tabs-nav {
+        order: 3;
+        gap: 8px;
+        padding-bottom: 2px;
+        scroll-snap-type: x proximity;
+      }
+
+      .app-tab {
+        min-width: max-content;
+        scroll-snap-align: start;
+      }
+
+      .app-header-actions {
+        margin-left: auto;
+      }
+
+      .theme-toggle {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
     .app-confirm-overlay {
       position: fixed;
       inset: 0;
@@ -84,6 +606,11 @@ import GsapAnimations from '../components/GsapAnimations.astro';
         rgba(2, 6, 23, 0.72);
       backdrop-filter: blur(10px);
       animation: appConfirmFade 0.16s ease;
+    }
+    :root[data-theme="light"] .visitor-badge {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: rgba(99, 102, 241, 0.24);
+      color: #4f46e5;
     }
 
     .app-confirm-dialog {
@@ -195,6 +722,36 @@ import GsapAnimations from '../components/GsapAnimations.astro';
       from { opacity: 0; transform: translateY(8px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
+
+    /* 让长模型名在自定义下拉中完整显示 */
+    .cs-trigger {
+      align-items: flex-start;
+      min-height: 42px;
+    }
+
+    .cs-trigger span:first-child,
+    .cs-trigger .cs-label {
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.35;
+      padding-right: 8px;
+    }
+
+    .cs-dropdown {
+      right: auto;
+    }
+
+    .cs-wrap.cs-open .cs-dropdown {
+      overflow-x: auto;
+    }
+
+    .cs-option {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      word-break: break-word;
+      line-height: 1.4;
+    }
   </style>
 
   <script is:inline>
@@ -304,6 +861,43 @@ import GsapAnimations from '../components/GsapAnimations.astro';
     // ============================================================
     //  DOM
     // ============================================================
+    var appTabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab-target]'));
+    var appTabPanels = Array.prototype.slice.call(document.querySelectorAll('[data-tab-panel]'));
+
+    function setActiveTab(nextTab) {
+      if (!nextTab) return;
+      var target = nextTab.getAttribute('data-tab-target');
+      appTabs.forEach(function(tab) {
+        var active = tab === nextTab;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      appTabPanels.forEach(function(panel) {
+        var active = panel.getAttribute('data-tab-panel') === target;
+        panel.classList.toggle('is-active', active);
+        panel.hidden = !active;
+      });
+      requestAnimationFrame(function() {
+        if (window.__enhanceAllSelects__) window.__enhanceAllSelects__();
+      });
+    }
+
+    appTabs.forEach(function(tab, index) {
+      tab.addEventListener('click', function() {
+        setActiveTab(tab);
+      });
+      tab.addEventListener('keydown', function(ev) {
+        if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft' && ev.key !== 'Home' && ev.key !== 'End') return;
+        ev.preventDefault();
+        if (ev.key === 'Home') return appTabs[0].focus();
+        if (ev.key === 'End') return appTabs[appTabs.length - 1].focus();
+        var delta = ev.key === 'ArrowRight' ? 1 : -1;
+        var nextIndex = (index + delta + appTabs.length) % appTabs.length;
+        appTabs[nextIndex].focus();
+        setActiveTab(appTabs[nextIndex]);
+      });
+    });
+
     var apiUrl               = document.getElementById('apiUrl');
     var apiKey               = document.getElementById('apiKey');
     var btnFetchModels       = document.getElementById('btnFetchModels');
@@ -334,6 +928,9 @@ import GsapAnimations from '../components/GsapAnimations.astro';
     var entriesList          = document.getElementById('entriesList');
     var btnDownloadJson      = document.getElementById('btnDownloadJson');
     var btnExportPNG         = document.getElementById('btnExportPNG');
+    var themeToggle          = document.getElementById('themeToggle');
+    var themeToggleText      = document.getElementById('themeToggleText');
+    var themeToggleIcon      = themeToggle ? themeToggle.querySelector('.theme-toggle-icon') : null;
 
     // ============================================================
     //  状态
@@ -354,6 +951,22 @@ import GsapAnimations from '../components/GsapAnimations.astro';
     var DRAFTS_KEY  = "st_v3_builder_drafts";
     var CURRENT_KEY = "st_v3_builder_current_id";
     var AI_KEY      = "st_v3_builder_ai_config";
+
+    function applyTheme(theme) {
+      var nextTheme = theme === 'light' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      if (themeToggle) themeToggle.setAttribute('aria-pressed', nextTheme === 'light' ? 'true' : 'false');
+      if (themeToggleText) themeToggleText.textContent = nextTheme === 'light' ? '浅色' : '深色';
+      if (themeToggleIcon) themeToggleIcon.textContent = nextTheme === 'light' ? '☀️' : '🌙';
+      try { localStorage.setItem('st-theme', nextTheme); } catch (e) {}
+    }
+
+    if (themeToggle) {
+      applyTheme(document.documentElement.dataset.theme || 'dark');
+      themeToggle.addEventListener('click', function() {
+        applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+      });
+    }
 
     function escapeHTML(str) {
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

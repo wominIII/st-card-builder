@@ -2,9 +2,23 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "command": "./node_modules/.bin/astro dev",
-      "name": "Development server",
+      "name": "Open Astro App",
+      "type": "pwa-chrome",
       "request": "launch",
+      "url": "http://localhost:4321",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "npm: dev"
+    },
+    {
+      "name": "Start Astro Dev Server",
+      "request": "launch",
+      "type": "node",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "setInterval(() => {}, 1 << 30)"],
+      "preLaunchTask": "npm: dev"
+    },
+    {
+      "name": "Development server (terminal)",
       "type": "node-terminal"
     }
   ]

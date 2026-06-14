@@ -181,12 +181,165 @@
 </div>
 
 <style is:global>
-  .novel-workshop-panel {
-    border-color: rgba(56, 189, 248, 0.18);
+  :root[data-theme="light"] .novel-workshop-panel {
+    border-color: color-mix(in srgb, var(--accent-cyan) 24%, var(--field-border));
     background:
-      radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 34%),
-      radial-gradient(circle at bottom left, rgba(245, 158, 11, 0.08), transparent 38%),
-      linear-gradient(180deg, rgba(13, 18, 32, 0.96), rgba(15, 23, 37, 0.94));
+      radial-gradient(circle at top right, color-mix(in srgb, var(--accent-cyan) 12%, transparent), transparent 34%),
+      radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent-amber) 10%, transparent), transparent 38%),
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent), color-mix(in srgb, var(--surface-elevated) 100%, transparent));
+  }
+  :root[data-theme="light"] .novel-hero,
+  :root[data-theme="light"] .novel-card,
+  :root[data-theme="light"] .novel-manager,
+  :root[data-theme="light"] .novel-preview-shell,
+  :root[data-theme="light"] .novel-manager-block {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent), color-mix(in srgb, var(--surface-elevated) 100%, transparent)) !important;
+    border-color: color-mix(in srgb, var(--text-muted) 26%, transparent) !important;
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--accent-cyan) 8%, transparent);
+  }
+  :root[data-theme="light"] .novel-hero-copy h2,
+  :root[data-theme="light"] .novel-card-head strong,
+  :root[data-theme="light"] .novel-block-title,
+  :root[data-theme="light"] .novel-preview-head strong {
+    color: var(--text-main) !important;
+  }
+  :root[data-theme="light"] .novel-hero-copy p,
+  :root[data-theme="light"] .novel-card-head span,
+  :root[data-theme="light"] .novel-inline-note,
+  :root[data-theme="light"] .novel-upload-hint,
+  :root[data-theme="light"] .novel-status-text,
+  :root[data-theme="light"] #novelSummaryText,
+  :root[data-theme="light"] #novelEntityCount {
+    color: var(--text-muted) !important;
+  }
+  :root[data-theme="light"] .novel-dropzone,
+  :root[data-theme="light"] .novel-file-summary,
+  :root[data-theme="light"] .novel-estimate-card,
+  :root[data-theme="light"] .novel-workflow-step,
+  :root[data-theme="light"] .novel-inline-note,
+  :root[data-theme="light"] .novel-stage-preview,
+  :root[data-theme="light"] .novel-stage-preview-track span,
+  :root[data-theme="light"] .novel-flag-item,
+  :root[data-theme="light"] .novel-entity-card {
+    box-shadow: none;
+  }
+  :root[data-theme="light"] .novel-dropzone {
+    border-color: color-mix(in srgb, var(--accent-cyan) 34%, var(--field-border));
+    background:
+      radial-gradient(circle at top, color-mix(in srgb, var(--accent-cyan) 14%, transparent), transparent 46%),
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-soft-info) 92%, white), color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent));
+  }
+  :root[data-theme="light"] .novel-dropzone:hover,
+  :root[data-theme="light"] .novel-dropzone.is-dragover {
+    border-color: color-mix(in srgb, var(--accent-cyan) 52%, var(--field-border));
+    background:
+      radial-gradient(circle at top, color-mix(in srgb, var(--accent-cyan) 18%, transparent), transparent 46%),
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-soft-info) 100%, white), color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent));
+  }
+  :root[data-theme="light"] .novel-dropzone-title,
+  :root[data-theme="light"] .novel-file-summary strong,
+  :root[data-theme="light"] .novel-estimate-card strong,
+  :root[data-theme="light"] .novel-workflow-copy strong,
+  :root[data-theme="light"] .novel-flag-copy strong,
+  :root[data-theme="light"] .novel-entity-card strong,
+  :root[data-theme="light"] .novel-editor-head label {
+    color: var(--text-main);
+  }
+  :root[data-theme="light"] .novel-dropzone-subtitle,
+  :root[data-theme="light"] .novel-file-summary span,
+  :root[data-theme="light"] .novel-workflow-copy span,
+  :root[data-theme="light"] .novel-flag-copy span,
+  :root[data-theme="light"] .novel-entity-card p,
+  :root[data-theme="light"] .novel-editor-head span,
+  :root[data-theme="light"] .novel-flag-empty,
+  :root[data-theme="light"] .novel-entity-empty {
+    color: var(--text-muted);
+  }
+  :root[data-theme="light"] .novel-textarea {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--field-bg-strong) 100%, transparent), color-mix(in srgb, var(--surface-soft-info) 34%, var(--field-bg)));
+    border-color: color-mix(in srgb, var(--accent-cyan) 22%, var(--field-border));
+    color: var(--field-text);
+  }
+  :root[data-theme="light"] .novel-textarea::placeholder {
+    color: var(--text-muted);
+  }
+  :root[data-theme="light"] .novel-inline-note,
+  :root[data-theme="light"] .novel-manager-block,
+  :root[data-theme="light"] .novel-preview-shell,
+  :root[data-theme="light"] .novel-flag-item {
+    border-color: color-mix(in srgb, var(--text-muted) 24%, transparent);
+    background: color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent);
+  }
+  :root[data-theme="light"] .novel-estimate-card,
+  :root[data-theme="light"] .novel-workflow-step,
+  :root[data-theme="light"] .novel-stage-preview-track span,
+  :root[data-theme="light"] .novel-stage-btn,
+  :root[data-theme="light"] .novel-focus-tag,
+  :root[data-theme="light"] .novel-secondary-btn,
+  :root[data-theme="light"] .novel-sync-btn {
+    border-color: color-mix(in srgb, var(--text-muted) 28%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent);
+    color: var(--text-soft);
+  }
+  :root[data-theme="light"] .novel-estimate-card.is-accent,
+  :root[data-theme="light"] .novel-stage-preview {
+    border-color: color-mix(in srgb, var(--accent-amber) 28%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-amber) 12%, var(--surface-overlay-strong)), color-mix(in srgb, var(--accent-cyan) 8%, var(--surface-overlay-strong)));
+  }
+  :root[data-theme="light"] .novel-workflow-step.is-active {
+    border-color: color-mix(in srgb, var(--accent-cyan) 36%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 12%, var(--surface-overlay-strong)), color-mix(in srgb, var(--accent-2) 8%, var(--surface-overlay-strong)));
+  }
+  :root[data-theme="light"] .novel-workflow-step.is-done {
+    border-color: color-mix(in srgb, var(--accent-green) 28%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-green) 10%, var(--surface-overlay-strong)), color-mix(in srgb, var(--surface-soft-success) 72%, white));
+  }
+  :root[data-theme="light"] .novel-workflow-index {
+    border-color: color-mix(in srgb, var(--accent-cyan) 34%, var(--field-border));
+    background: color-mix(in srgb, var(--accent-cyan) 12%, var(--field-bg));
+    color: color-mix(in srgb, var(--accent-cyan) 76%, var(--text-main));
+  }
+  :root[data-theme="light"] .novel-focus-label,
+  :root[data-theme="light"] .novel-stage-preview-head,
+  :root[data-theme="light"] .novel-preview-head span {
+    color: var(--text-muted);
+  }
+  :root[data-theme="light"] .novel-stage-preview-head strong {
+    color: color-mix(in srgb, var(--accent-amber) 72%, var(--text-main));
+  }
+  :root[data-theme="light"] .novel-focus-tag:hover,
+  :root[data-theme="light"] .novel-stage-btn:hover,
+  :root[data-theme="light"] .novel-secondary-btn:hover,
+  :root[data-theme="light"] .novel-sync-btn:hover {
+    border-color: color-mix(in srgb, var(--accent-cyan) 40%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-soft-info) 92%, white);
+    color: var(--text-main);
+  }
+  :root[data-theme="light"] .novel-focus-tag.active {
+    border-color: color-mix(in srgb, var(--accent-amber) 40%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-amber) 16%, var(--field-bg)), color-mix(in srgb, var(--accent-cyan) 12%, var(--field-bg)));
+    color: color-mix(in srgb, var(--accent-amber) 76%, var(--text-main));
+  }
+  :root[data-theme="light"] .novel-stage-btn.active {
+    border-color: color-mix(in srgb, var(--accent-cyan) 44%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 16%, var(--field-bg)), color-mix(in srgb, var(--accent-2) 10%, var(--field-bg)));
+    color: var(--text-main);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+  }
+  :root[data-theme="light"] .novel-primary-btn {
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--accent-cyan) 16%, transparent);
+  }
+  :root[data-theme="light"] .novel-entity-meta {
+    border-color: color-mix(in srgb, var(--accent-amber) 30%, var(--field-border));
+    background: color-mix(in srgb, var(--accent-amber) 12%, var(--field-bg));
+    color: color-mix(in srgb, var(--accent-amber) 74%, var(--text-main));
+  }
+  .novel-workshop-panel {
+    border-color: color-mix(in srgb, var(--accent-cyan) 22%, var(--field-border));
+    background:
+      radial-gradient(circle at top right, color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 34%),
+      radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent-amber) 12%, transparent), transparent 38%),
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-overlay-strong) 94%, transparent), color-mix(in srgb, var(--surface-elevated) 100%, transparent));
   }
 
   .novel-hero {
@@ -194,12 +347,12 @@
     overflow: hidden;
     margin-bottom: 16px;
     padding: 16px 18px 14px;
-    border: 1px solid rgba(56, 189, 248, 0.18);
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 22%, var(--field-border));
     border-radius: 14px;
     background:
-      linear-gradient(135deg, rgba(8, 47, 73, 0.34), rgba(17, 24, 39, 0.72)),
-      radial-gradient(circle at 10% 20%, rgba(34, 211, 238, 0.12), transparent 24%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 12%, var(--surface-overlay-strong)), color-mix(in srgb, var(--surface-overlay) 100%, transparent)),
+      radial-gradient(circle at 10% 20%, color-mix(in srgb, var(--accent-cyan) 14%, transparent), transparent 24%);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
   }
 
   .novel-hero-badge {
@@ -209,9 +362,9 @@
     margin-bottom: 12px;
     padding: 4px 10px;
     border-radius: 999px;
-    border: 1px solid rgba(103, 232, 249, 0.26);
-    background: rgba(8, 47, 73, 0.4);
-    color: #67e8f9;
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 28%, var(--chip-border));
+    background: color-mix(in srgb, var(--accent-cyan) 12%, var(--chip-bg));
+    color: color-mix(in srgb, var(--accent-cyan) 76%, var(--text-main));
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -228,13 +381,13 @@
     margin: 0 0 6px;
     border: 0;
     padding: 0;
-    color: #e0f2fe;
+    color: var(--text-main);
     font-size: 1.08rem;
   }
 
   .novel-hero-copy p {
     margin: 0;
-    color: #94a3b8;
+    color: var(--text-soft);
     font-size: 0.74rem;
     line-height: 1.55;
   }
@@ -252,8 +405,8 @@
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    border: 1px solid rgba(56, 189, 248, 0.26);
-    box-shadow: 0 0 24px rgba(56, 189, 248, 0.14), inset 0 0 16px rgba(14, 165, 233, 0.06);
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 26%, var(--field-border));
+    box-shadow: 0 0 24px color-mix(in srgb, var(--accent-cyan) 12%, transparent), inset 0 0 16px color-mix(in srgb, var(--accent-cyan) 8%, transparent);
   }
 
   .novel-orbit-ring::before,
@@ -262,13 +415,13 @@
     position: absolute;
     inset: 8px;
     border-radius: 50%;
-    border: 1px dashed rgba(245, 158, 11, 0.28);
+    border: 1px dashed color-mix(in srgb, var(--accent-amber) 32%, transparent);
     animation: novel-orbit-spin 14s linear infinite;
   }
 
   .novel-orbit-ring::after {
     inset: 18px;
-    border-color: rgba(103, 232, 249, 0.22);
+    border-color: color-mix(in srgb, var(--accent-cyan) 24%, transparent);
     animation-direction: reverse;
     animation-duration: 10s;
   }
@@ -286,12 +439,12 @@
     border-radius: 50%;
     display: grid;
     place-items: center;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.94), rgba(6, 182, 212, 0.76));
-    color: #082f49;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-amber) 92%, white), color-mix(in srgb, var(--accent-cyan) 78%, white));
+    color: color-mix(in srgb, var(--accent-cyan) 36%, #082f49);
     font-size: 0.8rem;
     font-weight: 900;
     letter-spacing: 0.06em;
-    box-shadow: 0 0 24px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--accent-amber) 18%, transparent);
   }
 
   .novel-stats {
@@ -309,9 +462,9 @@
     min-height: 26px;
     padding: 4px 10px;
     border-radius: 999px;
-    border: 1px solid rgba(51, 65, 85, 0.72);
-    background: rgba(2, 6, 23, 0.44);
-    color: #cbd5e1;
+    border: 1px solid var(--chip-border);
+    background: var(--chip-bg);
+    color: var(--text-soft);
     font-size: 0.68rem;
     font-weight: 700;
   }
@@ -331,9 +484,9 @@
   }
 
   .novel-card {
-    border: 1px solid rgba(71, 85, 105, 0.64);
+    border: 1px solid color-mix(in srgb, var(--text-muted) 46%, transparent);
     border-radius: 14px;
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(2, 6, 23, 0.58));
+    background: var(--surface-elevated);
     overflow: hidden;
   }
 
@@ -343,17 +496,17 @@
     justify-content: space-between;
     gap: 12px;
     padding: 11px 14px;
-    border-bottom: 1px solid rgba(51, 65, 85, 0.66);
-    background: rgba(15, 23, 42, 0.72);
+    border-bottom: 1px solid var(--chip-border);
+    background: var(--surface-overlay-strong);
   }
 
   .novel-card-head strong {
-    color: #e2e8f0;
+    color: var(--text-main);
     font-size: 0.82rem;
   }
 
   .novel-card-head span {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.62rem;
     font-weight: 700;
     white-space: normal;
@@ -382,10 +535,10 @@
     margin-bottom: 12px;
     padding: 18px 16px;
     border-radius: 14px;
-    border: 1px dashed rgba(56, 189, 248, 0.36);
+    border: 1px dashed color-mix(in srgb, var(--accent-cyan) 34%, var(--field-border));
     background:
-      radial-gradient(circle at top, rgba(56, 189, 248, 0.1), transparent 46%),
-      linear-gradient(180deg, rgba(8, 47, 73, 0.26), rgba(15, 23, 42, 0.52));
+      radial-gradient(circle at top, color-mix(in srgb, var(--accent-cyan) 14%, transparent), transparent 46%),
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-soft-info) 18%, var(--surface-overlay-strong)), color-mix(in srgb, var(--surface-overlay) 100%, transparent));
     cursor: pointer;
     text-align: center;
     transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
@@ -393,10 +546,10 @@
 
   .novel-dropzone:hover,
   .novel-dropzone.is-dragover {
-    border-color: rgba(125, 211, 252, 0.72);
+    border-color: color-mix(in srgb, var(--accent-cyan) 52%, var(--field-border));
     background:
-      radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 46%),
-      linear-gradient(180deg, rgba(8, 47, 73, 0.42), rgba(15, 23, 42, 0.68));
+      radial-gradient(circle at top, color-mix(in srgb, var(--accent-cyan) 20%, transparent), transparent 46%),
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-soft-info) 26%, var(--surface-overlay-strong)), color-mix(in srgb, var(--surface-overlay) 100%, transparent));
     transform: translateY(-1px);
   }
 
@@ -407,14 +560,14 @@
   }
 
   .novel-dropzone-title {
-    color: #e0f2fe;
+    color: var(--text-main);
     font-size: 0.88rem;
     font-weight: 800;
     letter-spacing: 0.02em;
   }
 
   .novel-dropzone-subtitle {
-    color: #94a3b8;
+    color: var(--text-soft);
     font-size: 0.7rem;
     line-height: 1.5;
     max-width: 380px;
@@ -428,8 +581,8 @@
     padding: 0 12px;
     border-radius: 8px;
     border: 1px solid rgba(56, 189, 248, 0.28);
-    background: rgba(8, 47, 73, 0.42);
-    color: #7dd3fc;
+    background: color-mix(in srgb, var(--accent-cyan) 14%, var(--surface-overlay-strong));
+    color: color-mix(in srgb, var(--accent-cyan) 70%, var(--text-main));
     font-size: 0.74rem;
     font-weight: 700;
     cursor: pointer;
@@ -437,12 +590,12 @@
   }
 
   .novel-upload-btn:hover {
-    background: rgba(14, 116, 144, 0.38);
-    color: #e0f2fe;
+    background: color-mix(in srgb, var(--accent-cyan) 22%, var(--surface-soft-info));
+    color: var(--text-main);
   }
 
   .novel-upload-hint {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.68rem;
   }
 
@@ -451,8 +604,8 @@
     padding: 0 10px;
     border-radius: 8px;
     border: 1px solid rgba(248, 113, 113, 0.24);
-    background: rgba(127, 29, 29, 0.16);
-    color: #fca5a5;
+    background: var(--surface-soft-danger);
+    color: color-mix(in srgb, var(--danger) 54%, var(--text-main));
     font-size: 0.72rem;
     font-weight: 700;
     cursor: pointer;
@@ -460,21 +613,21 @@
   }
 
   .novel-upload-clear:hover {
-    background: rgba(127, 29, 29, 0.3);
-    color: #fecaca;
+    background: color-mix(in srgb, var(--danger) 16%, var(--surface-soft-danger));
+    color: color-mix(in srgb, var(--danger) 52%, var(--text-main));
   }
 
   .novel-file-summary {
     margin-bottom: 12px;
     padding: 12px 13px;
     border-radius: 12px;
-    border: 1px solid rgba(56, 189, 248, 0.16);
-    background: linear-gradient(135deg, rgba(8, 47, 73, 0.22), rgba(15, 23, 42, 0.52));
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 20%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 10%, var(--surface-overlay-strong)), color-mix(in srgb, var(--surface-overlay) 100%, transparent));
   }
 
   .novel-file-summary strong {
     display: block;
-    color: #e0f2fe;
+    color: var(--text-main);
     font-size: 0.78rem;
     line-height: 1.4;
   }
@@ -482,7 +635,7 @@
   .novel-file-summary span {
     display: block;
     margin-top: 5px;
-    color: #94a3b8;
+    color: var(--text-soft);
     font-size: 0.68rem;
     line-height: 1.5;
   }
@@ -497,28 +650,28 @@
   .novel-estimate-card {
     padding: 11px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(51, 65, 85, 0.7);
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.66), rgba(2, 6, 23, 0.4));
+    border: 1px solid color-mix(in srgb, var(--text-muted) 28%, var(--field-border));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface-overlay-strong) 94%, transparent), color-mix(in srgb, var(--surface-overlay) 100%, transparent));
   }
 
   .novel-estimate-card strong {
     display: block;
     margin-bottom: 5px;
-    color: #e2e8f0;
+    color: var(--text-main);
     font-size: 0.9rem;
     line-height: 1.2;
   }
 
   .novel-estimate-card span {
     display: block;
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.66rem;
     line-height: 1.45;
   }
 
   .novel-estimate-card.is-accent {
-    border-color: rgba(245, 158, 11, 0.28);
-    background: linear-gradient(135deg, rgba(120, 53, 15, 0.22), rgba(8, 47, 73, 0.28));
+    border-color: color-mix(in srgb, var(--accent-amber) 28%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-amber) 14%, var(--surface-overlay-strong)), color-mix(in srgb, var(--accent-cyan) 8%, var(--surface-overlay-strong)));
   }
 
   .novel-workflow-steps {
@@ -533,20 +686,20 @@
     align-items: flex-start;
     padding: 11px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(51, 65, 85, 0.7);
-    background: rgba(2, 6, 23, 0.34);
+    border: 1px solid color-mix(in srgb, var(--text-muted) 28%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 92%, transparent);
     transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   }
 
   .novel-workflow-step.is-active {
-    border-color: rgba(56, 189, 248, 0.3);
-    background: linear-gradient(135deg, rgba(8, 47, 73, 0.28), rgba(15, 23, 42, 0.74));
+    border-color: color-mix(in srgb, var(--accent-cyan) 34%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 12%, var(--surface-overlay-strong)), color-mix(in srgb, var(--accent-2) 8%, var(--surface-overlay-strong)));
     transform: translateY(-1px);
   }
 
   .novel-workflow-step.is-done {
-    border-color: rgba(52, 211, 153, 0.22);
-    background: linear-gradient(135deg, rgba(6, 78, 59, 0.2), rgba(15, 23, 42, 0.72));
+    border-color: color-mix(in srgb, var(--accent-green) 24%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-green) 10%, var(--surface-overlay-strong)), color-mix(in srgb, var(--surface-soft-success) 26%, transparent));
   }
 
   .novel-workflow-index {
@@ -555,16 +708,16 @@
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    background: rgba(8, 47, 73, 0.46);
-    color: #7dd3fc;
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 28%, var(--field-border));
+    background: color-mix(in srgb, var(--accent-cyan) 12%, var(--field-bg));
+    color: color-mix(in srgb, var(--accent-cyan) 76%, var(--text-main));
     font-size: 0.78rem;
     font-weight: 900;
   }
 
   .novel-workflow-copy strong {
     display: block;
-    color: #e2e8f0;
+    color: var(--text-main);
     font-size: 0.78rem;
     line-height: 1.3;
   }
@@ -580,8 +733,8 @@
   .novel-textarea {
     min-height: 120px;
     resize: vertical;
-    background: linear-gradient(180deg, rgba(2, 6, 23, 0.7), rgba(15, 23, 42, 0.82));
-    border-color: rgba(56, 189, 248, 0.16);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--field-bg-strong) 100%, transparent), color-mix(in srgb, var(--surface-overlay) 100%, transparent));
+    border-color: color-mix(in srgb, var(--accent-cyan) 20%, var(--field-border));
   }
 
   .novel-source-text {
@@ -612,14 +765,14 @@
 
   .novel-editor-head label {
     margin: 0;
-    color: #dbeafe;
+    color: var(--text-main);
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.02em;
   }
 
   .novel-editor-head span {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.68rem;
     line-height: 1.45;
   }
@@ -632,9 +785,9 @@
     min-height: 42px;
     padding: 9px 10px;
     border-radius: 10px;
-    border: 1px solid rgba(51, 65, 85, 0.7);
-    background: rgba(2, 6, 23, 0.28);
-    color: #64748b;
+    border: 1px solid color-mix(in srgb, var(--text-muted) 28%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 96%, transparent);
+    color: var(--text-muted);
     font-size: 0.68rem;
     line-height: 1.5;
   }
@@ -642,7 +795,7 @@
   .novel-focus-label {
     display: block;
     margin-bottom: 8px;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 0.74rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -662,9 +815,9 @@
     min-height: 30px;
     padding: 0 12px;
     border-radius: 999px;
-    border: 1px solid rgba(71, 85, 105, 0.74);
-    background: rgba(15, 23, 42, 0.58);
-    color: #94a3b8;
+    border: 1px solid color-mix(in srgb, var(--text-muted) 32%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent);
+    color: var(--text-soft);
     font-size: 0.72rem;
     font-weight: 700;
     cursor: pointer;
@@ -672,23 +825,23 @@
   }
 
   .novel-focus-tag:hover {
-    border-color: rgba(56, 189, 248, 0.34);
-    color: #cbd5e1;
+    border-color: color-mix(in srgb, var(--accent-cyan) 40%, var(--field-border));
+    color: var(--text-main);
   }
 
   .novel-focus-tag.active {
-    border-color: rgba(245, 158, 11, 0.38);
-    background: linear-gradient(135deg, rgba(146, 64, 14, 0.34), rgba(12, 74, 110, 0.28));
-    color: #fcd34d;
-    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.08);
+    border-color: color-mix(in srgb, var(--accent-amber) 38%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-amber) 18%, var(--field-bg)), color-mix(in srgb, var(--accent-cyan) 12%, var(--field-bg)));
+    color: color-mix(in srgb, var(--accent-amber) 76%, var(--text-main));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-amber) 10%, transparent);
   }
 
   .novel-stage-preview {
     margin-bottom: 14px;
     padding: 12px;
     border-radius: 12px;
-    border: 1px solid rgba(245, 158, 11, 0.18);
-    background: linear-gradient(135deg, rgba(120, 53, 15, 0.16), rgba(8, 47, 73, 0.12));
+    border: 1px solid color-mix(in srgb, var(--accent-amber) 24%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-amber) 12%, var(--surface-overlay-strong)), color-mix(in srgb, var(--accent-cyan) 8%, var(--surface-overlay-strong)));
   }
 
   .novel-stage-preview-head {
@@ -697,11 +850,11 @@
     gap: 10px;
     margin-bottom: 10px;
     font-size: 0.7rem;
-    color: #94a3b8;
+    color: var(--text-muted);
   }
 
   .novel-stage-preview-head strong {
-    color: #fef3c7;
+    color: color-mix(in srgb, var(--accent-amber) 74%, var(--text-main));
     font-size: 0.72rem;
   }
 
@@ -716,9 +869,9 @@
     place-items: center;
     min-height: 34px;
     border-radius: 999px;
-    border: 1px solid rgba(56, 189, 248, 0.16);
-    background: rgba(2, 6, 23, 0.32);
-    color: #cbd5e1;
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 18%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 96%, transparent);
+    color: var(--text-soft);
     font-size: 0.68rem;
     font-weight: 700;
   }
@@ -734,22 +887,22 @@
     margin: 0;
     background: linear-gradient(135deg, #f59e0b, #0ea5e9);
     color: #fff;
-    box-shadow: 0 10px 24px rgba(14, 165, 233, 0.12);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--accent-cyan) 16%, transparent);
   }
 
   .novel-secondary-btn,
   .novel-sync-btn {
     width: 100%;
     margin: 0;
-    background: rgba(15, 23, 42, 0.68);
-    border: 1px solid rgba(71, 85, 105, 0.78);
-    color: #cbd5e1;
+    background: color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-muted) 32%, var(--field-border));
+    color: var(--text-soft);
   }
 
   .novel-secondary-btn:hover,
   .novel-sync-btn:hover {
-    background: rgba(30, 41, 59, 0.82);
-    color: #e2e8f0;
+    background: color-mix(in srgb, var(--surface-soft-info) 48%, var(--surface-overlay-strong));
+    color: var(--text-main);
   }
 
   .novel-status-text {
@@ -761,11 +914,11 @@
   .novel-manager {
     margin-top: 16px;
     padding: 15px 16px 16px;
-    border: 1px solid rgba(56, 189, 248, 0.18);
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 22%, var(--field-border));
     border-radius: 14px;
     background:
-      linear-gradient(180deg, rgba(15, 23, 42, 0.84), rgba(2, 6, 23, 0.72)),
-      radial-gradient(circle at top left, rgba(245, 158, 11, 0.08), transparent 28%);
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-overlay-strong) 94%, transparent), color-mix(in srgb, var(--surface-elevated) 100%, transparent)),
+      radial-gradient(circle at top left, color-mix(in srgb, var(--accent-amber) 10%, transparent), transparent 28%);
   }
 
   .novel-manager-head {
@@ -777,13 +930,13 @@
   }
 
   .novel-manager-head strong {
-    color: #e2e8f0;
+    color: var(--text-main);
     font-size: 0.9rem;
   }
 
   .novel-manager-head p {
     margin: 5px 0 0;
-    color: #94a3b8;
+    color: var(--text-soft);
     font-size: 0.72rem;
     line-height: 1.5;
   }
@@ -802,13 +955,13 @@
   .novel-manager-block {
     padding: 12px;
     border-radius: 12px;
-    border: 1px solid rgba(51, 65, 85, 0.72);
-    background: rgba(2, 6, 23, 0.34);
+    border: 1px solid color-mix(in srgb, var(--text-muted) 28%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 96%, transparent);
   }
 
   .novel-block-title {
     margin-bottom: 10px;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 0.7rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -825,9 +978,9 @@
     min-height: 34px;
     padding: 0 14px;
     border-radius: 999px;
-    border: 1px solid rgba(71, 85, 105, 0.72);
-    background: rgba(15, 23, 42, 0.62);
-    color: #cbd5e1;
+    border: 1px solid color-mix(in srgb, var(--text-muted) 32%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent);
+    color: var(--text-soft);
     font-size: 0.72rem;
     font-weight: 700;
     cursor: pointer;
@@ -835,10 +988,10 @@
   }
 
   .novel-stage-btn.active {
-    border-color: rgba(56, 189, 248, 0.38);
-    background: linear-gradient(135deg, rgba(8, 47, 73, 0.76), rgba(56, 189, 248, 0.26));
-    color: #e0f2fe;
-    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.14);
+    border-color: color-mix(in srgb, var(--accent-cyan) 42%, var(--field-border));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 16%, var(--field-bg)), color-mix(in srgb, var(--accent-2) 10%, var(--field-bg)));
+    color: var(--text-main);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--accent-cyan) 14%, transparent);
   }
 
   .novel-flag-list {
@@ -847,7 +1000,7 @@
   }
 
   .novel-flag-empty {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.72rem;
   }
 
@@ -857,8 +1010,8 @@
     gap: 10px;
     padding: 9px 10px;
     border-radius: 10px;
-    border: 1px solid rgba(51, 65, 85, 0.68);
-    background: rgba(15, 23, 42, 0.56);
+    border: 1px solid color-mix(in srgb, var(--text-muted) 28%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent);
   }
 
   .novel-flag-copy {
@@ -868,7 +1021,7 @@
 
   .novel-flag-copy strong {
     display: block;
-    color: #e2e8f0;
+    color: var(--text-main);
     font-size: 0.74rem;
     line-height: 1.35;
   }
@@ -876,7 +1029,7 @@
   .novel-flag-copy span {
     display: block;
     margin-top: 3px;
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.67rem;
     line-height: 1.45;
   }
@@ -884,8 +1037,8 @@
   .novel-preview-shell {
     padding: 12px;
     border-radius: 12px;
-    border: 1px solid rgba(51, 65, 85, 0.72);
-    background: rgba(2, 6, 23, 0.3);
+    border: 1px solid color-mix(in srgb, var(--text-muted) 28%, var(--field-border));
+    background: color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent);
   }
 
   .novel-preview-head {
@@ -897,12 +1050,12 @@
   }
 
   .novel-preview-head strong {
-    color: #e2e8f0;
+    color: var(--text-main);
     font-size: 0.82rem;
   }
 
   .novel-preview-head span {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.68rem;
     font-weight: 700;
   }
@@ -917,14 +1070,14 @@
     min-width: 0;
     padding: 11px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(56, 189, 248, 0.14);
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.48));
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 18%, var(--field-border));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--surface-overlay-strong) 98%, transparent), color-mix(in srgb, var(--surface-soft-info) 22%, transparent));
   }
 
   .novel-entity-card strong {
     display: block;
     margin-bottom: 5px;
-    color: #e0f2fe;
+    color: var(--text-main);
     font-size: 0.78rem;
     line-height: 1.4;
     word-break: break-word;
@@ -937,9 +1090,9 @@
     margin-bottom: 6px;
     padding: 0 8px;
     border-radius: 999px;
-    border: 1px solid rgba(245, 158, 11, 0.18);
-    background: rgba(120, 53, 15, 0.2);
-    color: #fcd34d;
+    border: 1px solid color-mix(in srgb, var(--accent-amber) 26%, var(--field-border));
+    background: color-mix(in srgb, var(--accent-amber) 12%, var(--field-bg));
+    color: color-mix(in srgb, var(--accent-amber) 74%, var(--text-main));
     font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.05em;
@@ -948,14 +1101,14 @@
 
   .novel-entity-card p {
     margin: 0;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 0.7rem;
     line-height: 1.5;
     word-break: break-word;
   }
 
   .novel-entity-empty {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.72rem;
   }
 

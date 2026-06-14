@@ -13,6 +13,14 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script is:inline>
+      (function() {
+        var storedTheme = null;
+        try { storedTheme = localStorage.getItem('st-theme'); } catch (e) {}
+        var preferredTheme = storedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.dataset.theme = preferredTheme;
+      })();
+    </script>
     <!-- 可选：JetBrains Mono 字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,18 +28,144 @@ const { title } = Astro.props;
 
     <style is:global>
       /* ========== 基础重置 ========== */
+      :root {
+        color-scheme: dark;
+        --bg-color: #0a0e1a;
+        --bg-image:
+          radial-gradient(ellipse at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+          radial-gradient(ellipse at 85% 20%, rgba(34, 197, 232, 0.06) 0%, transparent 50%),
+          radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+        --text-main: #f1f5f9;
+        --text-soft: #cbd5e1;
+        --text-muted: #64748b;
+        --text-faint: #475569;
+        --panel-bg: linear-gradient(135deg, rgb(15, 23, 37), rgb(13, 18, 32));
+        --panel-border: rgba(99, 102, 241, 0.12);
+        --panel-border-strong: rgba(99, 102, 241, 0.25);
+        --panel-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        --panel-shadow-hover:
+          0 12px 48px rgba(99, 102, 241, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.07);
+        --header-bg: linear-gradient(135deg, rgba(13, 18, 32, 0.95), rgba(10, 14, 26, 0.98));
+        --header-border: rgba(99, 102, 241, 0.15);
+        --header-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        --field-bg: rgba(13, 18, 32, 0.8);
+        --field-bg-strong: rgba(13, 18, 32, 0.95);
+        --field-border: rgba(99, 102, 241, 0.2);
+        --field-focus: rgba(99, 102, 241, 0.15);
+        --field-text: #f1f5f9;
+        --select-menu-bg: color-mix(in srgb, var(--panel-bg) 92%, white 8%);
+        --select-menu-border: color-mix(in srgb, var(--accent) 28%, transparent);
+        --select-menu-shadow: 0 8px 24px color-mix(in srgb, black 18%, transparent);
+        --select-option-hover-bg: rgba(139, 92, 246, 0.12);
+        --select-option-hover-text: var(--text-main);
+        --select-option-selected-bg: rgba(139, 92, 246, 0.08);
+        --select-option-selected-text: color-mix(in srgb, var(--accent-2) 72%, var(--text-main));
+        --card-bg: #1e293b;
+        --card-bg-hover: #263044;
+        --code-bg: rgba(5, 5, 16, 0.95);
+        --code-header-bg: #0f172a;
+        --code-border: rgba(30, 41, 59, 0.8);
+        --code-divider: #1e293b;
+        --accent: #6366f1;
+        --accent-2: #8b5cf6;
+        --accent-cyan: #38bdf8;
+        --accent-green: #10b981;
+        --accent-amber: #f59e0b;
+        --danger: #ef4444;
+        --surface-elevated: linear-gradient(135deg, rgba(15, 23, 42, 0.74), rgba(7, 12, 24, 0.9));
+        --surface-elevated-strong:
+          radial-gradient(circle at top right, rgba(56, 189, 248, 0.16), transparent 38%),
+          linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.98));
+        --surface-overlay: rgba(2, 6, 23, 0.44);
+        --surface-overlay-strong: rgba(15, 23, 42, 0.72);
+        --surface-soft-accent: rgba(99, 102, 241, 0.05);
+        --surface-soft-success: rgba(16, 185, 129, 0.08);
+        --surface-soft-info: rgba(56, 189, 248, 0.08);
+        --surface-soft-danger: rgba(127, 29, 29, 0.16);
+        --border-strong: rgba(71, 85, 105, 0.58);
+        --chip-bg: rgba(2, 6, 23, 0.44);
+        --chip-border: rgba(51, 65, 85, 0.72);
+        --button-muted-bg: linear-gradient(135deg, #475569, #334155);
+        --button-muted-bg-hover: linear-gradient(135deg, #334155, #1f2937);
+        --button-muted-text: #e0e7ff;
+        --button-muted-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        --scrollbar-thumb: linear-gradient(180deg, rgba(139, 92, 246, 0.5), rgba(56, 189, 248, 0.45));
+        --scrollbar-thumb-hover: linear-gradient(180deg, rgba(139, 92, 246, 0.8), rgba(56, 189, 248, 0.7));
+      }
+
+      :root[data-theme="light"] {
+        color-scheme: light;
+        --bg-color: #f3f7ff;
+        --bg-image:
+          radial-gradient(ellipse at 10% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 42%),
+          radial-gradient(ellipse at 90% 10%, rgba(56, 189, 248, 0.12) 0%, transparent 36%),
+          radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.08) 0%, transparent 32%),
+          linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+        --text-main: #0f172a;
+        --text-soft: #334155;
+        --text-muted: #64748b;
+        --text-faint: #64748b;
+        --panel-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(244, 248, 255, 0.98));
+        --panel-border: rgba(148, 163, 184, 0.28);
+        --panel-border-strong: rgba(99, 102, 241, 0.24);
+        --panel-shadow:
+          0 18px 42px rgba(148, 163, 184, 0.14),
+          inset 0 1px 0 rgba(255, 255, 255, 0.75);
+        --panel-shadow-hover:
+          0 24px 52px rgba(99, 102, 241, 0.14),
+          inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        --header-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(239, 246, 255, 0.96));
+        --header-border: rgba(148, 163, 184, 0.28);
+        --header-shadow: 0 16px 42px rgba(148, 163, 184, 0.16);
+        --field-bg: rgba(255, 255, 255, 0.92);
+        --field-bg-strong: rgba(255, 255, 255, 1);
+        --field-border: rgba(148, 163, 184, 0.36);
+        --field-focus: rgba(99, 102, 241, 0.16);
+        --field-text: #0f172a;
+        --select-menu-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(241, 247, 255, 1));
+        --select-menu-border: rgba(99, 102, 241, 0.24);
+        --select-menu-shadow: 0 18px 38px rgba(148, 163, 184, 0.22);
+        --select-option-hover-bg: rgba(99, 102, 241, 0.1);
+        --select-option-hover-text: #0f172a;
+        --select-option-selected-bg: rgba(99, 102, 241, 0.14);
+        --select-option-selected-text: #4338ca;
+        --card-bg: #f8fbff;
+        --card-bg-hover: #eef4ff;
+        --code-bg: rgba(248, 250, 252, 0.96);
+        --code-header-bg: #edf3ff;
+        --code-border: rgba(148, 163, 184, 0.34);
+        --code-divider: rgba(148, 163, 184, 0.32);
+        --surface-elevated: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.98));
+        --surface-elevated-strong: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(56, 189, 248, 0.08));
+        --surface-overlay: rgba(255, 255, 255, 0.82);
+        --surface-overlay-strong: rgba(255, 255, 255, 0.92);
+        --surface-soft-accent: rgba(99, 102, 241, 0.08);
+        --surface-soft-success: rgba(236, 253, 245, 0.92);
+        --surface-soft-info: rgba(239, 246, 255, 0.92);
+        --surface-soft-danger: rgba(254, 242, 242, 0.92);
+        --border-strong: rgba(148, 163, 184, 0.32);
+        --chip-bg: rgba(255, 255, 255, 0.88);
+        --chip-border: rgba(148, 163, 184, 0.34);
+        --button-muted-bg: linear-gradient(135deg, #64748b, #475569);
+        --button-muted-bg-hover: linear-gradient(135deg, #475569, #334155);
+        --button-muted-text: #f8fafc;
+        --button-muted-shadow: 0 8px 20px rgba(148, 163, 184, 0.16);
+        --scrollbar-thumb: linear-gradient(180deg, rgba(99, 102, 241, 0.48), rgba(14, 165, 233, 0.4));
+        --scrollbar-thumb-hover: linear-gradient(180deg, rgba(99, 102, 241, 0.72), rgba(14, 165, 233, 0.62));
+      }
+
       *, *::before, *::after {
         box-sizing: border-box;
       }
 
       body {
-        background-color: #0a0e1a;
-        background-image:
-          radial-gradient(ellipse at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-          radial-gradient(ellipse at 85% 20%, rgba(34, 197, 232, 0.06) 0%, transparent 50%),
-          radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+        background-color: var(--bg-color);
+        background-image: var(--bg-image);
         background-attachment: fixed;
-        color: #f1f5f9;
+        color: var(--text-main);
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         margin: 0;
         padding: 20px;
@@ -46,15 +180,15 @@ const { title } = Astro.props;
         max-width: 1920px;
         margin: 0 auto 20px;
         padding: 14px 24px;
-        background: linear-gradient(135deg, rgba(13, 18, 32, 0.95), rgba(10, 14, 26, 0.98));
-        border: 1px solid rgba(99, 102, 241, 0.15);
+        background: var(--header-bg);
+        border: 1px solid var(--header-border);
         border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        box-shadow: var(--header-shadow);
         position: relative;
         overflow: hidden;
       }
@@ -138,7 +272,7 @@ const { title } = Astro.props;
       }
       .app-subtitle {
         font-size: 0.68rem;
-        color: #475569;
+        color: var(--text-faint);
         margin: 3px 0 0;
         letter-spacing: 0.03em;
       }
@@ -149,13 +283,40 @@ const { title } = Astro.props;
       }
       .app-version-badge {
         font-size: 0.62rem;
-        color: #64748b;
-        background: rgba(100, 116, 139, 0.1);
+        color: var(--text-muted);
+        background: color-mix(in srgb, var(--text-muted) 10%, transparent);
         padding: 4px 10px;
         border-radius: 99px;
-        border: 1px solid rgba(100, 116, 139, 0.15);
+        border: 1px solid color-mix(in srgb, var(--text-muted) 18%, transparent);
         font-family: 'JetBrains Mono', monospace;
         letter-spacing: 0.05em;
+      }
+      .theme-toggle {
+        width: auto;
+        min-width: 104px;
+        padding: 8px 12px;
+        background: color-mix(in srgb, var(--field-bg-strong) 92%, transparent);
+        border: 1px solid var(--field-border);
+        color: var(--text-soft);
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.76rem;
+        font-weight: 700;
+        transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .theme-toggle:hover {
+        transform: translateY(-1px);
+        border-color: color-mix(in srgb, var(--accent) 45%, var(--field-border));
+        box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 12%, transparent);
+      }
+      .theme-toggle-icon {
+        font-size: 0.92rem;
+        line-height: 1;
       }
 
       /* ========== 主容器布局 — 4 个工作栈 ========== */
@@ -255,34 +416,32 @@ const { title } = Astro.props;
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, rgba(139, 92, 246, 0.5), rgba(56, 189, 248, 0.45));
+        background: var(--scrollbar-thumb);
         border-radius: 99px;
         box-shadow: 0 0 4px rgba(139, 92, 246, 0.3);
         transition: background 0.3s ease, box-shadow 0.3s ease;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, rgba(139, 92, 246, 0.8), rgba(56, 189, 248, 0.7));
+        background: var(--scrollbar-thumb-hover);
         box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
       }
       ::-webkit-scrollbar-corner { background: transparent; }
       /* Firefox */
       * {
         scrollbar-width: thin;
-        scrollbar-color: rgba(139, 92, 246, 0.45) transparent;
+        scrollbar-color: color-mix(in srgb, var(--accent-2) 45%, transparent) transparent;
       }
 
       /* ========== 面板通用 ========== */
       .panel {
-        background: linear-gradient(135deg, rgb(15, 23, 37), rgb(13, 18, 32));
+        background: var(--panel-bg);
         padding: 16px;
         border-radius: 12px;
-        border: 1px solid rgba(99, 102, 241, 0.12);
+        border: 1px solid var(--panel-border);
         max-height: min(720px, calc(100vh - 112px));
         overflow-y: auto;
         scrollbar-gutter: stable;
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        box-shadow: var(--panel-shadow);
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
         will-change: none;
         transform: translateZ(0);
@@ -290,10 +449,8 @@ const { title } = Astro.props;
         -moz-osx-font-smoothing: grayscale;
       }
       .panel:hover {
-        border-color: rgba(99, 102, 241, 0.25);
-        box-shadow:
-          0 12px 48px rgba(99, 102, 241, 0.12),
-          inset 0 1px 0 rgba(255, 255, 255, 0.07);
+        border-color: var(--panel-border-strong);
+        box-shadow: var(--panel-shadow-hover);
       }
 
       .area-worldbook {
@@ -302,8 +459,8 @@ const { title } = Astro.props;
 
       .panel h2 {
         margin: 0 0 16px 0;
-        color: #e0e7ff;
-        border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+        color: color-mix(in srgb, var(--text-main) 92%, #a5b4fc);
+        border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
         padding-bottom: 12px;
         font-size: 1.05rem;
         letter-spacing: 0.02em;
@@ -311,7 +468,7 @@ const { title } = Astro.props;
       }
       .panel h3 {
         margin: 20px 0 12px 0;
-        color: #cbd5e1;
+        color: var(--text-soft);
         font-size: 0.95rem;
         font-weight: 600;
       }
@@ -323,7 +480,7 @@ const { title } = Astro.props;
       .form-group label {
         display: block;
         font-size: 0.8rem;
-        color: #a5b4fc;
+        color: color-mix(in srgb, var(--accent) 65%, var(--text-soft));
         margin-bottom: 6px;
         font-weight: 600;
         text-transform: uppercase;
@@ -336,9 +493,9 @@ const { title } = Astro.props;
       textarea,
       select {
         width: 100%;
-        background-color: rgba(13, 18, 32, 0.8);
-        border: 1px solid rgba(99, 102, 241, 0.2);
-        color: #f1f5f9;
+        background-color: var(--field-bg);
+        border: 1px solid var(--field-border);
+        color: var(--field-text);
         padding: 10px 12px;
         border-radius: 8px;
         box-sizing: border-box;
@@ -352,9 +509,9 @@ const { title } = Astro.props;
       input[type="number"]:focus,
       textarea:focus,
       select:focus {
-        border-color: #6366f1;
-        background-color: rgba(13, 18, 32, 0.95);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        border-color: var(--accent);
+        background-color: var(--field-bg-strong);
+        box-shadow: 0 0 0 3px var(--field-focus);
       }
       textarea {
         min-height: 80px;
@@ -386,7 +543,7 @@ const { title } = Astro.props;
       select {
         cursor: pointer;
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23cbd5e1' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 10px center;
         padding-right: 32px;
@@ -407,9 +564,9 @@ const { title } = Astro.props;
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        background-color: rgba(13, 18, 32, 0.8);
-        border: 1px solid rgba(99, 102, 241, 0.2);
-        color: #f1f5f9;
+        background-color: var(--field-bg);
+        border: 1px solid var(--field-border);
+        color: var(--field-text);
         padding: 10px 12px;
         border-radius: 8px;
         font-family: inherit;
@@ -421,12 +578,12 @@ const { title } = Astro.props;
       }
       .cs-trigger:hover {
         border-color: rgba(139, 92, 246, 0.4);
-        background-color: rgba(13, 18, 32, 0.95);
+        background-color: var(--field-bg-strong);
       }
       .cs-wrap.cs-open .cs-trigger {
-        border-color: #6366f1;
-        background-color: rgba(13, 18, 32, 0.95);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        border-color: var(--accent);
+        background-color: var(--field-bg-strong);
+        box-shadow: 0 0 0 3px var(--field-focus);
         border-radius: 8px 8px 0 0;
       }
       .cs-arrow {
@@ -448,15 +605,15 @@ const { title } = Astro.props;
         left: 0;
         right: 0;
         z-index: 9000;
-        background: rgb(15, 20, 36);
-        border: 1px solid rgba(99, 102, 241, 0.3);
+        background: var(--select-menu-bg);
+        border: 1px solid var(--select-menu-border);
         border-top: none;
         border-radius: 0 0 8px 8px;
         max-height: 0;
         overflow: hidden;
         opacity: 0;
         transition: max-height 0.25s ease, opacity 0.2s ease;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        box-shadow: var(--select-menu-shadow);
       }
       .cs-wrap.cs-open .cs-dropdown {
         max-height: 220px;
@@ -466,7 +623,7 @@ const { title } = Astro.props;
       .cs-option {
         padding: 9px 14px;
         font-size: 0.84rem;
-        color: #cbd5e1;
+        color: var(--text-soft);
         cursor: pointer;
         transition: background 0.15s ease, color 0.15s ease, padding-left 0.2s ease;
         position: relative;
@@ -475,13 +632,13 @@ const { title } = Astro.props;
         text-overflow: ellipsis;
       }
       .cs-option:hover {
-        background: rgba(139, 92, 246, 0.12);
-        color: #e0e7ff;
+        background: var(--select-option-hover-bg);
+        color: var(--select-option-hover-text);
         padding-left: 18px;
       }
       .cs-option.cs-selected {
-        color: #c4b5fd;
-        background: rgba(139, 92, 246, 0.08);
+        color: var(--select-option-selected-text);
+        background: var(--select-option-selected-bg);
       }
       .cs-option.cs-selected::before {
         content: '';
@@ -510,7 +667,7 @@ const { title } = Astro.props;
         min-height: 16px;
         border: 1.5px solid rgba(139, 92, 246, 0.35);
         border-radius: 4px;
-        background: rgba(13, 18, 32, 0.8);
+        background: var(--field-bg);
         cursor: pointer;
         position: relative;
         vertical-align: middle;
@@ -533,7 +690,7 @@ const { title } = Astro.props;
         left: 50%;
         width: 5px;
         height: 9px;
-        border: solid #e0e7ff;
+        border: solid var(--text-main);
         border-width: 0 2px 2px 0;
         border-radius: 0 0 1px 0;
         transform: translate(-50%, -60%) rotate(45deg) scale(0);
@@ -552,14 +709,14 @@ const { title } = Astro.props;
 
       /* ========== 文件上传 ========== */
       input[type="file"] {
-        color: #94a3b8;
+        color: var(--text-muted);
         font-size: 0.8rem;
         cursor: pointer;
         padding: 0;
       }
       input[type="file"]::file-selector-button {
-        background: linear-gradient(135deg, #475569, #334155);
-        color: #e0e7ff;
+        background: var(--button-muted-bg);
+        color: var(--button-muted-text);
         border: 1px solid rgba(99, 102, 241, 0.2);
         padding: 7px 14px;
         border-radius: 8px;
@@ -571,10 +728,10 @@ const { title } = Astro.props;
         transition: all 0.2s ease;
       }
       input[type="file"]::file-selector-button:hover {
-        background: linear-gradient(135deg, #334155, #1f2937);
+        background: var(--button-muted-bg-hover);
         border-color: rgba(99, 102, 241, 0.4);
-        color: #c7d2fe;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        color: var(--button-muted-text);
+        box-shadow: var(--button-muted-shadow);
       }
 
       /* ========== 网格布局 ========== */
@@ -599,7 +756,7 @@ const { title } = Astro.props;
       /* ========== 状态文本 ========== */
       .status-text {
         font-size: 0.82rem;
-        color: #10b981;
+        color: var(--accent-green);
         min-height: 20px;
         margin-top: 10px;
         font-weight: 600;
@@ -610,13 +767,13 @@ const { title } = Astro.props;
         border: 1px dashed rgba(99, 102, 241, 0.4);
         padding: 14px;
         border-radius: 10px;
-        background: rgba(99, 102, 241, 0.05);
+        background: var(--surface-soft-accent);
         margin-bottom: 16px;
       }
 
       /* ========== 草稿管理器 ========== */
       .draft-manager {
-        background: rgba(16, 185, 129, 0.08);
+        background: var(--surface-soft-success);
         border: 1px solid rgba(16, 185, 129, 0.2);
         padding: 14px;
         border-radius: 10px;
@@ -664,13 +821,14 @@ const { title } = Astro.props;
       }
 
       .btn-fetch { 
-        background: linear-gradient(135deg, #475569, #334155);
+        background: var(--button-muted-bg);
         border-color: rgba(71, 85, 105, 0.3);
+        color: var(--button-muted-text);
       }
       .btn-fetch:hover { 
-        background: linear-gradient(135deg, #334155, #1e293b);
+        background: var(--button-muted-bg-hover);
         border-color: rgba(99, 102, 241, 0.3);
-        box-shadow: 0 8px 24px rgba(71, 85, 105, 0.2);
+        box-shadow: var(--button-muted-shadow);
       }
 
       .btn-ai {
@@ -724,7 +882,7 @@ const { title } = Astro.props;
 
       /* ========== 世界书条目 ========== */
       .entry-item {
-        background-color: #1e293b;
+        background-color: var(--card-bg);
         padding: 12px;
         border-radius: 8px;
         margin-bottom: 8px;
@@ -742,7 +900,7 @@ const { title } = Astro.props;
         overflow: visible;
       }
       .entry-item:hover {
-        border-color: #334155;
+        border-color: color-mix(in srgb, var(--text-muted) 48%, transparent);
       }
       .entry-item-header {
         display: flex;
@@ -754,7 +912,7 @@ const { title } = Astro.props;
       }
       .entry-info { min-width: 0; flex: 1; }
       .entry-info h4 { margin: 0 0 4px 0; font-size: 0.88rem; }
-      .entry-info p { margin: 0; font-size: 0.72rem; color: #94a3b8; }
+      .entry-info p { margin: 0; font-size: 0.72rem; color: var(--text-muted); }
       .entry-info h4,
       .entry-info p {
         overflow: hidden;
@@ -765,7 +923,7 @@ const { title } = Astro.props;
         margin-top: 12px;
         padding: 14px;
         border-radius: 12px;
-        background: linear-gradient(180deg, rgba(6, 10, 24, 0.92), rgba(15, 23, 42, 0.9));
+        background: var(--surface-elevated);
         border: 1px solid rgba(99, 102, 241, 0.24);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
       }
@@ -778,12 +936,12 @@ const { title } = Astro.props;
         flex-wrap: wrap;
       }
       .wb-inline-editor-title {
-        color: #c7d2fe;
+        color: color-mix(in srgb, var(--accent) 58%, var(--text-main));
         font-size: 0.82rem;
         font-weight: 700;
       }
       .wb-inline-editor-subtitle {
-        color: #64748b;
+        color: var(--text-muted);
         font-size: 0.7rem;
       }
       .wb-inline-editor textarea {
@@ -810,7 +968,7 @@ const { title } = Astro.props;
       }
       .wb-entry-preview {
         margin-top: 8px;
-        color: #cbd5e1;
+        color: var(--text-soft);
         font-size: 0.75rem;
         line-height: 1.55;
         min-height: calc(0.75rem * 1.55 * 3);
@@ -822,11 +980,11 @@ const { title } = Astro.props;
 
       /* ========== 代码预览窗口 ========== */
       .code-window {
-        background-color: rgba(5, 5, 16, 0.95);
+        background-color: var(--code-bg);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-radius: 12px;
-        border: 1px solid rgba(30, 41, 59, 0.8);
+        border: 1px solid var(--code-border);
         display: flex;
         flex-direction: column;
         max-height: min(560px, calc(100vh - 112px));
@@ -838,12 +996,12 @@ const { title } = Astro.props;
           0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
       .code-header {
-        background-color: #0f172a;
+        background-color: var(--code-header-bg);
         padding: 10px 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #1e293b;
+        border-bottom: 1px solid var(--code-divider);
         flex-shrink: 0;
         flex-wrap: wrap;
         gap: 8px;
@@ -858,7 +1016,7 @@ const { title } = Astro.props;
         display: inline-block;
         width: 8px;
         height: 8px;
-        background: #10b981;
+        background: var(--accent-green);
         border-radius: 50%;
         box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
         animation: pulse-dot 2s infinite;
@@ -884,7 +1042,7 @@ const { title } = Astro.props;
         margin: 0;
         font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
         font-size: 0.82rem;
-        color: #e2e8f0;
+        color: var(--text-main);
         line-height: 1.7;
         white-space: pre-wrap;
         word-wrap: break-word;
@@ -904,13 +1062,13 @@ const { title } = Astro.props;
         gap: 8px;
         margin-bottom: 6px;
         font-size: 0.8rem;
-        background: #1e293b;
+        background: var(--card-bg);
         padding: 10px;
         border-radius: 6px;
         transition: background 0.2s ease;
       }
       .preset-item:hover {
-        background: #263044;
+        background: var(--card-bg-hover);
       }
       .preset-item input[type="checkbox"] {
         margin-top: 2px;
@@ -920,7 +1078,7 @@ const { title } = Astro.props;
         cursor: pointer;
         flex: 1;
         user-select: none;
-        color: #e2e8f0;
+        color: var(--text-main);
         font-weight: normal;
         line-height: 1.4;
       }
@@ -928,8 +1086,17 @@ const { title } = Astro.props;
       /* ========== 分隔线 ========== */
       .divider {
         border: none;
-        border-top: 1px dashed #1e293b;
+        border-top: 1px dashed var(--code-divider);
         margin: 20px 0;
+      }
+
+      :root[data-theme="light"] .app-logo {
+        box-shadow: 0 10px 24px rgba(99, 102, 241, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      }
+
+      :root[data-theme="light"] .draft-manager,
+      :root[data-theme="light"] .preset-upload {
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
       }
 
       /* ========== 动画辅助 ========== */
@@ -1526,11 +1693,11 @@ const { title } = Astro.props;
         max-height: 220px !important;
         overflow: hidden auto !important;
         opacity: 1 !important;
-        border: 1px solid rgba(99, 102, 241, 0.3) !important;
+        border: 1px solid var(--select-menu-border) !important;
         border-top: none !important;
         border-radius: 0 0 8px 8px !important;
-        background: rgb(15, 20, 36) !important;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+        background: var(--select-menu-bg) !important;
+        box-shadow: var(--select-menu-shadow) !important;
         transform-origin: top center;
         animation: csDropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
       }
@@ -1558,15 +1725,59 @@ const { title } = Astro.props;
 
       /* ── Portal 工具函数 ── */
       var _csJustOpened = false;
+      var _csMeasureCanvas = document.createElement('canvas');
+      var _csMeasureCtx = _csMeasureCanvas.getContext('2d');
+
+      function measureSelectDropdownWidth(sel, trigger, dropdown) {
+        if (!_csMeasureCtx) return trigger.getBoundingClientRect().width;
+
+        var triggerStyle = window.getComputedStyle(trigger);
+        var optionStyle = window.getComputedStyle(dropdown);
+        var font = triggerStyle.font || [
+          triggerStyle.fontStyle,
+          triggerStyle.fontVariant,
+          triggerStyle.fontWeight,
+          triggerStyle.fontSize + '/' + triggerStyle.lineHeight,
+          triggerStyle.fontFamily
+        ].join(' ');
+
+        _csMeasureCtx.font = font;
+
+        var maxTextWidth = 0;
+        for (var i = 0; i < sel.options.length; i++) {
+          var text = sel.options[i].textContent || '';
+          var width = _csMeasureCtx.measureText(text).width;
+          if (width > maxTextWidth) maxTextWidth = width;
+        }
+
+        var paddingLeft = parseFloat(optionStyle.paddingLeft) || 14;
+        var paddingRight = parseFloat(optionStyle.paddingRight) || 14;
+        var selectedBar = 10;
+        var scrollbarAllowance = 16;
+        var minWidth = trigger.getBoundingClientRect().width;
+
+        return Math.max(
+          minWidth,
+          Math.ceil(maxTextWidth + paddingLeft + paddingRight + selectedBar + scrollbarAllowance)
+        );
+      }
 
       // 将下拉框传送到 body 并用 fixed 定位对齐触发器
       function portalOpen(wrap, dropdown, trigger) {
         var rect = trigger.getBoundingClientRect();
+        var desiredWidth = measureSelectDropdownWidth(wrap.querySelector('select'), trigger, dropdown);
+        var maxWidth = Math.max(220, window.innerWidth - 24);
+        var finalWidth = Math.min(desiredWidth, maxWidth);
+        var left = rect.left;
+        if (left + finalWidth > window.innerWidth - 12) {
+          left = Math.max(12, window.innerWidth - 12 - finalWidth);
+        }
+
         dropdown.classList.add('cs-portalled');
         document.body.appendChild(dropdown);
-        dropdown.style.left = rect.left + 'px';
+        dropdown.style.left = left + 'px';
         dropdown.style.top = rect.bottom + 'px';
-        dropdown.style.width = rect.width + 'px';
+        dropdown.style.width = finalWidth + 'px';
         // 防止开启瞬间被 scroll 事件关闭
         _csJustOpened = true;
         setTimeout(function() { _csJustOpened = false; }, 60);

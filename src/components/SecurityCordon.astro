@@ -81,10 +81,13 @@ const { unlockClicks = 10, label = '🔒 模块封锁中 · 开发未完成' } =
   }
 
   .security-cordon-wrapper.locked .cordon-content-layer {
-    filter: blur(5px) brightness(0.45) saturate(0.25);
+    filter: blur(5px) brightness(0.72) saturate(0.42);
     pointer-events: none;
     user-select: none;
     transition: filter 0.8s cubic-bezier(.4,0,.2,1);
+  }
+  :root[data-theme="light"] .security-cordon-wrapper.locked .cordon-content-layer {
+    filter: blur(3px) brightness(0.94) saturate(0.78);
   }
 
   .security-cordon-wrapper.unlocked .cordon-content-layer {
@@ -273,6 +276,13 @@ const { unlockClicks = 10, label = '🔒 模块封锁中 · 开发未完成' } =
     animation: cordonBadgePulse 3s ease-in-out infinite;
     min-width: 220px;
   }
+  :root[data-theme="light"] .cordon-center-badge {
+    background: color-mix(in srgb, var(--surface-overlay-strong) 96%, white);
+    border-color: color-mix(in srgb, var(--accent-amber) 36%, var(--field-border));
+    box-shadow:
+      0 0 30px color-mix(in srgb, var(--accent-amber) 12%, transparent),
+      0 8px 32px rgba(148, 163, 184, 0.18);
+  }
 
   @keyframes cordonBadgePulse {
     0%, 100% {
@@ -310,11 +320,18 @@ const { unlockClicks = 10, label = '🔒 模块封锁中 · 开发未完成' } =
     margin-bottom: 12px;
     line-height: 1.4;
   }
+  :root[data-theme="light"] .cordon-label-text {
+    color: color-mix(in srgb, var(--accent-amber) 82%, var(--text-main));
+    text-shadow: 0 0 10px color-mix(in srgb, var(--accent-amber) 18%, transparent);
+  }
 
   .cordon-badge-sub {
     font-size: 0.6rem;
     color: #475569;
     letter-spacing: 0.08em;
+  }
+  :root[data-theme="light"] .cordon-badge-sub {
+    color: var(--text-muted);
   }
 
 

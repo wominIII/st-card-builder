@@ -1,0 +1,693 @@
+---
+---
+<div class="panel ai-panel area-ai">
+  <h2>🚀 一键生成角色 + 世界书骨架</h2>
+
+  <div class="form-group">
+    <label style="color: var(--accent-cyan);">📝 [阶段1] 角色设定提示词</label>
+    <textarea id="aiPrompt" placeholder="例如：一个在赛博朋克世界中靠捡垃圾为生的边缘黑客少女..." style="min-height: 80px;"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label style="color: var(--accent-green);">🌍 [阶段2] 世界书骨架提示词</label>
+    <textarea id="wbPrompt" placeholder="例如：围绕赛博废土展开，包含武器、势力、地点、NPC..." style="min-height: 60px; border-color: color-mix(in srgb, var(--accent-green) 32%, var(--field-border));"></textarea>
+  </div>
+
+  <div style="background: var(--surface-soft-success); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="flex: 1;">
+        <label style="color: var(--accent-green); font-size: 0.78rem; font-weight: 600; margin: 0 0 4px 0; display: block;">🦴 骨架模式</label>
+        <p style="font-size: 0.68rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+          一键生成时只产出简短骨架。后续用「✨ AI重写」逐条展开。
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <label style="color: var(--text-faint); font-size: 0.75rem; white-space: nowrap; margin: 0;">生成</label>
+        <input type="number" id="wbSkeletonCount" value="6" min="1" max="30" style="width: 52px; text-align: center; padding: 6px 4px; font-size: 0.9rem; font-weight: 700; border-color: color-mix(in srgb, var(--accent-green) 32%, var(--field-border));" />
+        <label style="color: var(--text-faint); font-size: 0.75rem; white-space: nowrap; margin: 0;">条</label>
+      </div>
+    </div>
+    <div style="display: flex; gap: 6px; margin-top: 10px;">
+      <button class="wb-count-btn" data-count="3" style="flex:1;">3条</button>
+      <button class="wb-count-btn" data-count="6" style="flex:1;">6条</button>
+      <button class="wb-count-btn" data-count="10" style="flex:1;">10条</button>
+      <button class="wb-count-btn" data-count="15" style="flex:1;">15条</button>
+      <button class="wb-count-btn" data-count="20" style="flex:1;">20条</button>
+    </div>
+  </div>
+
+  <button id="btnAiGenerate" class="btn btn-ai">🚀 一键生成角色和世界书骨架</button>
+
+  <div id="hackerOverlay" style="display: none;">
+    <div id="hackerCanvas"></div>
+    <div id="hackerStatus">
+      <div id="hackerPhase"></div>
+      <div id="hackerProgress"></div>
+      <div id="hackerDetail"></div>
+    </div>
+  </div>
+
+  <div id="aiStatus" class="status-text"></div>
+</div>
+
+<style>
+  .wb-count-btn {
+    background: color-mix(in srgb, var(--accent-green) 8%, transparent);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: color-mix(in srgb, var(--accent-green) 65%, var(--text-main));
+    padding: 4px 0;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .wb-count-btn:hover {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #a7f3d0;
+    transform: translateY(-1px);
+  }
+  .wb-count-btn.active {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+    color: #ecfdf5;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+  }
+
+  #hackerOverlay {
+    position: relative;
+    margin-top: 14px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    background: var(--code-bg);
+    min-height: 160px;
+  }
+  #hackerCanvas {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.65rem;
+    line-height: 1.2;
+    color: rgba(139, 92, 246, 0.15);
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding: 8px;
+    pointer-events: none;
+  }
+  #hackerStatus {
+    position: relative;
+    z-index: 2;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    gap: 12px;
+  }
+  #hackerPhase {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #c4b5fd;
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+    text-align: center;
+    animation: hackerGlow 1.5s ease-in-out infinite;
+  }
+  #hackerProgress {
+    width: 80%;
+    max-width: 260px;
+    height: 4px;
+    background: rgba(139, 92, 246, 0.15);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+  }
+  #hackerProgress::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: var(--progress, 0%);
+    background: linear-gradient(90deg, #8b5cf6, #c084fc, #8b5cf6);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  }
+  #hackerDetail {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 1.2em;
+  }
+  @keyframes hackerGlow {
+    0%, 100% { text-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
+    50% { text-shadow: 0 0 40px rgba(139, 92, 246, 0.8), 0 0 80px rgba(139, 92, 246, 0.3); }
+  }
+  #hackerOverlay::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.5), transparent);
+    animation: hackerScan 2s linear infinite;
+    pointer-events: none;
+    z-index: 3;
+  }
+  @keyframes hackerScan {
+    0% { top: 0; opacity: 1; }
+    100% { top: 100%; opacity: 0.2; }
+  }
+</style>
+
+<script is:inline>
+(function() {
+  var apiUrl = document.getElementById('apiUrl');
+  var apiUrlHint = document.getElementById('apiUrlHint');
+  var wbSkeletonCount = document.getElementById('wbSkeletonCount');
+  var countBtns = document.querySelectorAll('.wb-count-btn');
+  var hackerOverlay = document.getElementById('hackerOverlay');
+  var hackerCanvas = document.getElementById('hackerCanvas');
+  var hackerPhase = document.getElementById('hackerPhase');
+  var hackerProgress = document.getElementById('hackerProgress');
+  var hackerDetail = document.getElementById('hackerDetail');
+
+  var searchEnable = document.getElementById('searchEnable');
+  var searchConfigBlock = document.getElementById('searchConfigBlock');
+  var searchToggleCard = searchEnable ? searchEnable.closest('.search-toggle-card') : null;
+  var searchConfigDetail = document.getElementById('searchConfigDetail');
+  var searchModeBadge = document.getElementById('searchModeBadge');
+  var searchEngine = document.getElementById('searchEngine');
+  var searchKeyGroup = document.getElementById('searchKeyGroup');
+  var searchKeyLabel = document.getElementById('searchKeyLabel');
+  var searchApiKey = document.getElementById('searchApiKey');
+  var searchRegisterHint = document.getElementById('searchRegisterHint');
+  var searchResultCount = document.getElementById('searchResultCount');
+  var searchLang = document.getElementById('searchLang');
+  var searchCustomQuery = document.getElementById('searchCustomQuery');
+  var btnTestSearch = document.getElementById('btnTestSearch');
+  var searchTestStatus = document.getElementById('searchTestStatus');
+  var searchPreview = document.getElementById('searchPreview');
+
+  var SEARCH_CONFIG_KEY = 'st_v3_builder_search_config';
+
+  function checkApiUrlProtocol() {
+    var val = apiUrl.value.trim();
+    var isHttps = location.protocol === 'https:';
+    var isHttp = val.startsWith('http://');
+
+    if (!val) { apiUrlHint.style.display = 'none'; return; }
+    apiUrlHint.style.display = 'block';
+
+    if (isHttps && isHttp) {
+      apiUrlHint.innerHTML =
+        '<div class="hint-bar" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);color:#fcd34d;">' +
+          '⚠️ <span>HTTP 地址在 HTTPS 页面下会被浏览器拦截</span>' +
+          '<span style="margin-left:auto;font-size:0.65rem;opacity:0.6;">悬停查看解决方法 ▾</span>' +
+        '</div>' +
+        '<div class="hint-detail" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-top:none;color:#fcd34d;">' +
+          '解决方法（任选一种）：<br/>' +
+          '① 🔗 改用本工具的 HTTP 版本访问：' +
+          '<a href="http://zmer.xyz:11450" target="_blank" style="color:#38bdf8;text-decoration:underline;">http://zmer.xyz:11450</a><br/>' +
+          '② 给你的 API 套上 HTTPS<br/>' +
+          '③ 使用 OpenAI / 中转站等 HTTPS 接口' +
+        '</div>';
+    } else if (!isHttps && isHttp) {
+      apiUrlHint.innerHTML =
+        '<div class="hint-bar" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:#34d399;">' +
+          '✅ <span>HTTP 地址，当前页面也是 HTTP，可以正常请求。</span>' +
+        '</div>';
+    } else {
+      apiUrlHint.innerHTML =
+        '<div class="hint-bar" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);color:#34d399;">' +
+          '✅ <span>HTTPS 地址，可以正常请求。</span>' +
+        '</div>';
+    }
+  }
+
+  apiUrl.addEventListener('input', checkApiUrlProtocol);
+  checkApiUrlProtocol();
+
+  function updateCountBtnActive() {
+    var val = parseInt(wbSkeletonCount.value, 10);
+    countBtns.forEach(function(btn) {
+      btn.classList.toggle('active', parseInt(btn.getAttribute('data-count'), 10) === val);
+    });
+  }
+  countBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      wbSkeletonCount.value = btn.getAttribute('data-count');
+      updateCountBtnActive();
+    });
+  });
+  wbSkeletonCount.addEventListener('input', updateCountBtnActive);
+  updateCountBtnActive();
+
+  var _searchInitDone = false;
+  var _searchAnimating = false;
+
+  function updateSearchBadge() {
+    var enabled = searchEnable.checked;
+    if (!enabled) { searchModeBadge.style.display = 'none'; return; }
+
+    var engine = searchEngine.value;
+    searchModeBadge.style.display = 'inline';
+
+    if (engine === 'none') {
+      searchModeBadge.textContent = 'AI 自带联网';
+      searchModeBadge.style.background = 'rgba(56,189,248,0.12)';
+      searchModeBadge.style.color = '#38bdf8';
+      searchModeBadge.style.border = '1px solid rgba(56,189,248,0.25)';
+      searchKeyGroup.style.display = 'none';
+    } else if (engine === 'serper') {
+      searchModeBadge.textContent = 'Serper · Google';
+      searchModeBadge.style.background = 'rgba(16,185,129,0.12)';
+      searchModeBadge.style.color = '#34d399';
+      searchModeBadge.style.border = '1px solid rgba(16,185,129,0.25)';
+      searchKeyGroup.style.display = 'block';
+      searchKeyLabel.textContent = 'Serper API Key';
+      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https://serper.dev" target="_blank" style="color:#38bdf8;text-decoration:underline;">serper.dev</a> → 注册后在 Dashboard 复制 API Key（免费 2,500 次/月）';
+    } else if (engine === 'tavily') {
+      searchModeBadge.textContent = 'Tavily · AI 专用';
+      searchModeBadge.style.background = 'rgba(245,158,11,0.12)';
+      searchModeBadge.style.color = '#fbbf24';
+      searchModeBadge.style.border = '1px solid rgba(245,158,11,0.25)';
+      searchKeyGroup.style.display = 'block';
+      searchKeyLabel.textContent = 'Tavily API Key';
+      searchRegisterHint.innerHTML = '📎 免费注册：<a href="https://tavily.com" target="_blank" style="color:#38bdf8;text-decoration:underline;">tavily.com</a> → 注册后在 API Keys 页复制（免费 1,000 次/月）';
+    }
+  }
+
+  function playSearchScanAnimation(cb) {
+    if (!window.gsap) { cb(); return; }
+    var overlay = document.createElement('div');
+    overlay.className = 'search-scan-overlay';
+    var docIcons = ['📄', '📋', '📑'];
+    var docs = [];
+    docIcons.forEach(function(icon, i) {
+      var d = document.createElement('span');
+      d.className = 'search-scan-doc';
+      d.textContent = icon;
+      d.style.left = (20 + i * 30) + '%';
+      d.style.top = '35%';
+      overlay.appendChild(d);
+      docs.push(d);
+    });
+    var glass = document.createElement('span');
+    glass.className = 'search-scan-glass';
+    glass.textContent = '🔍';
+    overlay.appendChild(glass);
+    var scanLine = document.createElement('div');
+    scanLine.className = 'search-scan-line';
+    overlay.appendChild(scanLine);
+    searchConfigBlock.appendChild(overlay);
+    searchConfigBlock.style.overflow = 'hidden';
+
+    var tl = gsap.timeline({
+      onComplete: function() {
+        overlay.remove();
+        searchConfigBlock.style.overflow = '';
+        cb();
+      }
+    });
+
+    docs.forEach(function(d, i) {
+      tl.fromTo(d, { opacity: 0, y: 20, scale: 0.5 }, { opacity: 0.7, y: 0, scale: 1, duration: 0.25, ease: 'back.out(1.5)' }, i * 0.08);
+    });
+    tl.fromTo(glass, { opacity: 0, left: '-10%', top: '20%', scale: 0.3, rotation: -20 }, { opacity: 1, left: '10%', top: '25%', scale: 1, rotation: 0, duration: 0.3, ease: 'power2.out' }, 0.15);
+    tl.to(glass, { left: '75%', top: '30%', duration: 0.6, ease: 'power1.inOut' });
+    tl.fromTo(scanLine, { opacity: 0, top: '0%' }, { opacity: 1, top: '100%', duration: 0.6, ease: 'power1.inOut' }, 0.35);
+    docs.forEach(function(d, i) {
+      tl.to(d, { scale: 1.3, opacity: 1, filter: 'drop-shadow(0 0 14px rgba(56,189,248,0.9))', duration: 0.15, yoyo: true, repeat: 1 }, 0.45 + i * 0.06);
+    });
+    tl.to(glass, { opacity: 0, scale: 0.5, y: -15, duration: 0.2, ease: 'power2.in' });
+    docs.forEach(function(d) {
+      tl.to(d, { opacity: 0, scale: 0.3, y: -10, duration: 0.2, ease: 'power2.in' }, '-=0.15');
+    });
+    tl.to(scanLine, { opacity: 0, duration: 0.15 }, '-=0.2');
+  }
+
+  function expandSearchDetail(animate) {
+    if (animate && window.gsap) {
+      searchConfigDetail.style.display = 'block';
+      searchConfigDetail.style.overflow = 'hidden';
+      var children = searchConfigDetail.children;
+      for (var i = 0; i < children.length; i++) {
+        gsap.set(children[i], { opacity: 0, y: 12 });
+      }
+      var childCount = children.length;
+      var childDone = 0;
+      gsap.fromTo(searchConfigDetail, { height: 0, opacity: 0 }, {
+        height: 'auto',
+        opacity: 1,
+        duration: 0.45,
+        ease: 'power2.out',
+        onComplete: function() {
+          searchConfigDetail.style.overflow = '';
+          searchConfigDetail.style.height = '';
+        }
+      });
+      for (var j = 0; j < children.length; j++) {
+        (function(idx) {
+          gsap.to(children[idx], {
+            opacity: 1,
+            y: 0,
+            duration: 0.35,
+            ease: 'power2.out',
+            delay: 0.1 + idx * 0.06,
+            onComplete: function() {
+              children[idx].style.transform = '';
+              childDone++;
+              if (childDone >= childCount) {
+                searchConfigDetail.style.transform = '';
+                searchConfigDetail.style.opacity = '';
+              }
+            }
+          });
+        })(j);
+      }
+    } else {
+      searchConfigDetail.style.display = 'block';
+    }
+  }
+
+  function collapseSearchDetail(animate) {
+    if (animate && window.gsap) {
+      searchConfigDetail.style.overflow = 'hidden';
+      gsap.to(searchConfigDetail, {
+        height: 0,
+        opacity: 0,
+        duration: 0.3,
+        ease: 'power2.inOut',
+        onComplete: function() {
+          searchConfigDetail.style.display = 'none';
+          searchConfigDetail.style.overflow = '';
+          searchConfigDetail.style.height = '';
+          searchConfigDetail.style.opacity = '';
+          searchConfigDetail.style.transform = '';
+          var ch = searchConfigDetail.children;
+          for (var k = 0; k < ch.length; k++) {
+            ch[k].style.transform = '';
+            ch[k].style.opacity = '';
+          }
+        }
+      });
+    } else {
+      searchConfigDetail.style.display = 'none';
+    }
+  }
+
+  function saveSearchConfig() {
+    localStorage.setItem(SEARCH_CONFIG_KEY, JSON.stringify({
+      enabled: searchEnable.checked,
+      engine: searchEngine.value,
+      apiKey: searchApiKey.value.trim(),
+      resultCount: parseInt(searchResultCount.value, 10),
+      lang: searchLang.value,
+    }));
+  }
+
+  function updateSearchUI(isUserAction) {
+    var enabled = searchEnable.checked;
+    var shouldAnimate = _searchInitDone && isUserAction === true;
+    searchConfigBlock.classList.toggle('active', enabled);
+    if (searchToggleCard) searchToggleCard.classList.toggle('is-active', enabled);
+    updateSearchBadge();
+
+    if (enabled) {
+      if (shouldAnimate && !_searchAnimating) {
+        _searchAnimating = true;
+        playSearchScanAnimation(function() {
+          expandSearchDetail(true);
+          _searchAnimating = false;
+        });
+      } else {
+        searchConfigDetail.style.display = 'block';
+      }
+    } else {
+      if (shouldAnimate) collapseSearchDetail(true);
+      else searchConfigDetail.style.display = 'none';
+      searchModeBadge.style.display = 'none';
+    }
+    saveSearchConfig();
+  }
+
+  searchEnable.addEventListener('change', function() { updateSearchUI(true); });
+  searchEngine.addEventListener('change', function() { updateSearchBadge(); saveSearchConfig(); });
+  searchApiKey.addEventListener('input', saveSearchConfig);
+  searchResultCount.addEventListener('change', saveSearchConfig);
+  searchLang.addEventListener('change', saveSearchConfig);
+
+  function loadSearchConfig() {
+    try {
+      var c = JSON.parse(localStorage.getItem(SEARCH_CONFIG_KEY));
+      if (!c) { searchEnable.checked = false; updateSearchUI(false); _searchInitDone = true; return; }
+      searchEnable.checked = c.enabled === true;
+      if (c.engine) searchEngine.value = c.engine;
+      if (c.apiKey) searchApiKey.value = c.apiKey;
+      if (c.resultCount) searchResultCount.value = c.resultCount;
+      if (c.lang) searchLang.value = c.lang;
+      updateSearchUI(false);
+      _searchInitDone = true;
+    } catch (e) {
+      searchEnable.checked = false;
+      updateSearchUI(false);
+      _searchInitDone = true;
+    }
+  }
+
+  loadSearchConfig();
+
+  async function executeSearch(query, count, lang) {
+    var engine = searchEngine.value;
+    var key = searchApiKey.value.trim();
+    if (engine === 'serper' && key) return await searchWithSerper(query, count, lang, key);
+    if (engine === 'tavily' && key) return await searchWithTavily(query, count, key);
+    return null;
+  }
+
+  async function searchWithSerper(query, count, lang, key) {
+    var res = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: query,
+        num: count,
+        gl: lang === 'zh-CN' ? 'cn' : (lang === 'ja' ? 'jp' : 'us'),
+        hl: lang === 'auto' ? 'zh-CN' : lang
+      })
+    });
+    if (!res.ok) throw new Error('Serper 搜索失败 HTTP ' + res.status);
+    var data = await res.json();
+    var results = [];
+    if (data.organic) {
+      data.organic.forEach(function(item) {
+        results.push({ title: item.title || '', snippet: item.snippet || '', url: item.link || '' });
+      });
+    }
+    if (data.knowledgeGraph) {
+      var kg = data.knowledgeGraph;
+      results.unshift({ title: '[知识面板] ' + (kg.title || ''), snippet: kg.description || '', url: kg.descriptionLink || '' });
+    }
+    return results.slice(0, count);
+  }
+
+  async function searchWithTavily(query, count, key) {
+    var res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: key, query: query, max_results: count, search_depth: 'basic', include_answer: true })
+    });
+    if (!res.ok) throw new Error('Tavily 搜索失败 HTTP ' + res.status);
+    var data = await res.json();
+    var results = [];
+    if (data.answer) results.push({ title: '[AI 总结]', snippet: data.answer, url: '' });
+    if (data.results) {
+      data.results.forEach(function(item) {
+        results.push({ title: item.title || '', snippet: item.content || '', url: item.url || '' });
+      });
+    }
+    return results.slice(0, count + 1);
+  }
+
+  function formatSearchResultsForPrompt(results) {
+    if (!results || results.length === 0) return '';
+    var text = '\n\n【🌐 联网搜索参考资料】：\n';
+    text += '以下是从互联网搜索到的相关资料，请参考这些真实信息来丰富你的创作，但不要照搬：\n';
+    text += '─────────────────\n';
+    results.forEach(function(r, i) {
+      text += '📄 [' + (i + 1) + '] ' + r.title + '\n';
+      text += '   ' + r.snippet + '\n';
+      if (r.url) text += '   🔗 ' + r.url + '\n';
+      text += '\n';
+    });
+    text += '─────────────────\n';
+    text += '请基于以上参考资料，结合用户的创意要求进行创作。可以借鉴但不要照搬原文。\n';
+    return text;
+  }
+
+  function escapeHTMLSimple(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderSearchPreview(results) {
+    if (!results || results.length === 0) { searchPreview.style.display = 'none'; return; }
+    var html = '';
+    results.forEach(function(r) {
+      html += '<div class="search-result-item">';
+      html += '<div class="search-result-title">' + escapeHTMLSimple(r.title) + '</div>';
+      html += '<div class="search-result-snippet">' + escapeHTMLSimple(r.snippet).substring(0, 200) + '</div>';
+      if (r.url) html += '<div class="search-result-url">' + escapeHTMLSimple(r.url) + '</div>';
+      html += '</div>';
+    });
+    searchPreview.innerHTML = html;
+    searchPreview.style.display = 'block';
+  }
+
+  btnTestSearch.addEventListener('click', async function() {
+    var engine = searchEngine.value;
+    var promptEl = document.getElementById('aiPrompt');
+    var query = searchCustomQuery.value.trim() || (promptEl ? promptEl.value.trim() : '');
+    if (!query) {
+      searchTestStatus.textContent = '❌ 请先填写提示词或搜索词';
+      searchTestStatus.style.color = '#fca5a5';
+      return;
+    }
+    if (engine === 'none') {
+      searchTestStatus.textContent = 'ℹ️ 当前为 AI 自带联网模式，无需测试';
+      searchTestStatus.style.color = '#38bdf8';
+      searchPreview.style.display = 'none';
+      return;
+    }
+    if (!searchApiKey.value.trim()) {
+      searchTestStatus.textContent = '❌ 请先填写搜索 API Key';
+      searchTestStatus.style.color = '#fca5a5';
+      return;
+    }
+    btnTestSearch.disabled = true;
+    searchTestStatus.textContent = '🔍 搜索中...';
+    searchTestStatus.style.color = '#38bdf8';
+    try {
+      var count = parseInt(searchResultCount.value, 10) || 5;
+      var lang = searchLang.value;
+      var results = await executeSearch(query, count, lang);
+      if (results && results.length > 0) {
+        searchTestStatus.textContent = '✅ 找到 ' + results.length + ' 条结果';
+        searchTestStatus.style.color = '#34d399';
+        renderSearchPreview(results);
+      } else {
+        searchTestStatus.textContent = '⚠️ 未找到结果';
+        searchTestStatus.style.color = '#fbbf24';
+        searchPreview.style.display = 'none';
+      }
+    } catch (err) {
+      searchTestStatus.textContent = '❌ ' + err.message;
+      searchTestStatus.style.color = '#fca5a5';
+      searchPreview.style.display = 'none';
+    } finally {
+      btnTestSearch.disabled = false;
+    }
+  });
+
+  var hackerChars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン{}[]<>/\\\\|=+-*&^%$#@!~;:,.?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var hackerAnimId = null;
+  var hackerStreamText = '';
+
+  function startHackerAnim() {
+    hackerOverlay.style.display = 'block';
+    hackerStreamText = '';
+    hackerCanvas.textContent = '';
+    for (var i = 0; i < 800; i++) {
+      hackerStreamText += hackerChars[Math.floor(Math.random() * hackerChars.length)];
+      if (Math.random() < 0.08) hackerStreamText += '\n';
+    }
+    hackerCanvas.textContent = hackerStreamText;
+    var frameCount = 0;
+    function tick() {
+      frameCount++;
+      if (frameCount % 2 === 0) {
+        var arr = hackerStreamText.split('');
+        var changes = 15 + Math.floor(Math.random() * 25);
+        for (var c = 0; c < changes; c++) {
+          var pos = Math.floor(Math.random() * arr.length);
+          if (arr[pos] !== '\n') arr[pos] = hackerChars[Math.floor(Math.random() * hackerChars.length)];
+        }
+        var newLine = '';
+        for (var n = 0; n < 20; n++) newLine += hackerChars[Math.floor(Math.random() * hackerChars.length)];
+        arr.push('\n');
+        for (var nn = 0; nn < newLine.length; nn++) arr.push(newLine[nn]);
+        if (arr.length > 1200) arr.splice(0, arr.length - 1200);
+        hackerStreamText = arr.join('');
+        hackerCanvas.textContent = hackerStreamText;
+        hackerCanvas.scrollTop = hackerCanvas.scrollHeight;
+      }
+      hackerAnimId = requestAnimationFrame(tick);
+    }
+    hackerAnimId = requestAnimationFrame(tick);
+  }
+
+  function stopHackerAnim() { if (hackerAnimId) { cancelAnimationFrame(hackerAnimId); hackerAnimId = null; } }
+  function hideHackerOverlay() { hackerOverlay.style.display = 'none'; }
+  function setHackerPhase(text) { hackerPhase.textContent = text; }
+  function setHackerProgress(current, total) {
+    var pct = total > 0 ? Math.round((current / total) * 100) : 0;
+    hackerProgress.style.setProperty('--progress', pct + '%');
+  }
+  function setHackerDetail(text) { hackerDetail.textContent = text; }
+
+  var hackerMessages = [
+    '正在肘击gemini...',
+    '正在肘击deepseek...',
+    '正在申请退款Claude...',
+    '正在给谷歌写申述邮件...',
+    '正在删除无用的屎山代码...',
+    '正在申请GPT大兵认证...',
+    '正在假装看懂了报错信息...',
+    '正在说服模型不要幻觉...',
+    '正在等模型生成，已等待三个世纪...',
+    '正在让 GPT 假装自己是 Claude...',
+    '正在让 Claude 假装自己是 GPT...',
+    '正在把幻觉结果当参考文献...',
+    '正在把五行代码注释写成两百字...',
+    '正在把 bug 重新命名为 feature...',
+    '正在偷偷绕过内容审核...',
+    '正在控诉 token 不够用...',
+    '正在等待 Cloudflare 转圈圈...',
+    '正在给 token 省钱，删掉了标点...',
+    '正在测试 AI 有没有感情...',
+    '正在把 prompt 改了又改...',
+  ];
+  function getRandomHackerMsg() { return hackerMessages[Math.floor(Math.random() * hackerMessages.length)]; }
+
+  window.__hackerAnim__ = {
+    start: startHackerAnim,
+    stop: stopHackerAnim,
+    hide: hideHackerOverlay,
+    setPhase: setHackerPhase,
+    setProgress: setHackerProgress,
+    setDetail: setHackerDetail,
+    randomMsg: getRandomHackerMsg,
+  };
+
+  window.__getSkeletonCount__ = function() {
+    var v = parseInt(wbSkeletonCount.value, 10);
+    if (isNaN(v) || v < 1) return 6;
+    if (v > 30) return 30;
+    return v;
+  };
+
+  window.__searchConfig__ = {
+    isEnabled: function() { return searchEnable.checked; },
+    getEngine: function() { return searchEngine.value; },
+    getCustomQuery: function() { return searchCustomQuery.value.trim(); },
+    getResultCount: function() { return parseInt(searchResultCount.value, 10) || 5; },
+    getLang: function() { return searchLang.value; },
+    executeSearch: executeSearch,
+    formatForPrompt: formatSearchResultsForPrompt,
+  };
+})();
+</script>
