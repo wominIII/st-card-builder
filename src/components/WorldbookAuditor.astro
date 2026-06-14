@@ -42,6 +42,29 @@
 
 <style>
   .wb-auditor {
+    --audit-card-bg: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface-elevated) 94%, transparent),
+      color-mix(in srgb, var(--surface-overlay-strong) 92%, transparent)
+    );
+    --audit-card-bg-hover: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface-elevated-strong) 96%, transparent),
+      color-mix(in srgb, var(--surface-overlay) 94%, transparent)
+    );
+    --audit-card-border: color-mix(in srgb, var(--accent-2) 16%, var(--field-border));
+    --audit-card-border-strong: color-mix(in srgb, var(--accent-2) 28%, var(--field-border));
+    --audit-accent-panel: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-2) 10%, var(--surface-elevated)),
+      color-mix(in srgb, var(--accent) 8%, var(--surface-overlay-strong))
+    );
+    --audit-accent-border: color-mix(in srgb, var(--accent-2) 24%, var(--field-border));
+    --audit-muted: var(--text-muted);
+    --audit-soft: var(--text-soft);
+    --audit-main: var(--text-main);
+    --audit-chip-bg: color-mix(in srgb, var(--surface-overlay) 90%, var(--chip-bg));
+    --audit-chip-border: color-mix(in srgb, var(--accent-2) 16%, var(--chip-border));
     display: flex;
     flex-direction: column;
     min-height: 320px;
@@ -65,7 +88,7 @@
   }
   .auditor-desc {
     font-size: 0.72rem;
-    color: #64748b;
+    color: var(--audit-muted);
     line-height: 1.5;
     margin-bottom: 10px;
     -webkit-font-smoothing: antialiased;
@@ -78,9 +101,9 @@
   }
   .btn-audit-quick {
     width: 100%;
-    background: rgba(56, 189, 248, 0.08);
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    color: #38bdf8;
+    background: color-mix(in srgb, var(--accent-cyan) 10%, var(--surface-overlay));
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 24%, var(--field-border));
+    color: color-mix(in srgb, var(--accent-cyan) 70%, var(--text-main));
     padding: 10px 16px;
     border-radius: 8px;
     font-size: 0.82rem;
@@ -90,9 +113,9 @@
     font-family: inherit;
   }
   .btn-audit-quick:hover {
-    background: rgba(56, 189, 248, 0.15);
-    border-color: rgba(56, 189, 248, 0.35);
-    box-shadow: 0 2px 12px rgba(56, 189, 248, 0.12);
+    background: color-mix(in srgb, var(--accent-cyan) 16%, var(--surface-overlay-strong));
+    border-color: color-mix(in srgb, var(--accent-cyan) 36%, var(--field-border));
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--accent-cyan) 18%, transparent);
   }
   .btn-audit-run {
     width: 100%;
@@ -150,8 +173,8 @@
     align-items: center;
     gap: 14px;
     padding: 14px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.08));
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: var(--audit-accent-panel);
+    border: 1px solid var(--audit-accent-border);
     border-radius: 12px;
     margin-bottom: 12px;
   }
@@ -168,7 +191,7 @@
   }
   .score-bg {
     fill: none;
-    stroke: rgba(139, 92, 246, 0.15);
+    stroke: color-mix(in srgb, var(--accent-2) 18%, var(--field-border));
     stroke-width: 6;
   }
   .score-fill {
@@ -187,7 +210,7 @@
     transform: translate(-50%, -50%);
     font-size: 1.3rem;
     font-weight: 800;
-    color: #c4b5fd;
+    color: color-mix(in srgb, var(--accent-2) 68%, var(--audit-main));
     font-family: 'JetBrains Mono', monospace;
   }
   .audit-score-info {
@@ -201,7 +224,7 @@
   }
   .score-summary {
     font-size: 0.72rem;
-    color: #94a3b8;
+    color: var(--audit-muted);
     line-height: 1.5;
     word-break: break-word;
   }
@@ -214,15 +237,15 @@
     margin-bottom: 12px;
   }
   .dim-card {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(25, 35, 50, 0.7));
-    border: 1px solid rgba(99, 102, 241, 0.15);
+    background: var(--audit-card-bg);
+    border: 1px solid var(--audit-card-border);
     border-radius: 8px;
     padding: 10px 12px;
     transition: all 0.2s ease;
   }
   .dim-card:hover {
-    border-color: rgba(99, 102, 241, 0.3);
-    background: linear-gradient(135deg, rgba(35, 45, 60, 0.8), rgba(30, 40, 55, 0.8));
+    border-color: var(--audit-card-border-strong);
+    background: var(--audit-card-bg-hover);
   }
   .dim-header {
     display: flex;
@@ -233,7 +256,7 @@
   .dim-name {
     font-size: 0.74rem;
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--audit-main);
   }
   .dim-status {
     font-size: 0.62rem;
@@ -258,12 +281,12 @@
   }
   .dim-status.none {
     background: rgba(100, 116, 139, 0.12);
-    color: #64748b;
+    color: var(--audit-muted);
     border: 1px solid rgba(100, 116, 139, 0.25);
   }
   .dim-bar {
     height: 4px;
-    background: rgba(51, 65, 85, 0.5);
+    background: color-mix(in srgb, var(--text-muted) 22%, transparent);
     border-radius: 99px;
     overflow: hidden;
     margin-bottom: 4px;
@@ -275,7 +298,7 @@
   }
   .dim-detail {
     font-size: 0.68rem;
-    color: #94a3b8;
+    color: var(--audit-muted);
     line-height: 1.4;
     font-weight: 500;
     -webkit-font-smoothing: antialiased;
@@ -289,7 +312,7 @@
   .audit-issues-title {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #e2e8f0;
+    color: var(--audit-main);
     margin-bottom: 8px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -298,7 +321,7 @@
     display: flex;
     gap: 8px;
     padding: 8px 10px;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(25, 35, 50, 0.7));
+    background: var(--audit-card-bg);
     border-radius: 8px;
     margin-bottom: 6px;
     border-left: 3px solid transparent;
@@ -326,14 +349,14 @@
   .issue-title {
     font-size: 0.78rem;
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--audit-main);
     margin-bottom: 2px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   .issue-desc {
     font-size: 0.73rem;
-    color: #cbd5e1;
+    color: var(--audit-soft);
     line-height: 1.5;
     word-break: break-word;
     font-weight: 500;
@@ -343,15 +366,15 @@
 
   
   .audit-suggestions {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.08));
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: var(--audit-accent-panel);
+    border: 1px solid var(--audit-accent-border);
     border-radius: 10px;
     padding: 14px;
   }
   .suggestions-title {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #d8b4fe;
+    color: color-mix(in srgb, var(--accent-2) 62%, var(--audit-main));
     margin-bottom: 10px;
   }
   .suggestion-item {
@@ -360,13 +383,13 @@
     align-items: flex-start;
     margin-bottom: 8px;
     font-size: 0.75rem;
-    color: #cbd5e1;
+    color: var(--audit-soft);
     line-height: 1.5;
   }
   .suggestion-item:last-child { margin-bottom: 0; }
   .suggestion-num {
-    background: rgba(139, 92, 246, 0.2);
-    color: #c4b5fd;
+    background: color-mix(in srgb, var(--accent-2) 18%, var(--chip-bg));
+    color: color-mix(in srgb, var(--accent-2) 72%, var(--audit-main));
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -381,72 +404,135 @@
   
   .qc-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-bottom: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
   .qc-stat {
+    display: grid;
+    gap: 4px;
+    padding: 12px 14px;
+    min-height: 84px;
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--surface-elevated) 95%, white),
+      color-mix(in srgb, var(--surface-overlay) 92%, white)
+    );
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--accent-2) 14%, var(--audit-card-border));
+    box-shadow: 0 10px 24px rgba(139, 92, 246, 0.07);
+  }
+  .qc-stat-num {
+    font-size: 1.45rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .qc-stat-label {
+    font-size: 0.76rem;
+    color: var(--audit-soft);
+    line-height: 1.45;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .qc-shell {
+    display: grid;
+    gap: 14px;
+  }
+  .qc-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+    gap: 14px;
+    align-items: stretch;
+    margin-bottom: 14px;
+  }
+  .qc-panel {
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--accent-2) 16%, var(--audit-card-border));
+    background:
+      radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), transparent 42%),
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--surface-elevated) 98%, white),
+        color-mix(in srgb, var(--surface-overlay) 95%, white)
+      );
+    box-shadow: 0 18px 48px rgba(148, 163, 184, 0.14);
+  }
+  .qc-panel--accent {
+    background:
+      radial-gradient(circle at top right, rgba(52, 211, 153, 0.14), transparent 40%),
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--accent-2) 9%, white),
+        color-mix(in srgb, var(--surface-overlay) 94%, white)
+      );
+  }
+  .qc-panel--wide {
+    padding-bottom: 14px;
+  }
+  .qc-section-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(25, 35, 50, 0.7));
-    border-radius: 8px;
-    border: 1px solid rgba(99, 102, 241, 0.15);
-  }
-  .qc-stat-num {
-    font-size: 1.1rem;
+    font-size: 0.76rem;
     font-weight: 800;
-    font-family: 'JetBrains Mono', monospace;
-    min-width: 28px;
-    text-align: right;
+    color: color-mix(in srgb, var(--accent-2) 54%, var(--audit-main));
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
-  .qc-stat-label {
-    font-size: 0.7rem;
-    color: #cbd5e1;
-    line-height: 1.3;
-    font-weight: 500;
+  .qc-panel-note {
+    margin: -2px 0 10px;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--audit-muted);
   }
 
-  
   .qc-dim-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 10px;
+    gap: 8px;
   }
   .qc-dim-tag {
-    font-size: 0.65rem;
-    padding: 3px 10px;
-    border-radius: 99px;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-weight: 700;
     white-space: nowrap;
     border: 1px solid;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
   }
 
-  
   .qc-issue-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   /* 快速建议样式 */
   .qc-suggestions-box {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 8px;
   }
   .qc-suggestion-item {
-    padding: 8px 12px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.12));
-    border-left: 3px solid #a78bfa;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    color: #e0e7ff;
+    padding: 10px 12px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-2) 14%, var(--surface-elevated)),
+      color-mix(in srgb, var(--accent) 10%, var(--surface-overlay))
+    );
+    border-left: 3px solid color-mix(in srgb, var(--accent-2) 78%, var(--field-border));
+    border-radius: 10px;
+    font-size: 0.77rem;
+    color: var(--audit-main);
     line-height: 1.5;
-    font-weight: 500;
+    font-weight: 600;
     animation: suggestionSlide 0.4s ease both;
   }
   @keyframes suggestionSlide {
@@ -454,15 +540,57 @@
     to   { opacity: 1; transform: translateX(0); }
   }
 
-  
-  .qc-section-title {
-    font-size: 0.75rem;
-    font-weight: 800;
-    color: #e0e7ff;
-    margin-bottom: 8px;
-    margin-top: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+  .qc-empty {
+    font-size: 0.76rem;
+    line-height: 1.5;
+    color: var(--audit-muted);
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-overlay) 88%, white);
+    border: 1px dashed color-mix(in srgb, var(--accent-2) 20%, var(--field-border));
+  }
+
+  @media (max-width: 960px) {
+    .qc-hero {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .qc-panel {
+      padding: 14px;
+      border-radius: 16px;
+    }
+    .qc-stats {
+      grid-template-columns: 1fr;
+    }
+    .qc-stat {
+      min-height: auto;
+    }
+    .qc-dim-tags {
+      gap: 6px;
+    }
+    .qc-dim-tag {
+      white-space: normal;
+    }
+  }
+
+  :root[data-theme="light"] .wb-auditor {
+    --audit-card-bg: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface-elevated) 98%, white),
+      color-mix(in srgb, var(--surface-overlay) 96%, white)
+    );
+    --audit-card-bg-hover: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface-elevated-strong) 98%, white),
+      color-mix(in srgb, var(--surface-overlay-strong) 94%, white)
+    );
+    --audit-accent-panel: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-2) 8%, white),
+      color-mix(in srgb, var(--accent) 6%, var(--surface-elevated))
+    );
   }
 </style>
 
@@ -571,7 +699,9 @@
     
     quickCheckResult.style.display = 'block';
 
-    var statsHtml = '<div class="qc-section-title">📊 基础统计</div>'
+    var statsHtml = '<section class="qc-panel qc-panel--wide">'
+      + '<div class="qc-section-title">📊 基础统计</div>'
+      + '<div class="qc-panel-note">先看整体体量、触发方式和内容密度，方便快速判断这张卡现在是“缺内容”还是“缺结构”。</div>'
       + '<div class="qc-stats">'
       + statCard(totalEntries, '总条目', '#c4b5fd')
       + statCard(constantCount, '常驻', '#34d399')
@@ -579,10 +709,14 @@
       + statCard(skeletonCount, '骨架', '#f59e0b')
       + statCard(Math.round(totalContentLen / 1000 * 10) / 10 + 'k', '总字数', '#94a3b8')
       + statCard(issues.length, '问题', issues[0].level === 'tip' ? '#34d399' : '#ef4444')
-      + '</div>';
+      + '</div>'
+      + '</section>';
 
-    var dimHtml = '<div class="qc-section-title">🧭 维度覆盖</div>'
-      + '<div class="qc-dim-tags">' + renderDimTags(dimensions) + '</div>';
+    var dimHtml = '<section class="qc-panel qc-panel--accent">'
+      + '<div class="qc-section-title">🧭 维度覆盖</div>'
+      + '<div class="qc-panel-note">覆盖越均衡，角色在对话里的稳定性通常越高。绿色代表当前更充足，灰色说明几乎还没建立。</div>'
+      + '<div class="qc-dim-tags">' + renderDimTags(dimensions) + '</div>'
+      + '</section>';
 
     // 自动生成快速建议
     var quickSuggestions = [];
@@ -600,24 +734,28 @@
 
     var suggestionsHtml = '';
     if (quickSuggestions.length > 0) {
-      suggestionsHtml = '<div class="qc-section-title">💡 快速建议</div>'
+      suggestionsHtml = '<section class="qc-panel">'
+        + '<div class="qc-section-title">💡 快速建议</div>'
         + '<div class="qc-suggestions-box">'
         + quickSuggestions.map(function(sugg, i) {
           return '<div class="qc-suggestion-item" style="animation-delay:' + (i * 0.05) + 's;">' + sugg + '</div>';
         }).join('')
-        + '</div>';
+        + '</div>'
+        + '</section>';
     }
 
-    var issuesHtml = '<div class="qc-section-title">🔎 检查结果</div>'
+    var issuesHtml = '<section class="qc-panel">'
+      + '<div class="qc-section-title">🔎 检查结果</div>'
       + '<div class="qc-issue-list">'
       + issues.map(function(iss, i) {
         return '<div class="issue-item ' + iss.level + '" style="animation-delay:' + (i * 0.06) + 's;">'
           + '<span class="issue-icon">' + iss.icon + '</span>'
           + '<div class="issue-body"><div class="issue-title">' + iss.title + '</div><div class="issue-desc">' + iss.desc + '</div></div></div>';
       }).join('')
-      + '</div>';
+      + '</div>'
+      + '</section>';
 
-    quickCheckResult.innerHTML = statsHtml + dimHtml + suggestionsHtml + issuesHtml;
+    quickCheckResult.innerHTML = '<div class="qc-shell"><div class="qc-hero">' + statsHtml + dimHtml + '</div>' + (suggestionsHtml || '<div class="qc-empty">当前没有额外快速建议，这份世界书的基础结构已经比较顺。</div>') + issuesHtml + '</div>';
   }
 
   function statCard(num, label, color) {

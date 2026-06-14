@@ -3,9 +3,9 @@
 <div class="panel area-character">
   <!-- 草稿管理 -->
   <div class="draft-manager">
-    <label style="color: #34d399; font-size: 0.85rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+    <label style="color: var(--accent-green); font-size: 0.85rem; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
       <span>💾 多卡片草稿箱</span>
-      <span id="saveIndicator" style="color: #3b82f6; font-size: 0.75rem; display: none; font-weight: 600;">✔️ 已保存</span>
+      <span id="saveIndicator" style="color: var(--accent-cyan); font-size: 0.75rem; display: none; font-weight: 600;">✔️ 已保存</span>
     </label>
     <select id="draftSelect"></select>
     <div class="draft-controls">
@@ -18,12 +18,12 @@
 
   <!-- 头像上传 -->
   <div style="display: flex; gap: 14px; margin-bottom: 16px; align-items: center;">
-    <div style="width: 56px; height: 56px; border-radius: 10px; background: #0a0f1e; border: 1px dashed #334155; overflow: hidden; display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
-      <span id="avatarPlaceholder" style="font-size: 0.65rem; color: #475569;">无图</span>
+    <div class="char-avatar-shell">
+      <span id="avatarPlaceholder" class="char-avatar-placeholder">无图</span>
       <img id="avatarImg" style="width: 100%; height: 100%; object-fit: cover; display: none;" alt="avatar" />
     </div>
     <div style="flex: 1; min-width: 0;">
-      <label style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px; display: block;">上传头像（将嵌入 PNG 卡片）</label>
+      <label class="char-upload-label">上传头像（将嵌入 PNG 卡片）</label>
       <input type="file" id="charImageInput" accept="image/*" />
     </div>
   </div>
@@ -53,7 +53,7 @@
   <!-- ★ 备选开场白 -->
   <div class="alt-greetings-section">
     <div class="alt-greetings-header">
-      <label style="color: #64748b; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">
+      <label style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">
         备选开场白 (Alternate Greetings)
       </label>
       <button id="btnAddGreeting" class="btn-alt-add" title="添加备选开场白">＋</button>
@@ -71,6 +71,21 @@
 </div>
 
 <style is:global>
+  :root {
+    --theme-surface-subtle: rgba(255, 255, 255, 0.02);
+    --theme-surface-soft: #0a0f1e;
+    --theme-border-soft: #334155;
+    --theme-text-muted-2: #475569;
+    --theme-text-muted-3: #64748b;
+  }
+  :root[data-theme="light"] {
+    --theme-surface-subtle: rgba(255, 255, 255, 0.72);
+    --theme-surface-soft: #f8fbff;
+    --theme-border-soft: #cbd5e1;
+    --theme-text-muted-2: #64748b;
+    --theme-text-muted-3: #475569;
+  }
+
   /* ── 备选开场白区域 ── */
   .alt-greetings-section {
     margin-bottom: 14px;
@@ -83,7 +98,7 @@
   }
   .alt-greetings-tip {
     font-size: 0.68rem;
-    color: #475569;
+    color: var(--theme-text-muted-2);
     margin: 0 0 10px 0;
   }
 
@@ -92,7 +107,7 @@
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    border: 1px dashed #334155;
+    border: 1px dashed var(--theme-border-soft);
     background: rgba(16, 185, 129, 0.06);
     color: #34d399;
     font-size: 1.1rem;
@@ -130,7 +145,7 @@
   }
   .alt-greeting-label {
     font-size: 0.72rem;
-    color: #8b5cf6;
+    color: color-mix(in srgb, var(--accent-2) 75%, var(--text-main));
     font-weight: 600;
   }
   .alt-greeting-actions {
@@ -143,9 +158,9 @@
     width: 26px;
     height: 26px;
     border-radius: 6px;
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    background: rgba(99, 102, 241, 0.08);
-    color: #818cf8;
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    color: color-mix(in srgb, var(--accent) 65%, var(--text-main));
     font-size: 0.78rem;
     cursor: pointer;
     display: flex;
@@ -220,10 +235,33 @@
   .alt-greetings-empty {
     text-align: center;
     padding: 16px;
-    border: 1px dashed #1e293b;
+    border: 1px dashed var(--theme-border-soft);
     border-radius: 8px;
-    color: #334155;
+    color: var(--theme-text-muted-3);
     font-size: 0.75rem;
+  }
+
+  .char-avatar-shell {
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    background: var(--theme-surface-soft);
+    border: 1px dashed var(--theme-border-soft);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .char-avatar-placeholder {
+    font-size: 0.65rem;
+    color: var(--theme-text-muted-2);
+  }
+  .char-upload-label {
+    font-size: 0.75rem;
+    color: var(--theme-text-muted-3);
+    margin-bottom: 4px;
+    display: block;
   }
 </style>
 

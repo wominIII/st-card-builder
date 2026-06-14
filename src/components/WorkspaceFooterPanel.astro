@@ -26,10 +26,10 @@
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
-    border-color: rgba(56, 189, 248, 0.16);
+    border-color: color-mix(in srgb, var(--accent-cyan) 22%, var(--field-border));
     background:
-      linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(8, 13, 24, 0.95)),
-      radial-gradient(circle at 90% 0%, rgba(56, 189, 248, 0.1), transparent 36%);
+      linear-gradient(135deg, color-mix(in srgb, var(--surface-elevated) 100%, transparent), color-mix(in srgb, var(--surface-overlay-strong) 92%, transparent)),
+      radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--accent-cyan) 12%, transparent), transparent 36%);
   }
 
   .workspace-footer-mark {
@@ -38,13 +38,13 @@
     width: 42px;
     height: 42px;
     border-radius: 8px;
-    border: 1px solid rgba(56, 189, 248, 0.22);
-    background: rgba(8, 47, 73, 0.34);
-    color: #67e8f9;
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 26%, var(--field-border));
+    background: color-mix(in srgb, var(--accent-cyan) 10%, var(--chip-bg));
+    color: color-mix(in srgb, var(--accent-cyan) 72%, var(--text-main));
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.82rem;
     font-weight: 900;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
   }
 
   .workspace-footer-copy {
@@ -53,7 +53,7 @@
 
   .workspace-footer-copy strong {
     display: block;
-    color: #e0f2fe;
+    color: var(--text-main);
     font-size: 0.82rem;
     line-height: 1.2;
   }
@@ -61,14 +61,14 @@
   .workspace-footer-copy span {
     display: block;
     margin-top: 2px;
-    color: #c4b5fd;
+    color: color-mix(in srgb, var(--accent-2) 74%, var(--text-main));
     font-size: 0.66rem;
     font-weight: 800;
   }
 
   .workspace-footer-copy p {
     margin: 6px 0 0;
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 0.62rem;
     line-height: 1.45;
   }
@@ -89,9 +89,9 @@
     min-height: 24px;
     padding: 3px 9px;
     border-radius: 999px;
-    border: 1px solid rgba(52, 211, 153, 0.16);
-    background: rgba(6, 78, 59, 0.14);
-    color: #86efac;
+    border: 1px solid color-mix(in srgb, var(--accent-green) 20%, var(--chip-border));
+    background: color-mix(in srgb, var(--accent-green) 10%, var(--chip-bg));
+    color: color-mix(in srgb, var(--accent-green) 72%, var(--text-main));
     font-size: 0.54rem;
     font-weight: 900;
     letter-spacing: 0.04em;
@@ -101,27 +101,37 @@
 
   .workspace-footer-github {
     gap: 6px;
-    border-color: rgba(56, 189, 248, 0.24) !important;
-    background: linear-gradient(135deg, rgba(8, 47, 73, 0.5), rgba(30, 41, 59, 0.72)) !important;
-    color: #bae6fd !important;
-    box-shadow: 0 4px 14px rgba(8, 47, 73, 0.22);
+    border-color: color-mix(in srgb, var(--accent-cyan) 28%, var(--chip-border)) !important;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 14%, var(--chip-bg)), color-mix(in srgb, var(--accent-2) 10%, var(--surface-overlay))) !important;
+    color: color-mix(in srgb, var(--accent-cyan) 74%, var(--text-main)) !important;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-cyan) 12%, transparent);
   }
 
   .workspace-footer-github span {
     min-height: auto;
     padding: 1px 5px;
     border-radius: 5px;
-    border: 1px solid rgba(56, 189, 248, 0.22);
-    background: rgba(2, 6, 23, 0.42);
-    color: #67e8f9;
+    border: 1px solid color-mix(in srgb, var(--accent-cyan) 24%, var(--chip-border));
+    background: color-mix(in srgb, var(--accent-cyan) 8%, var(--field-bg));
+    color: color-mix(in srgb, var(--accent-cyan) 72%, var(--text-main));
     font-size: 0.5rem;
     line-height: 1.2;
   }
 
   .workspace-footer-meta a:hover {
-    border-color: rgba(56, 189, 248, 0.3);
-    background: rgba(8, 47, 73, 0.24);
-    color: #67e8f9;
+    border-color: color-mix(in srgb, var(--accent-cyan) 34%, var(--chip-border));
+    background: color-mix(in srgb, var(--accent-cyan) 12%, var(--surface-soft-info));
+    color: color-mix(in srgb, var(--accent-cyan) 80%, var(--text-main));
+  }
+
+  :root[data-theme="light"] .workspace-footer-panel {
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--surface-elevated) 100%, transparent), color-mix(in srgb, var(--surface-overlay-strong) 96%, transparent)),
+      radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--accent-cyan) 10%, transparent), transparent 36%);
+  }
+
+  :root[data-theme="light"] .workspace-footer-mark {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   }
 
   @media (max-width: 720px) {

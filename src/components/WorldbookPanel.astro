@@ -4,21 +4,21 @@
   <h2>📖 世界书条目</h2>
 
   <!-- AI 单条生成 -->
-  <div style="background: rgba(139, 92, 246, 0.06); border: 1px dashed rgba(139, 92, 246, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 20px;">
-    <h4 style="margin: 0 0 8px 0; color: #c4b5fd; font-size: 0.9rem;">🤖 AI 单条生成（自动叠加）</h4>
-    <p style="font-size: 0.72rem; color: #64748b; margin: 0 0 12px 0;">AI 会自动读取已有词条，确保世界观连贯且不重复。</p>
-    <div style="display: flex; gap: 10px;">
+  <div class="wb-ai-single-card">
+    <h4 class="wb-ai-single-title">🤖 AI 单条生成（自动叠加）</h4>
+    <p class="wb-ai-single-copy">AI 会自动读取已有词条，确保世界观连贯且不重复。</p>
+    <div class="wb-ai-single-actions">
       <input type="text" id="wbSinglePrompt" placeholder="定向要求(可选)，如：写一把专属武器..." style="flex: 1;" />
-      <button id="btnAiSingleWb" class="btn" style="width: auto; margin: 0; background: linear-gradient(135deg, #8b5cf6, #6d28d9); white-space: nowrap;">🎲 生成 1 条</button>
+      <button id="btnAiSingleWb" class="btn wb-ai-single-btn">🎲 生成 1 条</button>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px; flex-wrap: wrap;">
-      <div style="display: flex; align-items: center; gap: 8px;">
+    <div class="wb-ai-single-toggles">
+      <div class="wb-ai-single-toggle">
         <input type="checkbox" id="wbIncludeCharData" checked />
-        <label for="wbIncludeCharData" style="margin: 0; color: #94a3b8; font-size: 0.78rem; cursor: pointer; font-weight: normal;">融合【角色名与描述】</label>
+        <label for="wbIncludeCharData">融合【角色名与描述】</label>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px;">
+      <div class="wb-ai-single-toggle">
         <input type="checkbox" id="wbIncludeOtherEntries" checked />
-        <label for="wbIncludeOtherEntries" style="margin: 0; color: #94a3b8; font-size: 0.78rem; cursor: pointer; font-weight: normal;">融合【已有世界书条目】</label>
+        <label for="wbIncludeOtherEntries">融合【已有世界书条目】</label>
       </div>
     </div>
   </div>
@@ -70,6 +70,65 @@
 
 <style>
   /* ===== AI 智能整理美化版 ===== */
+  .wb-ai-single-card {
+    margin-bottom: 20px;
+    padding: 16px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent-2) 8%, var(--surface-overlay-strong));
+    border: 1px dashed color-mix(in srgb, var(--accent-2) 28%, var(--field-border));
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--accent-2) 10%, transparent);
+  }
+
+  .wb-ai-single-title {
+    margin: 0 0 8px 0;
+    color: color-mix(in srgb, var(--accent-2) 68%, var(--text-main));
+    font-size: 0.9rem;
+  }
+
+  .wb-ai-single-copy {
+    margin: 0 0 12px 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .wb-ai-single-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .wb-ai-single-btn {
+    width: auto;
+    margin: 0;
+    white-space: nowrap;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-2) 92%, white),
+      color-mix(in srgb, var(--accent-2) 76%, black)
+    );
+    border-color: color-mix(in srgb, var(--accent-2) 55%, transparent);
+  }
+
+  .wb-ai-single-toggles {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .wb-ai-single-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .wb-ai-single-toggle label {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-weight: normal;
+  }
 
 
 @keyframes organize-shine {
@@ -111,14 +170,14 @@
     display: block;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #fcd34d;
+    color: color-mix(in srgb, var(--accent-amber) 74%, var(--text-main));
     letter-spacing: 0.03em;
-    text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+    text-shadow: 0 0 20px color-mix(in srgb, var(--accent-amber) 22%, transparent);
   }
   .organize-subtitle {
     display: block;
     font-size: 0.68rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     margin-top: 2px;
   }
 
@@ -178,12 +237,22 @@
     z-index: 1;
   }
 
+  :root[data-theme="light"] .btn-organize-magic {
+    color: #4a2a00;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  :root[data-theme="light"] .wb-keygen-btn {
+    color: #082f49;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
   .organize-status-bar {
     font-size: 0.72rem;
-    color: #94a3b8;
+    color: var(--text-soft);
     margin-top: 10px;
     padding: 8px 12px;
-    background: rgba(0,0,0,0.25);
+    background: color-mix(in srgb, var(--surface-overlay) 94%, transparent);
     border-radius: 8px;
     min-height: 28px;
     display: flex;
@@ -191,7 +260,11 @@
     gap: 6px;
     position: relative;
     z-index: 1;
-    border: 1px solid rgba(51, 65, 85, 0.3);
+    border: 1px solid var(--chip-border);
+  }
+
+  .organize-status-bar:empty {
+    display: none;
   }
 
   .wb-entry-toolbar {
@@ -234,8 +307,8 @@
   }
 
   .wb-keygen-title {
-    color: #7dd3fc;
-    text-shadow: 0 0 18px rgba(56, 189, 248, 0.24);
+    color: color-mix(in srgb, var(--accent-cyan) 72%, var(--text-main));
+    text-shadow: 0 0 18px color-mix(in srgb, var(--accent-cyan) 18%, transparent);
   }
 
   .wb-keygen-btn {
@@ -249,13 +322,13 @@
 
   /* ===== 预览容器 ===== */
   .organize-preview-container {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(8, 12, 28, 0.99));
-    border: 1px solid rgba(251, 191, 36, 0.25);
+    background: linear-gradient(180deg, var(--code-bg), color-mix(in srgb, var(--surface-overlay) 86%, var(--code-bg)));
+    border: 1px solid color-mix(in srgb, var(--accent-amber) 28%, var(--code-border));
     border-radius: 12px;
     margin-top: 5px;
     margin-bottom: 14px;
     overflow: hidden;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    box-shadow: 0 6px 24px color-mix(in srgb, var(--text-main) 14%, transparent), inset 0 1px 0 rgba(255,255,255,0.04);
     animation: preview-slide-in 0.35s ease-out;
   }
   @keyframes preview-slide-in {
@@ -264,9 +337,13 @@
   }
 
   .organize-preview-header {
-    background: linear-gradient(90deg, rgba(251, 191, 36, 0.15), rgba(139, 92, 246, 0.1));
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent-amber) 15%, transparent),
+      color-mix(in srgb, var(--accent-2) 10%, transparent)
+    );
     padding: 12px 16px;
-    border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+    border-bottom: 1px solid color-mix(in srgb, var(--accent-amber) 22%, var(--code-divider));
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -274,19 +351,19 @@
   .preview-header-title {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #fbbf24;
+    color: color-mix(in srgb, var(--accent-amber) 76%, var(--text-main));
     display: flex;
     align-items: center;
     gap: 8px;
   }
   .preview-header-badge {
     font-size: 0.64rem;
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: var(--surface-soft-success);
+    color: color-mix(in srgb, var(--accent-green) 70%, var(--text-main));
     padding: 3px 10px;
     border-radius: 99px;
     font-weight: 600;
-    border: 1px solid rgba(16, 185, 129, 0.25);
+    border: 1px solid color-mix(in srgb, var(--accent-green) 24%, var(--chip-border));
   }
 
   .organize-table-wrap {
@@ -300,8 +377,8 @@
     font-size: 0.72rem;
   }
   .organize-table th {
-    background: rgba(30, 41, 59, 0.9);
-    color: #94a3b8;
+    background: color-mix(in srgb, var(--code-header-bg) 92%, transparent);
+    color: var(--text-muted);
     padding: 10px 12px;
     text-align: left;
     font-weight: 700;
@@ -311,16 +388,16 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+    border-bottom: 1px solid var(--code-divider);
   }
   .organize-table td {
     padding: 9px 12px;
-    border-bottom: 1px solid rgba(30, 41, 59, 0.6);
-    color: #e2e8f0;
+    border-bottom: 1px solid color-mix(in srgb, var(--code-divider) 84%, transparent);
+    color: var(--text-soft);
     transition: background 0.15s ease;
   }
   .organize-table tr:hover td {
-    background: rgba(251, 191, 36, 0.05);
+    background: color-mix(in srgb, var(--accent-amber) 6%, transparent);
   }
   .organize-table tr:last-child td {
     border-bottom: none;
@@ -332,7 +409,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--text-main);
   }
 
   .org-value-cell {
@@ -348,7 +425,7 @@
     border: 1px solid rgba(16, 185, 129, 0.2);
   }
   .org-old {
-    color: #64748b;
+    color: var(--text-muted);
     text-decoration: line-through;
     font-size: 0.62rem;
     margin-right: 5px;
@@ -357,7 +434,7 @@
   .org-reason-cell {
     max-width: 150px;
     font-size: 0.64rem;
-    color: #64748b;
+    color: var(--text-muted);
     line-height: 1.4;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -366,8 +443,8 @@
 
   .organize-footer {
     padding: 12px 16px;
-    background: rgba(0, 0, 0, 0.25);
-    border-top: 1px solid rgba(51, 65, 85, 0.4);
+    background: color-mix(in srgb, var(--surface-overlay) 92%, transparent);
+    border-top: 1px solid var(--code-divider);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -375,7 +452,7 @@
   }
   .organize-stats {
     font-size: 0.7rem;
-    color: #64748b;
+    color: var(--text-muted);
   }
   .organize-stats strong {
     color: #34d399;
@@ -404,19 +481,19 @@
     box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
   }
   .btn-org-cancel {
-    background: rgba(51, 65, 85, 0.5) !important;
-    color: #94a3b8 !important;
+    background: var(--field-bg) !important;
+    color: var(--text-soft) !important;
     padding: 8px 16px !important;
     font-size: 0.76rem !important;
     font-weight: 600 !important;
-    border: 1px solid rgba(71, 85, 105, 0.5) !important;
+    border: 1px solid var(--field-border) !important;
     border-radius: 7px !important;
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: inherit;
   }
   .btn-org-cancel:hover {
-    background: rgba(71, 85, 105, 0.6) !important;
-    color: #e2e8f0 !important;
+    background: var(--field-bg-strong) !important;
+    color: var(--text-main) !important;
   }
 </style>
