@@ -38,3 +38,7 @@ npm install
 
 测试请使用npm run dev
 生产环境请使用npm run build
+
+
+
+我的bot测试小群600635054
