@@ -64,6 +64,22 @@
     <button id="btnCreateEntry" class="btn btn-add wb-entry-create-btn">新建条目</button>
   </div>
 
+  <!-- ★ 世界书搜索 -->
+  <div class="wb-search-wrap">
+    <div class="wb-search-bar">
+      <span class="wb-search-icon">🔍</span>
+      <input type="text" id="wbSearchInput" class="wb-search-input" placeholder="搜索标题 / 触发词 / 内容..." autocomplete="off" />
+      <button id="wbSearchClear" class="wb-search-clear" title="清空" type="button" style="display:none;">✕</button>
+    </div>
+    <div class="wb-search-scope">
+      <label class="wb-scope-tag"><input type="checkbox" id="wbScopeTitle" checked /><span>标题</span></label>
+      <label class="wb-scope-tag"><input type="checkbox" id="wbScopeKeys" checked /><span>触发词</span></label>
+      <label class="wb-scope-tag"><input type="checkbox" id="wbScopeContent" checked /><span>内容</span></label>
+      <span id="wbSearchCount" class="wb-search-count"></span>
+    </div>
+    <div id="wbSearchResults" class="wb-search-results" style="display:none;"></div>
+  </div>
+
   <!-- 条目列表 -->
   <div id="entriesList"></div>
 </div>
@@ -418,5 +434,200 @@
   .btn-org-cancel:hover {
     background: rgba(71, 85, 105, 0.6) !important;
     color: #e2e8f0 !important;
+  }
+
+  /* ===== 世界书搜索 ===== */
+  .wb-search-wrap {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.06), rgba(139, 92, 246, 0.05));
+    border: 1px solid rgba(56, 189, 248, 0.18);
+  }
+  .wb-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(8, 12, 28, 0.6);
+    border: 1px solid rgba(71, 85, 105, 0.4);
+    border-radius: 9px;
+    padding: 0 10px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .wb-search-bar:focus-within {
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+  }
+  .wb-search-icon { font-size: 0.9rem; opacity: 0.7; }
+  .wb-search-input {
+    flex: 1;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    padding: 10px 0 !important;
+    font-family: inherit;
+    min-width: 0;
+    border-radius: 0;
+  }
+  .wb-search-input::placeholder { color: #64748b; }
+  .wb-search-clear {
+    background: rgba(71, 85, 105, 0.4);
+    border: none;
+    color: #94a3b8;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  .wb-search-clear:hover {
+    background: rgba(100, 116, 139, 0.6);
+    color: #f1f5f9;
+  }
+  .wb-search-scope {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .wb-scope-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(71, 85, 105, 0.4);
+    font-size: 0.7rem;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    margin: 0;
+    font-weight: normal;
+  }
+  .wb-scope-tag:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #cbd5e1;
+  }
+  .wb-scope-tag input { display: none; }
+  .wb-scope-tag:has(input:checked) {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #7dd3fc;
+  }
+  .wb-search-count {
+    margin-left: auto;
+    font-size: 0.68rem;
+    color: #64748b;
+    white-space: nowrap;
+  }
+  .wb-search-results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+    max-height: 460px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .wb-search-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.78rem;
+    padding: 24px 12px;
+  }
+  .wb-search-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(71, 85, 105, 0.4);
+    border-radius: 9px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+  .wb-search-card:hover {
+    border-color: rgba(56, 189, 248, 0.55);
+    background: rgba(30, 41, 59, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.12);
+  }
+  .wb-search-card-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .wb-search-card-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .wb-search-card-strategy {
+    font-size: 0.6rem;
+    color: #c4b5fd;
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    padding: 1px 6px;
+    border-radius: 99px;
+    flex-shrink: 0;
+  }
+  .wb-search-card-field {
+    font-size: 0.66rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wb-search-card-field strong {
+    color: #7dd3fc;
+    font-weight: 600;
+  }
+  .wb-search-card-snippet {
+    font-size: 0.72rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
+  .wb-search-card mark {
+    background: rgba(251, 191, 36, 0.28);
+    color: #fde68a;
+    padding: 0 2px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .wb-search-card-jump {
+    font-size: 0.62rem;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .wb-search-card:hover .wb-search-card-jump {
+    color: #7dd3fc;
+  }
+  @media (max-width: 720px) {
+    .wb-search-results { grid-template-columns: 1fr; }
   }
 </style>

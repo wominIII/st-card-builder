@@ -860,6 +860,11 @@ window.__setImportedAvatar__ = function(base64) {
       clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(function() { updatePreview(); saveCurrentDraft(); }, 500);
     }
+    function flushUpdateAndSave() {
+      clearTimeout(autoSaveTimer);
+      updatePreview();
+      saveCurrentDraft();
+    }
 
     // ============================================================
     //  预设系统
@@ -1446,10 +1451,152 @@ window.__setImportedAvatar__ = function(base64) {
       document.querySelectorAll('.btn-cancel-inline').forEach(function(b) { b.addEventListener('click', function() { cancelInlineEdit(); }); });
       document.querySelectorAll('.btn-toggle-reroll').forEach(function(b) { b.addEventListener('click', function(e) { var a = document.getElementById('reroll_area_' + e.currentTarget.getAttribute('data-index')); var item = e.currentTarget.closest('.entry-item'); var open = a.style.display === 'none'; a.style.display = open ? 'block' : 'none'; if (item) item.classList.toggle('is-expanded', open); }); });
       document.querySelectorAll('.btn-submit-reroll').forEach(function(b) { b.addEventListener('click', async function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); var req = document.getElementById('reroll_prompt_' + idx).value.trim(); var isSk = worldbookEntries[idx].content.length < 60; if (!isSk && !req) return alert('请填写修改要求！'); await aiRewriteEntry(idx, req, e.currentTarget); }); });
-      document.querySelectorAll('.btn-delete').forEach(function(b) { b.addEventListener('click', function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if (editingIndex === idx) resetWBForm(); else if (editingIndex > idx) editingIndex--; renderEntriesList(); debouncedUpdateAndSave(); }); });
+      document.querySelectorAll('.btn-delete').forEach(function(b) { b.addEventListener('click', function(e) { var idx = parseInt(e.currentTarget.getAttribute('data-index')); worldbookEntries.splice(idx, 1); if (editingIndex === idx) resetWBForm(); else if (editingIndex > idx) editingIndex--; renderEntriesList(); flushUpdateAndSave(); }); });
       // 通知审计官：世界书条目已变化
       window.dispatchEvent(new CustomEvent('worldbook-changed'));
+      // 同步刷新搜索结果
+      if (wbSearchInput && wbSearchInput.value) renderWbSearchResults(wbSearchInput.value);
     }
+
+    // ============================================================
+    //  世界书搜索（标题 / 触发词 / 内容，两列展示）
+    // ============================================================
+    var wbSearchInput   = document.getElementById('wbSearchInput');
+    var wbSearchClear   = document.getElementById('wbSearchClear');
+    var wbSearchResults = document.getElementById('wbSearchResults');
+    var wbSearchCount   = document.getElementById('wbSearchCount');
+    var wbScopeTitle    = document.getElementById('wbScopeTitle');
+    var wbScopeKeys     = document.getElementById('wbScopeKeys');
+    var wbScopeContent  = document.getElementById('wbScopeContent');
+
+    function escapeRegex(s) {
+      return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function highlightMatch(text, query) {
+      var safeText = escapeHtml(text || '');
+      if (!query) return safeText;
+      var safeQuery = escapeHtml(query);
+      if (!safeQuery) return safeText;
+      var re;
+      try { re = new RegExp(escapeRegex(safeQuery), 'gi'); }
+      catch (e) { return safeText; }
+      return safeText.replace(re, function(m) { return '<mark>' + m + '</mark>'; });
+    }
+
+    function renderWbSearchResults(query) {
+      if (!wbSearchResults) return;
+      var trimmed = query ? query.trim() : '';
+      if (!trimmed) {
+        wbSearchResults.style.display = 'none';
+        wbSearchResults.innerHTML = '';
+        if (wbSearchCount) wbSearchCount.textContent = '';
+        if (wbSearchClear) wbSearchClear.style.display = 'none';
+        return;
+      }
+      if (wbSearchClear) wbSearchClear.style.display = 'flex';
+      var q = trimmed.toLowerCase();
+      var scopeTitle   = !wbScopeTitle   || wbScopeTitle.checked;
+      var scopeKeys    = !wbScopeKeys    || wbScopeKeys.checked;
+      var scopeContent = !wbScopeContent || wbScopeContent.checked;
+      if (!scopeTitle && !scopeKeys && !scopeContent) {
+        scopeTitle = scopeKeys = scopeContent = true;
+      }
+      var matches = [];
+      worldbookEntries.forEach(function(rawEntry, index) {
+        var entry = normalizeWBEntry(rawEntry);
+        var comment = entry.comment || '';
+        var keysText = (entry.keys || []).join(', ');
+        var content = entry.content || '';
+        var titleMatch   = scopeTitle   && comment.toLowerCase().indexOf(q) !== -1;
+        var keysMatch    = scopeKeys    && keysText.toLowerCase().indexOf(q) !== -1;
+        var contentMatch = scopeContent && content.toLowerCase().indexOf(q) !== -1;
+        if (titleMatch || keysMatch || contentMatch) {
+          matches.push({ index: index, entry: entry, keysText: keysText, titleMatch: titleMatch, keysMatch: keysMatch, contentMatch: contentMatch });
+        }
+      });
+
+      if (wbSearchCount) wbSearchCount.textContent = '命中 ' + matches.length + ' / ' + worldbookEntries.length + ' 条';
+      wbSearchResults.style.display = 'grid';
+
+      if (matches.length === 0) {
+        wbSearchResults.innerHTML = '<div class="wb-search-empty">😿 没有命中条目</div>';
+        return;
+      }
+
+      var html = matches.map(function(m) {
+        var entry = m.entry;
+        var fields = [];
+        if (m.titleMatch)   fields.push('<strong>标题</strong>');
+        if (m.keysMatch)    fields.push('<strong>触发词</strong>');
+        if (m.contentMatch) fields.push('<strong>内容</strong>');
+        var snippet = '';
+        if (m.contentMatch) {
+          var content = entry.content || '';
+          var idx = content.toLowerCase().indexOf(q);
+          if (idx !== -1) {
+            var start = Math.max(0, idx - 30);
+            var end = Math.min(content.length, idx + trimmed.length + 50);
+            snippet = (start > 0 ? '…' : '') + content.substring(start, end) + (end < content.length ? '…' : '');
+          }
+        } else {
+          snippet = (entry.content || '').substring(0, 80) + ((entry.content || '').length > 80 ? '…' : '');
+        }
+        var titleHtml = highlightMatch(entry.comment || '未命名', trimmed);
+        var keysHtml = m.keysMatch ? highlightMatch(m.keysText, trimmed) : escapeHtml(m.keysText || '无');
+        var snippetHtml = highlightMatch(snippet, trimmed);
+        return '<div class="wb-search-card" data-jump-index="' + m.index + '">' +
+          '<div class="wb-search-card-head">' +
+            '<span class="wb-search-card-title" title="' + escapeHtml(entry.comment || '') + '">' + titleHtml + '</span>' +
+            '<span class="wb-search-card-strategy">' + escapeHtml(entry.strategy || '') + '</span>' +
+          '</div>' +
+          '<div class="wb-search-card-field">命中：' + fields.join(' · ') + '</div>' +
+          '<div class="wb-search-card-field">触发词：' + keysHtml + '</div>' +
+          '<div class="wb-search-card-snippet">' + snippetHtml + '</div>' +
+          '<div class="wb-search-card-jump">↗ 点击跳转到条目</div>' +
+        '</div>';
+      }).join('');
+      wbSearchResults.innerHTML = html;
+
+      wbSearchResults.querySelectorAll('.wb-search-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          var idx = parseInt(card.getAttribute('data-jump-index'));
+          jumpToWbEntry(idx);
+        });
+      });
+    }
+
+    function jumpToWbEntry(idx) {
+      if (!Number.isFinite(idx) || idx < 0 || idx >= worldbookEntries.length) return;
+      var items = entriesList.querySelectorAll('.entry-item');
+      var targetDiv = items[idx];
+      if (targetDiv) {
+        targetDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetDiv.style.transition = 'box-shadow 0.3s ease';
+        targetDiv.style.boxShadow = '0 0 0 2px rgba(56, 189, 248, 0.6)';
+        setTimeout(function() { targetDiv.style.boxShadow = ''; }, 1800);
+      } else {
+        entriesList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    if (wbSearchInput) {
+      wbSearchInput.addEventListener('input', function() {
+        renderWbSearchResults(wbSearchInput.value);
+      });
+    }
+    if (wbSearchClear) {
+      wbSearchClear.addEventListener('click', function() {
+        wbSearchInput.value = '';
+        renderWbSearchResults('');
+        wbSearchInput.focus();
+      });
+    }
+    [wbScopeTitle, wbScopeKeys, wbScopeContent].forEach(function(cb) {
+      if (cb) cb.addEventListener('change', function() {
+        renderWbSearchResults(wbSearchInput.value);
+      });
+    });
 
     if (btnCreateEntry) btnCreateEntry.addEventListener('click', toggleCreateEntryForm);
 
@@ -1463,6 +1610,8 @@ window.__setImportedAvatar__ = function(base64) {
     var keygenStatus      = document.getElementById('keygenStatus');
     var pendingOrganizeData = null;
     var KEYGEN_BATCH_CHAR_LIMIT = 20000;
+    var KEYGEN_BATCH_ITEM_LIMIT = 8;
+    var KEYGEN_MAX_RETRY_ROUNDS = 3;
 
     function sanitizeGeneratedKeys(keys, oldKeys) {
       var source = Array.isArray(keys) ? keys : [];
@@ -1507,7 +1656,7 @@ window.__setImportedAvatar__ = function(base64) {
       targets.forEach(function(item) {
         var tentative = current.concat([item]);
         var size = estimateKeygenPayloadChars(charBlock, tentative);
-        if (current.length > 0 && size > KEYGEN_BATCH_CHAR_LIMIT) {
+        if (current.length > 0 && (size > KEYGEN_BATCH_CHAR_LIMIT || tentative.length > KEYGEN_BATCH_ITEM_LIMIT)) {
           batches.push(current);
           current = [item];
           return;
@@ -1578,6 +1727,45 @@ window.__setImportedAvatar__ = function(base64) {
       return arr;
     }
 
+    function applyTriggerKeySuggestions(suggestions) {
+      var applied = 0;
+      var matched = {};
+      (Array.isArray(suggestions) ? suggestions : []).forEach(function(item) {
+        var idx = Number(item && item.index);
+        if (!Number.isFinite(idx) || idx < 0 || idx >= worldbookEntries.length) return;
+        var prevKeys = (worldbookEntries[idx].keys || []).join('||');
+        var nextKeys = sanitizeGeneratedKeys(item.keys, worldbookEntries[idx].keys);
+        if (!nextKeys.length) return;
+        matched[idx] = true;
+        worldbookEntries[idx].keys = nextKeys;
+        if (prevKeys !== nextKeys.join('||')) applied++;
+      });
+      return { applied: applied, matched: matched };
+    }
+
+    async function completeTriggerKeysBatch(batch, batchIndex, batchCount, processed, totalTargets) {
+      var pending = batch.slice();
+      var round = 0;
+      var updated = 0;
+      var matchedAny = {};
+
+      while (pending.length > 0 && round < KEYGEN_MAX_RETRY_ROUNDS) {
+        round++;
+        var retryHint = round > 1 ? '，补跑第 ' + round + ' 轮（剩余 ' + pending.length + ' 条）' : '';
+        keygenStatus.textContent = '🧠 正在生成触发词... ' + processed + '/' + totalTargets + '（第 ' + (batchIndex + 1) + '/' + batchCount + ' 批' + retryHint + '）';
+        var suggestions = await generateTriggerKeysBatch(pending);
+        var result = applyTriggerKeySuggestions(suggestions);
+        updated += result.applied;
+        Object.keys(result.matched).forEach(function(idx) { matchedAny[idx] = true; });
+        pending = pending.filter(function(item) { return !matchedAny[item.index]; });
+      }
+
+      return {
+        updated: updated,
+        missing: pending
+      };
+    }
+
     btnAiGenerateKeys.addEventListener('click', async function() {
       if (worldbookEntries.length === 0) return alert('世界书为空，没有可生成触发词的条目！');
       if (!modelSelect.value) return alert('请先选择 AI 模型！');
@@ -1602,26 +1790,28 @@ window.__setImportedAvatar__ = function(base64) {
         var batches = splitTargetsForKeygen(targets, charBlock);
         var updated = 0;
         var processed = 0;
+        var unresolved = [];
         for (var batchIndex = 0; batchIndex < batches.length; batchIndex++) {
           var batch = batches[batchIndex];
           processed += batch.length;
-          keygenStatus.textContent = '🧠 正在生成触发词... ' + processed + '/' + targets.length + '（第 ' + (batchIndex + 1) + '/' + batches.length + ' 批）';
-          var suggestions = await generateTriggerKeysBatch(batch);
-          suggestions.forEach(function(item) {
-            var idx = Number(item && item.index);
-            if (!Number.isFinite(idx) || idx < 0 || idx >= worldbookEntries.length) return;
-            var prevKeys = (worldbookEntries[idx].keys || []).join('||');
-            var nextKeys = sanitizeGeneratedKeys(item.keys, worldbookEntries[idx].keys);
-            if (!nextKeys.length) return;
-            worldbookEntries[idx].keys = nextKeys;
-            if (prevKeys !== nextKeys.join('||')) updated++;
-          });
+          var batchResult = await completeTriggerKeysBatch(batch, batchIndex, batches.length, processed, targets.length);
+          updated += batchResult.updated;
+          if (batchResult.missing && batchResult.missing.length > 0) {
+            unresolved = unresolved.concat(batchResult.missing.map(function(item) {
+              return item.entry.comment || ('#' + item.index);
+            }));
+          }
         }
 
         renderEntriesList();
         debouncedUpdateAndSave();
-        keygenStatus.innerHTML = '✅ 已为 <strong>' + updated + '</strong> 条世界书更新触发词';
-        keygenStatus.style.color = '#34d399';
+        if (unresolved.length > 0) {
+          keygenStatus.innerHTML = '⚠️ 已为 <strong>' + updated + '</strong> 条世界书更新触发词，但仍有 <strong>' + unresolved.length + '</strong> 条未返回结果：' + unresolved.slice(0, 3).map(escapeHtml).join('、') + (unresolved.length > 3 ? '…' : '');
+          keygenStatus.style.color = '#fbbf24';
+        } else {
+          keygenStatus.innerHTML = '✅ 已为 <strong>' + updated + '</strong> 条世界书更新触发词';
+          keygenStatus.style.color = '#34d399';
+        }
       } catch(err) {
         keygenStatus.textContent = '❌ 触发词生成失败: ' + err.message;
         keygenStatus.style.color = '#fca5a5';
