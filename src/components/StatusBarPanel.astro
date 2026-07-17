@@ -28,7 +28,7 @@
       <div class="novel-upload-row">
         <label class="novel-upload-btn" for="novelSourceFile">选择文件</label>
         <input id="novelSourceFile" type="file" accept=".txt,.md,.json" style="display:none;" />
-        <span id="novelFileHint" class="novel-upload-hint">支持 txt / md / json</span>
+        <span id="novelFileHint" class="novel-upload-hint">支持 txt / md / json。缓存与进度仅保存在当前浏览器本地。</span>
         <button id="btnNovelClearFile" type="button" class="novel-upload-clear" style="display:none;">清空文件</button>
       </div>
       <div id="novelFileSummary" class="novel-file-summary" style="display:none;"></div>
@@ -92,18 +92,32 @@
           <div id="novelFocusTags" class="novel-focus-tags"></div>
         </div>
 
-        <div class="novel-action-stack">
-          <button id="btnNovelGenerate" class="btn novel-primary-btn">🧬 生成世界书草稿</button>
-          <button id="btnNovelReset" class="btn novel-secondary-btn">重置任务</button>
+        <div class="novel-action-stack" id="novelActionStack">
         </div>
         <div id="novelStatusText" class="status-text novel-status-text"></div>
-        
+        <div id="novelEstimateText" class="novel-estimate-text" style="font-size:0.7rem; color:#94a3b8; margin-top:6px;"></div>
+
         <div id="novelTaskQueue" class="novel-task-queue" style="display:none; margin-top:12px;">
             <div class="novel-queue-head">
                 <span>任务队列进度</span>
                 <span id="novelQueueProgress">0/0</span>
             </div>
             <div id="novelQueueList" class="novel-queue-list"></div>
+        </div>
+
+        <div class="novel-diagnostic-panel" style="margin-top:12px;">
+            <div class="novel-diagnostic-head" id="btnToggleDiagnostics" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:rgba(15, 23, 42, 0.6); border:1px solid rgba(71, 85, 105, 0.5); border-radius:8px;">
+                <span style="font-size:0.75rem; color:#cbd5e1; font-weight:bold;">诊断日志 <span id="diagBadge" style="margin-left:4px; font-size:0.65rem;">(0)</span></span>
+                <span id="diagChevron" style="font-size:0.7rem; color:#64748b;">▼</span>
+            </div>
+            <div id="diagnosticContent" style="display:none; margin-top:8px; border:1px solid rgba(71, 85, 105, 0.3); border-radius:8px; padding:8px; background:rgba(2, 6, 23, 0.4);">
+                <div style="display:flex; gap:8px; margin-bottom:8px; justify-content:flex-end;">
+                    <button id="btnCopyDiag" class="btn novel-secondary-btn" style="width:auto; padding:2px 8px; font-size:0.65rem; min-height:22px;">复制脱敏日志</button>
+                    <button id="btnExportDiag" class="btn novel-secondary-btn" style="width:auto; padding:2px 8px; font-size:0.65rem; min-height:22px;">导出 JSON</button>
+                    <button id="btnClearDiag" class="btn novel-secondary-btn" style="width:auto; padding:2px 8px; font-size:0.65rem; min-height:22px; color:#fca5a5; border-color:rgba(248,113,113,0.3);">清空</button>
+                </div>
+                <div id="diagnosticLogList" style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;"></div>
+            </div>
         </div>
       </div>
     </section>
@@ -113,7 +127,7 @@
     <div class="novel-manager-head">
       <div>
         <strong>🧭 世界书草稿预览</strong>
-        <p id="novelDraftSummaryText">检查并应用生成的草稿条目。</p>
+        <p id="novelDraftSummaryText">检查并应用生成的草稿条目。数据仅保存在当前浏览器本地，不会上传。</p>
       </div>
       <div class="novel-manager-actions" style="display:flex; flex-direction:column; gap:8px;">
         <button id="btnApplyAll" class="btn novel-sync-btn">应用全部有效</button>
@@ -124,7 +138,7 @@
         <button id="btnCancelDraft" class="btn novel-secondary-btn">取消</button>
       </div>
     </div>
-    
+
     <div class="novel-preview-shell">
       <div class="novel-preview-head">
         <strong>条目预览</strong>
@@ -627,7 +641,7 @@
     line-height: 1.5;
     word-break: break-word;
   }
-  
+
   .novel-entity-keys {
     font-size: 0.65rem;
     color: #64748b;
@@ -658,7 +672,7 @@
   .novel-queue-item.running { color: #60a5fa; background: rgba(96, 165, 250, 0.1); }
   .novel-queue-item.success { color: #34d399; background: rgba(52, 211, 153, 0.1); }
   .novel-queue-item.failed { color: #f87171; background: rgba(248, 113, 113, 0.1); }
-  
+
   @media (max-width: 720px) {
     .novel-manager-head {
       flex-direction: column;
@@ -672,10 +686,10 @@
 
 <script is:inline>
 (function () {
-  var STORAGE_KEY = 'novelWorkshopV2';
-  var DRAFT_KEY = 'novelWorkshopDraftV2';
-  var SNAPSHOT_KEY = 'novelWorkshopSnapshotV2';
-  
+  var STORE_NAME = 'novelWorkshopV2Store';
+  var DB_NAME = 'NovelWorkshopDB';
+  var DB_VERSION = 3;
+
   var FOCUS_OPTIONS = [
     { id: 'character', label: '人物' },
     { id: 'location', label: '地点' },
@@ -687,20 +701,30 @@
   ];
 
   var state = {
+    schemaVersion: 3,
+    projectId: '',
     sourceText: '',
     contextText: '',
     narrativeMode: 'story',
     chunkSize: 8000,
     concurrency: 3,
     strictQuality: false,
-    focus: ['character', 'location', 'faction', 'item', 'rule'],
+    focus: ['character', 'location', 'faction', 'item', 'rule', 'event', 'relation'],
     tasks: [],
-    signature: '',
-    drafts: []
+    drafts: [],
+    diagnosticLogs: [],
+    importedFileName: '',
+    importedFileHash: '',
+    phase: 'idle', // idle, mentions, narrative, resolving, aggregating, drafting, paused, completed, error
+    fileText: '',
+    stats: {},
+    resolvingProgress: { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null },
+    draftingProgress: { cursor: 0, entities: [] },
+    canonicalEntities: [],
+    aggregatedData: {}
   };
 
-  var importedFileText = '';
-  var importedFileMeta = null;
+  var dbPromise = null;
 
   var sourceTextEl = document.getElementById('novelSourceText');
   var contextTextEl = document.getElementById('novelContextText');
@@ -709,18 +733,18 @@
   var fileHintEl = document.getElementById('novelFileHint');
   var fileSummaryEl = document.getElementById('novelFileSummary');
   var btnClearFileEl = document.getElementById('btnNovelClearFile');
-  
+
   var narrativeModeEl = document.getElementById('novelNarrativeMode');
   var chunkSizeEl = document.getElementById('novelChunkSize');
   var concurrencyEl = document.getElementById('novelConcurrency');
   var strictQualityEl = document.getElementById('novelStrictQuality');
   var focusTagsEl = document.getElementById('novelFocusTags');
-  
-  var btnGenerateEl = document.getElementById('btnNovelGenerate');
-  var btnResetEl = document.getElementById('btnNovelReset');
+
+  var actionStackEl = document.getElementById('novelActionStack');
   var statusTextEl = document.getElementById('novelStatusText');
+  var estimateTextEl = document.getElementById('novelEstimateText');
   var statsBarEl = document.getElementById('novelStatsBar');
-  
+
   var taskQueueEl = document.getElementById('novelTaskQueue');
   var queueProgressEl = document.getElementById('novelQueueProgress');
   var queueListEl = document.getElementById('novelQueueList');
@@ -728,7 +752,7 @@
   var draftPreviewEl = document.getElementById('novelDraftPreview');
   var entityPreviewEl = document.getElementById('novelEntityPreview');
   var entityCountEl = document.getElementById('novelEntityCount');
-  
+
   var btnApplyAll = document.getElementById('btnApplyAll');
   var btnApplyGreen = document.getElementById('btnApplyGreen');
   var btnApplyBlue = document.getElementById('btnApplyBlue');
@@ -736,17 +760,107 @@
   var btnUndoApply = document.getElementById('btnUndoApply');
   var btnCancelDraft = document.getElementById('btnCancelDraft');
 
-  function saveState() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
-  }
-  function loadState() {
-    try { 
-        var s = JSON.parse(localStorage.getItem(STORAGE_KEY)); 
-        if(s) state = Object.assign(state, s);
-    } catch(e){}
-    renderAll();
+  var abortController = null;
+
+  function initDB() {
+      if(dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject) => {
+          var request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onerror = (e) => reject('IndexedDB error: ' + e.target.error);
+          request.onupgradeneeded = (e) => {
+              var db = e.target.result;
+              if (!db.objectStoreNames.contains(STORE_NAME)) {
+                  db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+              }
+          };
+          request.onsuccess = (e) => resolve(e.target.result);
+      });
+      return dbPromise;
   }
 
+  async function saveStateDB(id, data) {
+      try {
+          var db = await initDB();
+          return new Promise((resolve, reject) => {
+              var tx = db.transaction(STORE_NAME, 'readwrite');
+              var store = tx.objectStore(STORE_NAME);
+              store.put({ id: id, data: data, timestamp: Date.now() });
+              tx.oncomplete = () => resolve();
+              tx.onerror = (e) => reject(e.target.error);
+          });
+      } catch(e) {
+          console.warn('IndexedDB fail, fallback to localStorage', e);
+          try {
+              localStorage.setItem('novel_ws_' + id, JSON.stringify(data));
+          } catch(e2) {
+              if (e2.name === 'QuotaExceededError' || e2.message.indexOf('quota') > -1) {
+                  alert('本地缓存空间不足，保存失败，刷新后可能无法恢复进度！');
+                  console.error('LocalStorage quota exceeded', e2);
+              }
+          }
+      }
+  }
+
+  async function loadStateDB(id) {
+      try {
+          var db = await initDB();
+          return new Promise((resolve, reject) => {
+              var tx = db.transaction(STORE_NAME, 'readonly');
+              var store = tx.objectStore(STORE_NAME);
+              var request = store.get(id);
+              request.onsuccess = (e) => resolve(e.target.result ? e.target.result.data : null);
+              request.onerror = (e) => reject(e.target.error);
+          });
+      } catch(e) {
+          try { return JSON.parse(localStorage.getItem('novel_ws_' + id)); } catch(e2){ return null; }
+      }
+  }
+
+  async function getAllProjects() {
+      try {
+          var db = await initDB();
+          return new Promise((resolve, reject) => {
+              var tx = db.transaction(STORE_NAME, 'readonly');
+              var store = tx.objectStore(STORE_NAME);
+              var req = store.getAll();
+              req.onsuccess = e => {
+                  resolve((e.target.result || []).sort((a,b) => b.timestamp - a.timestamp));
+              };
+              req.onerror = e => reject(e.target.error);
+          });
+      } catch(e) {
+          return [];
+      }
+  }
+
+  async function persistCurrentProject() {
+      if(!state.projectId) return;
+      var dataToSave = Object.assign({}, state);
+      // Remove temporary runtime properties from tasks
+      dataToSave.tasks = state.tasks.map(t => ({
+          chunk_id: t.chunk_id,
+          meta: t.meta,
+          text: t.text,
+          mentionsStatus: (t.mentionsStatus === 'running' ? 'pending' : t.mentionsStatus),
+          mentionsAttempts: t.mentionsAttempts,
+          mentionsResult: t.mentionsResult,
+          mentionsError: t.mentionsError,
+          narrativeStatus: (t.narrativeStatus === 'running' ? 'pending' : t.narrativeStatus),
+          narrativeAttempts: t.narrativeAttempts,
+          narrativeResult: t.narrativeResult,
+          narrativeError: t.narrativeError
+      }));
+      await saveStateDB(state.projectId, dataToSave);
+
+      // Update recent project list
+      localStorage.setItem('novel_last_project', state.projectId);
+  }
+
+  function generateProjectId() {
+      var fullText = ((state.fileText || '') + '\n' + state.sourceText).trim();
+      var focusStr = state.focus.slice().sort().join(',');
+      return hashString(fullText + state.contextText + state.chunkSize + state.narrativeMode + state.strictQuality + focusStr);
+  }
   function hashString(str) {
     var hash = 0;
     for (var i = 0; i < str.length; i++) {
@@ -762,19 +876,114 @@
       return '<button type="button" class="novel-focus-tag' + (active ? ' active' : '') + '" data-focus="' + opt.id + '">' + opt.label + '</button>';
     }).join('');
     focusTagsEl.querySelectorAll('button').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', async function() {
+        if(state.phase !== 'idle' && state.phase !== 'completed') return;
         var id = btn.getAttribute('data-focus');
         var idx = state.focus.indexOf(id);
         if(idx >= 0) state.focus.splice(idx, 1);
         else state.focus.push(id);
-        saveState();
         renderFocusTags();
+        syncInputs();
       });
     });
   }
 
+
+  function addDiagnosticLog(level, stage, message, details) {
+      if (!Array.isArray(state.diagnosticLogs)) state.diagnosticLogs = [];
+      var safeDetails = {};
+      var allowedDetailKeys = [
+          'chunk_id', 'chapter_title', 'batch_start', 'batch_size', 'attempt', 'max_attempts',
+          'duration_ms', 'http_status', 'model', 'api_host', 'response_excerpt', 'wait_time_ms',
+          'error', 'reason', 'last_error'
+      ];
+      Object.keys(details || {}).forEach(key => {
+          if (!allowedDetailKeys.includes(key) || details[key] === undefined || details[key] === null) return;
+          safeDetails[key] = typeof details[key] === 'string' ? desensitizeExcerpt(details[key]) : details[key];
+      });
+      var log = {
+          id: Date.now() + '-' + Math.random().toString(36).substring(2, 9),
+          timestamp: new Date().toISOString(),
+          level: ['error', 'warning', 'info'].includes(level) ? level : 'info',
+          stage: desensitizeExcerpt(stage),
+          message: desensitizeExcerpt(message),
+          details: safeDetails
+      };
+      state.diagnosticLogs.unshift(log);
+      if (state.diagnosticLogs.length > 200) {
+          state.diagnosticLogs = state.diagnosticLogs.slice(0, 200);
+      }
+      if (log.level === 'error') isDiagExpanded = true;
+      renderDiagnosticLogs();
+  }
+
+  function desensitizeExcerpt(text) {
+      if (!text) return '';
+      let res = String(text);
+      res = res.replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***');
+      res = res.replace(/AIza[a-zA-Z0-9_-]{20,}/g, 'AIza***');
+      res = res.replace(/Bearer\s+[a-zA-Z0-9_\-\.]+/ig, 'Bearer ***');
+      res = res.replace(/("?(?:api_key|apikey|token|password|auth|authorization)"?\s*:\s*"?)[^"\s]+("?)/ig, '$1***$2');
+      res = res.replace(/((?:api[_-]?key|token|password|authorization)=)[^&\s]+/ig, '$1***');
+      if (res.length > 500) res = res.substring(0, 500) + '...';
+      return res;
+  }
+
+  function getSanitizedDiagnosticLogs() {
+      var allowedDetailKeys = new Set([
+          'chunk_id', 'chapter_title', 'batch_start', 'batch_size', 'attempt', 'max_attempts',
+          'duration_ms', 'http_status', 'model', 'api_host', 'response_excerpt', 'wait_time_ms',
+          'error', 'reason', 'last_error'
+      ]);
+      return (state.diagnosticLogs || []).slice(0, 200).map(log => ({
+          id: String(log.id || ''),
+          timestamp: String(log.timestamp || ''),
+          level: ['error', 'warning', 'info'].includes(log.level) ? log.level : 'info',
+          stage: desensitizeExcerpt(log.stage),
+          message: desensitizeExcerpt(log.message),
+          details: Object.fromEntries(Object.entries(log.details || {})
+              .filter(([key]) => allowedDetailKeys.has(key))
+              .map(([key, value]) => [key, typeof value === 'string' ? desensitizeExcerpt(value) : value]))
+      }));
+  }
+
   function escapeHtml(text) {
     return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function getPhaseName() {
+      const map = {
+          'idle': '等待开始',
+          'mentions': '1.提取提及',
+          'narrative': '2.叙事解析',
+          'resolving': '3.实体消歧',
+          'aggregating': '4.本地聚合',
+          'drafting': '5.生成草稿',
+          'paused': '已暂停',
+          'completed': '已完成',
+          'error': '发生错误'
+      };
+      return map[state.phase] || state.phase;
+  }
+
+  function updateEstimates() {
+      if(!state.fileText && !state.sourceText) {
+          estimateTextEl.textContent = '';
+          return;
+      }
+      var len = (state.fileText ? state.fileText.length : 0) + (state.sourceText ? state.sourceText.length : 0);
+      var estChunks = Math.ceil(len / state.chunkSize);
+      var estExtractTime = Math.ceil(estChunks / state.concurrency * 15 * 2); // 2 rounds per chunk
+      var resolvingCalls = state.canonicalEntities.length > 0 ? Math.ceil(state.canonicalEntities.length / 50) : Math.max(1, Math.ceil(estChunks / 10));
+      var draftingCalls = state.canonicalEntities.length > 0 ? Math.ceil(state.canonicalEntities.length / 5) : '待初读后确定';
+      var estMergeTime = typeof draftingCalls === 'number' ? (resolvingCalls + draftingCalls) * 15 : 30;
+
+      var timeStr = '';
+      var totalSec = estExtractTime + estMergeTime + 15;
+      if (totalSec > 60) timeStr = Math.floor(totalSec/60) + '分' + (totalSec%60) + '秒';
+      else timeStr = totalSec + '秒';
+
+      estimateTextEl.textContent = `字数约 ${(len/10000).toFixed(1)}万字 | 双轮初读 ${estChunks*2} 次，消歧约 ${resolvingCalls} 次，草稿 ${draftingCalls} 次 | 估时 ${timeStr} (基于每次请求速度)`;
   }
 
   function renderQueue() {
@@ -783,13 +992,33 @@
           return;
       }
       taskQueueEl.style.display = 'block';
-      var done = state.tasks.filter(t => t.status === 'success' || t.status === 'failed').length;
-      queueProgressEl.textContent = done + '/' + state.tasks.length;
-      
+      var done = state.tasks.filter(t => t.narrativeStatus === 'success' || t.mentionsStatus === 'failed' || t.narrativeStatus === 'failed' || t.mentionsStatus === 'skipped' || t.narrativeStatus === 'skipped').length;
+      var success = state.tasks.filter(t => t.narrativeStatus === 'success' || (t.mentionsStatus === 'success' && !t.narrativeStatus)).length;
+      var failed = state.tasks.filter(t => t.mentionsStatus === 'failed' || t.narrativeStatus === 'failed').length;
+      var skipped = state.tasks.filter(t => t.mentionsStatus === 'skipped' || t.narrativeStatus === 'skipped').length;
+      var skipText = skipped > 0 ? ` | 跳过: <span style="color:#fcd34d">${skipped}</span>` : '';
+      queueProgressEl.innerHTML = `总数: ${state.tasks.length} | 成功: <span style="color:#34d399">${success}</span> | 失败: <span style="color:#f87171">${failed}</span>${skipText} | 进度: ${done}/${state.tasks.length}`;
+
       queueListEl.innerHTML = state.tasks.map(t => {
-          return '<div class="novel-queue-item ' + t.status + '">' + 
-                 '<span>Chunk ' + t.chunk_id + '</span>' + 
-                 '<span>' + (t.status === 'running' ? '处理中...' : t.status === 'success' ? '完成' : t.status === 'failed' ? '失败' : '等待中') + '</span>' +
+          var title = t.meta ? String(t.meta.chapter_title || '') + ` (${t.meta.part_index}/${t.meta.part_total})` : 'Chunk ' + t.chunk_id;
+          var statusText = '';
+   if (t.narrativeStatus === 'success') statusText = '叙事完成';
+   else if (t.narrativeStatus === 'running') statusText = '叙事中...';
+   else if (t.mentionsStatus === 'success') statusText = '提及完成';
+   else if (t.mentionsStatus === 'running') statusText = '提集中...';
+   else if (t.mentionsStatus === 'failed' || t.narrativeStatus === 'failed') {
+       var err = t.mentionsStatus === 'failed' ? (t.mentionsError || '提取失败') : (t.narrativeError || '叙事失败');
+       var att = t.mentionsStatus === 'failed' ? t.mentionsAttempts : t.narrativeAttempts;
+       statusText = '失败 (' + att + '次): ' + err;
+       title = title + ' - ' + err;
+   }
+   else statusText = '等待中';
+
+   var statusClass = (t.narrativeStatus === 'success') ? 'success' : ((t.mentionsStatus === 'failed' || t.narrativeStatus === 'failed') ? 'failed' : (statusText.includes('中...') ? 'running' : 'pending'));
+
+          return '<div class="novel-queue-item ' + statusClass + '">' +
+                 '<span title="' + escapeHtml(title) + '" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">' + escapeHtml(title) + '</span>' +
+                 '<span>' + escapeHtml(statusText) + '</span>' +
                  '</div>';
       }).join('');
   }
@@ -801,7 +1030,7 @@
       }
       draftPreviewEl.style.display = 'block';
       entityCountEl.textContent = state.drafts.length + ' 个条目';
-      
+
       entityPreviewEl.innerHTML = state.drafts.map((d, i) => {
           var colorClass = d.layer === 'blue' ? 'blue' : 'green';
           var warningClass = d.warnings && d.warnings.length > 0 ? 'has-warning' : '';
@@ -818,6 +1047,67 @@
       }).join('');
   }
 
+  function renderActionStack() {
+      var html = '';
+      if (state.phase === 'idle') {
+          html += '<button id="btnNovelStart" class="btn novel-primary-btn">🚀 开始自动工作流</button>';
+      } else if (['mentions', 'narrative', 'resolving', 'aggregating', 'drafting'].includes(state.phase)) {
+          html += '<button id="btnNovelCancel" class="btn novel-secondary-btn">暂停任务</button>';
+      } else if (state.phase === 'paused' || state.phase === 'error') {
+          var hasTaskFailed = state.tasks.some(t => t.mentionsStatus === 'failed' || t.narrativeStatus === 'failed');
+          var hasBatchFailed = (state.resolvingProgress && state.resolvingProgress.error) ||
+                               (state.draftingProgress && state.draftingProgress.error);
+          html += '<button id="btnNovelStart" class="btn novel-primary-btn">▶️ 继续工作流</button>';
+          if (hasTaskFailed || hasBatchFailed) {
+              html += '<button id="btnNovelRetryFailed" class="btn novel-secondary-btn" style="color:#f87171; border-color:#f8717140;">重试失败任务</button>';
+          }
+          if (hasTaskFailed) {
+              html += '<button id="btnNovelSkipFailed" class="btn novel-secondary-btn" style="color:#fcd34d; border-color:#fcd34d40;">跳过失败，强制继续</button>';
+          }
+          html += '<button id="btnNovelReset" class="btn novel-secondary-btn">重置项目</button>';
+      } else if (state.phase === 'completed') {
+          html += '<button id="btnNovelReset" class="btn novel-secondary-btn">开始新项目</button>';
+      }
+      actionStackEl.innerHTML = html;
+
+      var btnStart = document.getElementById('btnNovelStart');
+      var btnCancel = document.getElementById('btnNovelCancel');
+      var btnRetry = document.getElementById('btnNovelRetryFailed');
+      var btnSkip = document.getElementById('btnNovelSkipFailed');
+      var btnReset = document.getElementById('btnNovelReset');
+
+      if(btnStart) btnStart.addEventListener('click', () => {
+          if (state.phase === 'paused' || state.phase === 'error') {
+              addDiagnosticLog('info', '工作流', '继续任务');
+          }
+          startWorkflow();
+      });
+      if(btnCancel) btnCancel.addEventListener('click', cancelWorkflow);
+      if(btnRetry) btnRetry.addEventListener('click', async () => {
+          addDiagnosticLog('info', '工作流', '重试失败任务');
+          state.tasks.forEach(t => {
+              if(t.mentionsStatus === 'failed') { t.mentionsStatus = 'pending'; t.mentionsAttempts = 0; t.mentionsError = null; }
+              if(t.narrativeStatus === 'failed') { t.narrativeStatus = 'pending'; t.narrativeAttempts = 0; t.narrativeError = null; }
+          });
+          if (state.resolvingProgress && state.resolvingProgress.error) { state.resolvingProgress.error = null; state.resolvingProgress.attempts = 0; }
+          if (state.draftingProgress && state.draftingProgress.error) { state.draftingProgress.error = null; state.draftingProgress.attempts = 0; }
+          await persistCurrentProject();
+          startWorkflow();
+      });
+      if(btnSkip) btnSkip.addEventListener('click', async () => {
+          addDiagnosticLog('warning', '工作流', '强制跳过失败任务');
+          state.tasks.forEach(t => {
+              if(t.mentionsStatus === 'failed') { t.mentionsStatus = 'skipped'; t.narrativeStatus = 'skipped'; }
+              else if(t.narrativeStatus === 'failed') t.narrativeStatus = 'skipped';
+          });
+          if (state.resolvingProgress && state.resolvingProgress.error) { state.resolvingProgress.error = null; state.resolvingProgress.attempts = 0; }
+          if (state.draftingProgress && state.draftingProgress.error) { state.draftingProgress.error = null; state.draftingProgress.attempts = 0; }
+          await persistCurrentProject();
+          startWorkflow();
+      });
+      if(btnReset) btnReset.addEventListener('click', resetProject);
+  }
+
   function renderAll() {
       sourceTextEl.value = state.sourceText;
       contextTextEl.value = state.contextText;
@@ -825,79 +1115,165 @@
       chunkSizeEl.value = state.chunkSize;
       concurrencyEl.value = state.concurrency;
       strictQualityEl.checked = state.strictQuality;
-      
-      if (importedFileText) {
+
+      if (state.importedFileName) {
           fileSummaryEl.style.display = 'block';
-          fileSummaryEl.innerHTML = '<strong>' + escapeHtml(importedFileMeta.name) + '</strong><span>' + importedFileText.length + ' 字符</span>';
+          fileSummaryEl.innerHTML = '<strong>' + escapeHtml(state.importedFileName) + '</strong><span>' + (state.fileText ? state.fileText.length : '?') + ' 字符</span>';
           btnClearFileEl.style.display = 'inline-block';
+          if (!state.fileText) {
+              fileSummaryEl.innerHTML += '<div style="color:#f87171; font-size:0.7rem; margin-top:4px;">⚠️ 原文缓存读取失败，请重新选择相同文件</div>';
+          }
       } else {
           fileSummaryEl.style.display = 'none';
           btnClearFileEl.style.display = 'none';
       }
-      
+
+      statsBarEl.innerHTML = `
+        <span class="novel-stat-chip">状态: ${getPhaseName()}</span>
+        ${state.tasks.length > 0 ? `<span class="novel-stat-chip">双轮完成: ${state.tasks.filter(t=>t.narrativeStatus==='success').length}/${state.tasks.length}</span>` : ''}
+      `;
+
       renderFocusTags();
       renderQueue();
       renderDrafts();
-      
-      if(localStorage.getItem(SNAPSHOT_KEY)) {
+      renderActionStack();
+      updateEstimates();
+      renderDiagnosticLogs();
+
+      if(localStorage.getItem('novelWorkshopSnapshotV2')) {
           btnUndoApply.style.display = 'block';
       } else {
           btnUndoApply.style.display = 'none';
       }
+
+      var isIdle = state.phase === 'idle' || state.phase === 'completed';
+      sourceTextEl.disabled = !isIdle;
+      contextTextEl.disabled = !isIdle;
+      narrativeModeEl.disabled = !isIdle;
+      chunkSizeEl.disabled = !isIdle;
+      strictQualityEl.disabled = !isIdle;
+      sourceFileEl.disabled = !isIdle;
+      btnClearFileEl.disabled = !isIdle;
   }
 
   function syncInputs() {
+      if(state.phase !== 'idle' && state.phase !== 'completed') return;
       state.sourceText = sourceTextEl.value;
       state.contextText = contextTextEl.value;
       state.narrativeMode = narrativeModeEl.value;
       state.chunkSize = parseInt(chunkSizeEl.value) || 8000;
       state.concurrency = Math.max(1, parseInt(concurrencyEl.value) || 3);
       state.strictQuality = strictQualityEl.checked;
-      saveState();
+
+      var fullText = (state.fileText || '') + state.sourceText;
+      var newId = generateProjectId();
+      if(state.projectId !== newId && state.phase === 'idle') {
+          state.projectId = newId;
+      }
+
+      updateEstimates();
   }
-  
+
   [sourceTextEl, contextTextEl, narrativeModeEl, chunkSizeEl, concurrencyEl, strictQualityEl].forEach(el => {
       el.addEventListener('change', syncInputs);
       el.addEventListener('input', syncInputs);
   });
 
   sourceFileEl.addEventListener('change', function(e) {
+      if(state.phase !== 'idle' && state.phase !== 'completed') return;
       var f = e.target.files[0];
       if(!f) return;
       var reader = new FileReader();
-      reader.onload = function(ev) {
-          importedFileText = ev.target.result;
-          importedFileMeta = { name: f.name };
+      reader.onload = async function(ev) {
+          state.fileText = ev.target.result;
+          state.importedFileName = f.name;
+          state.importedFileHash = hashString(state.fileText);
+          syncInputs();
+          if (!state.projectId) {
+              var fullText = ((state.fileText || '') + '\n' + state.sourceText).trim();
+              state.projectId = generateProjectId();
+          }
+          await persistCurrentProject();
           renderAll();
       };
       reader.readAsText(f);
   });
 
   btnClearFileEl.addEventListener('click', function() {
-      importedFileText = '';
-      importedFileMeta = null;
+      if(state.phase !== 'idle' && state.phase !== 'completed') return;
+      state.fileText = '';
+      state.importedFileName = '';
+      state.importedFileHash = '';
       sourceFileEl.value = '';
+      syncInputs();
       renderAll();
   });
 
   function splitText(text, size) {
       var chunks = [];
-      var parts = text.split(/(?=第[^\n]{1,20}[章节卷回部篇])|(?=chapter\s+\d+)/i);
-      var current = "";
+      var parts = text.split(/(?=(?:^|\n)\s*(?:第[^\n]{1,20}[章节卷回部篇]|chapter\s+\d+))/i);
+      var currentText = "";
+      var currentChapterTitle = "未命名章节";
+      var chapterIndex = 0;
+      var offset = 0;
+
+      function pushChunk(content, title, cIdx, pIdx, pTotal) {
+          if (!content.trim()) return;
+          chunks.push({
+              text: content,
+              chapter_title: title,
+              chapter_index: cIdx,
+              part_index: pIdx,
+              part_total: pTotal,
+              start_offset: offset,
+              end_offset: offset + content.length,
+              text_hash: hashString(content)
+          });
+          offset += content.length;
+      }
+
       parts.forEach(p => {
-          if(p.length > size) {
-              if(current) { chunks.push(current); current = ""; }
-              for(var i=0; i<p.length; i+=size) chunks.push(p.substring(i, i+size));
+          if (!p) return;
+          var match = p.match(/^\s*(第[^\n]{1,20}[章节卷回部篇]|chapter\s+\d+[^\n]*)/i);
+          var title = match ? match[1].trim() : currentChapterTitle;
+          if (match) chapterIndex++;
+
+          if (p.length > size) {
+              if (currentText) { pushChunk(currentText, currentChapterTitle, chapterIndex - (match ? 1 : 0), 1, 1); currentText = ""; }
+              var paragraphs = p.split(/(?=\n\s*\n)/);
+              var paraCurrent = "";
+              var subChunks = [];
+              paragraphs.forEach(para => {
+                  if (para.length > size) {
+                      if (paraCurrent) { subChunks.push(paraCurrent); paraCurrent = ""; }
+                      for (var i = 0; i < para.length; i += size) {
+                          subChunks.push(para.substring(i, i + size));
+                      }
+                  } else {
+                      if (paraCurrent.length + para.length > size) {
+                          subChunks.push(paraCurrent);
+                          paraCurrent = para;
+                      } else {
+                          paraCurrent += para;
+                      }
+                  }
+              });
+              if (paraCurrent) subChunks.push(paraCurrent);
+              subChunks.forEach((sc, idx) => pushChunk(sc, title, chapterIndex, idx + 1, subChunks.length));
+              currentChapterTitle = title;
           } else {
-              if(current.length + p.length > size) {
-                  chunks.push(current);
-                  current = p;
+              if (currentText.length + p.length > size) {
+                  pushChunk(currentText, currentChapterTitle, chapterIndex - (match ? 1 : 0), 1, 1);
+                  currentText = p;
+                  currentChapterTitle = title;
               } else {
-                  current += p;
+                  currentText += p;
+                  if (match) currentChapterTitle = title;
               }
           }
       });
-      if(current) chunks.push(current);
+      if (currentText) pushChunk(currentText, currentChapterTitle, chapterIndex, 1, 1);
+
       return chunks;
   }
 
@@ -913,167 +1289,892 @@
       });
       return res;
   }
-  
-  function validateDraft(entry) {
+
+  async function callAI(promptText, signal) {
+      var apiUrlEl = document.getElementById('apiUrl');
+      var apiKeyEl = document.getElementById('apiKey');
+      var modelEl = document.getElementById('modelSelect');
+      if (!apiUrlEl || !modelEl || !modelEl.value) throw new Error('未配置AI模型');
+
+      var apiHost = '';
+      try { apiHost = new URL(apiUrlEl.value).host; } catch(e) { apiHost = 'invalid-url'; }
+      var modelName = modelEl.value;
+
+      var startTime = Date.now();
+      var res;
+      try {
+          res = await fetch(apiUrlEl.value.replace(/\/$/, '') + '/chat/completions', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + (apiKeyEl ? apiKeyEl.value.trim() : '')
+              },
+              body: JSON.stringify({
+                  model: modelName,
+                  messages: [{role: 'user', content: promptText}],
+                  temperature: 0.2
+              }),
+              signal: signal
+          });
+      } catch (err) {
+          var duration = Date.now() - startTime;
+          var customErr = new Error(err.name === 'AbortError' ? 'AbortError' : '网络请求失败: ' + err.message);
+          customErr.name = err.name;
+          customErr.durationMs = duration;
+          customErr.model = modelName;
+          customErr.apiHost = apiHost;
+          throw customErr;
+      }
+
+      var duration = Date.now() - startTime;
+
+      if(!res.ok) {
+          var errText = '';
+          try { errText = await res.text(); } catch(e) {}
+          duration = Date.now() - startTime;
+          var customErr = new Error(res.status === 429 ? '429' : 'HTTP ' + res.status);
+          customErr.httpStatus = res.status;
+          customErr.responseExcerpt = desensitizeExcerpt(errText);
+          customErr.durationMs = duration;
+          customErr.model = modelName;
+          customErr.apiHost = apiHost;
+          throw customErr;
+      }
+      var responseText = '';
+      var data;
+      try {
+          responseText = await res.text();
+          data = JSON.parse(responseText);
+      } catch(e) {
+          var envelopeErr = new Error('API响应不是有效JSON');
+          envelopeErr.responseExcerpt = desensitizeExcerpt(responseText);
+          envelopeErr.durationMs = Date.now() - startTime;
+          envelopeErr.model = modelName;
+          envelopeErr.apiHost = apiHost;
+          throw envelopeErr;
+      }
+      var text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+      if (typeof text !== 'string') {
+          var shapeErr = new Error('API响应缺少 choices[0].message.content');
+          shapeErr.responseExcerpt = desensitizeExcerpt(responseText);
+          shapeErr.durationMs = Date.now() - startTime;
+          shapeErr.model = modelName;
+          shapeErr.apiHost = apiHost;
+          throw shapeErr;
+      }
+      try {
+          var fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+          if(fence) return { data: JSON.parse(fence[1]), duration, model: modelName, apiHost: apiHost };
+          var first = text.indexOf('{');
+          var last = text.lastIndexOf('}');
+          if(first >= 0 && last > first) return { data: JSON.parse(text.slice(first, last + 1)), duration, model: modelName, apiHost: apiHost };
+          return { data: JSON.parse(text), duration, model: modelName, apiHost: apiHost };
+      } catch(e) {
+          var customErr = new Error('JSON 解析失败');
+          customErr.responseExcerpt = desensitizeExcerpt(text);
+          customErr.durationMs = duration;
+          customErr.model = modelName;
+          customErr.apiHost = apiHost;
+          throw customErr;
+      }
+  }
+
+  function cancelWorkflow() {
+      if(abortController) abortController.abort();
+      state.phase = 'paused';
+      statusTextEl.textContent = '任务已暂停';
+      addDiagnosticLog('info', '工作流', '用户暂停任务');
+      persistCurrentProject();
+      renderAll();
+  }
+
+  async function resetProject() {
+      if(!confirm('确定要重置当前项目并清空所有进度吗？')) return;
+      var oldProjectId = state.projectId;
+      var keepFile = state.fileText;
+      var keepName = state.importedFileName;
+      var keepHash = state.importedFileHash;
+      state = {
+          schemaVersion: 3,
+          projectId: '', sourceText: state.sourceText, contextText: state.contextText,
+          narrativeMode: state.narrativeMode, chunkSize: state.chunkSize, concurrency: state.concurrency,
+          strictQuality: state.strictQuality, focus: state.focus, tasks: [], drafts: [], diagnosticLogs: [],
+          importedFileName: keepName, importedFileHash: keepHash, phase: 'idle',
+          resolvingProgress: { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null },
+          draftingProgress: { cursor: 0, entities: [] },
+          canonicalEntities: [],
+          aggregatedData: {},
+          unresolvedGroups: [], unresolvedData: {},
+          fileText: keepFile, stats: {}
+      };
+      addDiagnosticLog('info', '工作流', '项目已重置');
+      if (oldProjectId) {
+          await saveStateDB(oldProjectId, state);
+          localStorage.setItem('novel_last_project', oldProjectId);
+      }
+      syncInputs();
+      renderAll();
+  }
+
+  async function startWorkflow() {
+      syncInputs();
+      abortController = new AbortController();
+
+      if (state.phase === 'idle') {
+          var fullText = ((state.fileText || '') + '\n' + state.sourceText).trim();
+          if(!fullText) return alert('没有文本');
+
+          var sig = generateProjectId();
+          if(state.projectId !== sig) {
+              state.projectId = sig;
+              var chunks = splitText(fullText, state.chunkSize);
+              state.tasks = chunks.map((c, i) => ({
+                  chunk_id: i,
+                  meta: {
+                      chapter_title: c.chapter_title, chapter_index: c.chapter_index,
+                      part_index: c.part_index, part_total: c.part_total,
+                      start_offset: c.start_offset, end_offset: c.end_offset, text_hash: c.text_hash
+                  },
+                   text: c.text,
+                   mentionsStatus: 'pending', mentionsAttempts: 0, mentionsResult: null, mentionsError: null,
+                   narrativeStatus: 'pending', narrativeAttempts: 0, narrativeResult: null, narrativeError: null
+               }));
+               state.drafts = [];
+               state.resolvingProgress = { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null };
+               state.draftingProgress = { cursor: 0, entities: [] };
+               state.canonicalEntities = [];
+               state.aggregatedData = {};
+               state.unresolvedGroups = [];
+               state.unresolvedData = {};
+          }
+      }
+
+      await persistCurrentProject();
+      runPipeline();
+  }
+
+  async function runPipeline() {
+      try {
+          if (state.phase === 'idle' || state.phase === 'paused' || state.phase === 'mentions') {
+              state.phase = 'mentions';
+              renderAll();
+              await runTaskBatch('mentions', processChunkMentions);
+              if(abortController.signal.aborted) return;
+              if (state.tasks.some(t => t.mentionsStatus === 'failed')) return pauseWithFailed('提及提取');
+          }
+
+          if (state.phase === 'mentions' || state.phase === 'narrative') {
+              state.phase = 'narrative';
+              renderAll();
+              await runTaskBatch('narrative', processChunkNarrative);
+              if(abortController.signal.aborted) return;
+              if (state.tasks.some(t => t.narrativeStatus === 'failed')) return pauseWithFailed('叙事解析');
+          }
+
+          if (state.phase === 'narrative' || state.phase === 'resolving') {
+              state.phase = 'resolving';
+              renderAll();
+              await performResolving();
+              if(abortController.signal.aborted) return;
+              if(state.phase === 'paused' || state.resolvingProgress.error) return;
+          }
+
+          if (state.phase === 'resolving' || state.phase === 'aggregating') {
+              state.phase = 'aggregating';
+              statusTextEl.textContent = '本地聚合中...';
+              renderAll();
+              await performAggregation();
+              if(abortController.signal.aborted) return;
+          }
+
+          if (state.phase === 'aggregating' || state.phase === 'drafting') {
+              state.phase = 'drafting';
+              renderAll();
+              await generateDraftsBatch();
+              if(abortController.signal.aborted) return;
+              if(state.phase === 'paused' || state.draftingProgress.error) return;
+
+              state.phase = 'completed';
+              statusTextEl.textContent = '全部完成！请在下方预览和应用草稿。';
+              await persistCurrentProject();
+              renderAll();
+          }
+
+      } catch(e) {
+          if (e.name === 'AbortError') return;
+          console.error("Pipeline error", e);
+          state.phase = 'error';
+          statusTextEl.textContent = '流水线出错: ' + e.message;
+          addDiagnosticLog('error', '工作流', '流水线异常终止', {
+              error: e.message,
+              http_status: e.httpStatus,
+              duration_ms: e.durationMs,
+              model: e.model,
+              api_host: e.apiHost,
+              response_excerpt: e.responseExcerpt
+          });
+          await persistCurrentProject();
+          renderAll();
+      }
+  }
+
+  function pauseWithFailed(stageName) {
+      state.phase = 'paused';
+      var lastErrLog = (state.diagnosticLogs || []).find(l => l.level === 'error');
+      var errDetail = lastErrLog ? lastErrLog.message + (lastErrLog.details.error ? ': ' + lastErrLog.details.error : '') : '存在失败片段';
+      statusTextEl.textContent = stageName + '阶段暂停: ' + errDetail;
+      addDiagnosticLog('warning', '工作流', '任务暂停', { reason: stageName + '存在失败', last_error: errDetail });
+      persistCurrentProject().then(renderAll);
+  }
+
+  async function runTaskBatch(taskType, processFn) {
+      var statusKey = taskType + 'Status';
+      var attemptsKey = taskType + 'Attempts';
+
+      var hasPending = true;
+      while(hasPending) {
+          if(abortController.signal.aborted) return;
+
+          var pendingTasks = state.tasks.filter(t => t[statusKey] === 'pending' || !t[statusKey]);
+          var runningCount = state.tasks.filter(t => t[statusKey] === 'running').length;
+
+          if (pendingTasks.length === 0 && runningCount === 0) {
+              hasPending = false;
+              break;
+          }
+
+          var toStart = Math.min(pendingTasks.length, state.concurrency - runningCount);
+          var promises = [];
+          for(var i=0; i<toStart; i++) {
+              promises.push(processFn(pendingTasks[i]));
+          }
+
+          if (promises.length > 0) {
+              await Promise.race(promises).catch(e=>console.error(e));
+          } else {
+              await new Promise(r => setTimeout(r, 1000));
+          }
+      }
+  }
+
+  async function processChunkMentions(task) {
+      if(abortController.signal.aborted) return;
+      task.mentionsStatus = 'running';
+      task.mentionsAttempts = (task.mentionsAttempts || 0) + 1;
+      renderQueue();
+
+      try {
+          var prompt = `[novel-mentions-v2] You are a meticulous information extractor. Extract all mentions of entities from the provided text chunk.
+CRITICAL REQUIREMENTS:
+1. Extract EVERY mentioned entity matching the focus categories.
+2. Provide exact quotes. Do NOT summarize or invent facts.
+3. Only output JSON.
+
+JSON Schema:
+{
+  "mentions": [
+    {
+      "type": "character|location|faction|item|rule",
+      "name": "Entity Name",
+      "mention": "Brief description of how it was mentioned",
+      "aliases": ["alias1"],
+      "quote": "Exact quote from text"
+    }
+  ]
+}
+
+Focus Categories: ${state.focus.join(',')}
+Context: ${state.contextText}
+
+Text Chunk:
+${task.text}`;
+          var aiRes = await callAI(prompt, abortController.signal);
+          var result = aiRes.data;
+          groundQuotes(result.mentions, task.text, task.meta.start_offset);
+          task.mentionsResult = result;
+          addDiagnosticLog('info', '提及提取', '分片处理成功', {
+              chunk_id: task.chunk_id,
+              chapter_title: task.meta.chapter_title,
+              attempt: task.mentionsAttempts,
+              max_attempts: 3,
+              duration_ms: aiRes.duration,
+              model: aiRes.model,
+              api_host: aiRes.apiHost
+          });
+          task.mentionsStatus = 'success';
+          await persistCurrentProject();
+      } catch(e) {
+          await handleTaskError(task, 'mentions', e);
+      }
+      renderQueue();
+  }
+
+  async function processChunkNarrative(task) {
+      if(abortController.signal.aborted) return;
+      task.narrativeStatus = 'running';
+      task.narrativeAttempts = (task.narrativeAttempts || 0) + 1;
+      renderQueue();
+
+      try {
+          var prompt = `[novel-narrative-v2] You are a narrative analyzer. Analyze events, state changes, and relations in the text chunk based on the identified mentions.
+CRITICAL REQUIREMENTS:
+1. Output events, state changes, and relations. If focus excludes events/relations, you can return empty arrays.
+2. Provide exact quotes.
+3. Only output JSON.
+
+JSON Schema:
+{
+  "chapter_summary": "Brief summary of the chunk",
+  "events": [
+    { "name": "Event name", "participants": ["Entity1"], "cause": "...", "result": "...", "quote": "..." }
+  ],
+  "state_changes": [
+    { "entity": "Entity Name", "field": "Aspect changed", "before": "...", "after": "...", "quote": "..." }
+  ],
+  "relations": [
+    { "source": "Entity1", "relation": "Relationship type", "target": "Entity2", "change": "How it changed", "quote": "..." }
+  ],
+  "unresolved_mentions": [
+    { "text": "Ambiguous mention", "possible_entities": ["Entity1"] }
+  ]
+}
+
+Identified Mentions:
+${JSON.stringify((task.mentionsResult && task.mentionsResult.mentions) || [])}
+
+Context:
+${state.contextText}
+
+Text Chunk:
+${task.text}`;
+          var aiRes = await callAI(prompt, abortController.signal);
+          var result = aiRes.data;
+          addDiagnosticLog('info', '叙事解析', '分片处理成功', {
+              chunk_id: task.chunk_id,
+              chapter_title: task.meta.chapter_title,
+              attempt: task.narrativeAttempts,
+              max_attempts: 3,
+              duration_ms: aiRes.duration,
+              model: aiRes.model,
+              api_host: aiRes.apiHost
+          });
+
+          if (state.focus.indexOf('event') < 0) result.events = [];
+          if (state.focus.indexOf('relation') < 0) result.relations = [];
+
+          if (result.events) groundQuotes(result.events, task.text, task.meta.start_offset);
+          if (result.state_changes) groundQuotes(result.state_changes, task.text, task.meta.start_offset);
+          if (result.relations) groundQuotes(result.relations, task.text, task.meta.start_offset);
+
+          task.narrativeResult = result;
+          task.narrativeStatus = 'success';
+          await persistCurrentProject();
+      } catch(e) {
+          await handleTaskError(task, 'narrative', e);
+      }
+      renderQueue();
+  }
+
+  async function handleTaskError(task, stage, e) {
+      var statusKey = stage + 'Status';
+      var attemptsKey = stage + 'Attempts';
+      var errorKey = stage + 'Error';
+
+      if (e.name === 'AbortError') {
+          task[statusKey] = 'pending';
+          task[attemptsKey]--;
+          return;
+      }
+
+      var errMsg = e.message === '429' ? 'Rate Limit (429)' : e.message;
+      task[errorKey] = errMsg;
+
+      var waitTime = 0;
+      if (task[attemptsKey] < 3) {
+          waitTime = e.message === '429' ? 2000 * Math.pow(2, task[attemptsKey] - 1) : 1000;
+      }
+
+      addDiagnosticLog(task[attemptsKey] >= 3 ? 'error' : 'warning', stage === 'mentions' ? '提及提取' : '叙事解析', '任务执行异常', {
+          chunk_id: task.chunk_id,
+          chapter_title: task.meta.chapter_title,
+          attempt: task[attemptsKey],
+          max_attempts: 3,
+          error: errMsg,
+          http_status: e.httpStatus,
+          duration_ms: e.durationMs,
+          model: e.model,
+          api_host: e.apiHost,
+          response_excerpt: e.responseExcerpt,
+          wait_time_ms: waitTime
+      });
+
+      if (task[attemptsKey] >= 3) {
+          task[statusKey] = 'failed';
+      } else {
+          task[statusKey] = 'pending';
+          await new Promise(r => setTimeout(r, waitTime));
+      }
+      await persistCurrentProject();
+  }
+
+  function groundQuotes(items, text, chunkStartOffset) {
+      if (!items || !Array.isArray(items)) return;
+      items.forEach(item => {
+          if (!item.quote) {
+              item.grounded = false;
+              item.match_method = 'none';
+              return;
+          }
+          // Exact match
+          var idx = text.indexOf(item.quote);
+          if (idx >= 0) {
+              item.start = idx;
+              item.end = idx + item.quote.length;
+              item.chunk_source_start = chunkStartOffset;
+              item.global_start = chunkStartOffset + item.start;
+              item.global_end = chunkStartOffset + item.end;
+              item.grounded = true;
+              item.match_method = 'exact';
+              return;
+          }
+
+          // Normalized match (strip whitespace/punctuation)
+          var normText = '';
+          var indexMap = [];
+          for (var i = 0; i < text.length; i++) {
+              var char = text[i];
+              if (!/[\s\p{P}]/u.test(char)) {
+                  normText += char;
+                  indexMap.push(i);
+              }
+          }
+
+          var normQuote = item.quote.replace(/[\s\p{P}]/gu, '');
+          var normIdx = normText.indexOf(normQuote);
+          if (normIdx >= 0) {
+              item.start = indexMap[normIdx];
+              item.end = indexMap[normIdx + normQuote.length - 1] + 1;
+              item.chunk_source_start = chunkStartOffset;
+              item.global_start = chunkStartOffset + item.start;
+              item.global_end = chunkStartOffset + item.end;
+              item.grounded = true;
+              item.match_method = 'normalized';
+              return;
+          }
+
+          item.grounded = false;
+          item.match_method = 'none';
+      });
+  }
+
+  async function performResolving() {
+      statusTextEl.textContent = '实体消歧中...';
+
+      // 收集所有mentions
+      var allMentions = [];
+      state.tasks.forEach(t => {
+          if (t.mentionsStatus === 'success' && t.mentionsResult && t.mentionsResult.mentions) {
+              t.mentionsResult.mentions.forEach((m, mentionIndex) => {
+                  allMentions.push({
+                      ...m,
+                      mention_ref: `${t.chunk_id}:m:${mentionIndex}`,
+                      _chunk_id: t.chunk_id
+                  });
+              });
+          }
+      });
+
+      // 简单本地规范化生成候选
+      var localCandidatesMap = {};
+      allMentions.forEach(m => {
+          var normName = String(m.name || '').trim();
+          if (!normName) return;
+          if (!localCandidatesMap[normName]) {
+              localCandidatesMap[normName] = { name: normName, type: m.type, aliases: new Set(), refs: [] };
+          }
+          if (m.aliases) m.aliases.forEach(a => localCandidatesMap[normName].aliases.add(a));
+          localCandidatesMap[normName].refs.push(m);
+      });
+
+      var candidateList = Object.values(localCandidatesMap).map(c => ({
+          name: c.name,
+          type: c.type,
+          aliases: Array.from(c.aliases),
+          mention_count: c.refs.length,
+          mention_refs: c.refs.map(r => r.mention_ref),
+          evidence: c.refs.filter(r => r.grounded).slice(0, 3).map(r => r.quote)
+      }));
+
+      if (!state.resolvingProgress) state.resolvingProgress = { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null };
+      if (!Array.isArray(state.resolvingProgress.nextPackages)) state.resolvingProgress.nextPackages = [];
+      if (!Array.isArray(state.resolvingProgress.unresolvedGroups)) state.resolvingProgress.unresolvedGroups = [];
+      var batchSize = 50; // names per batch
+
+      while (state.resolvingProgress.cursor < candidateList.length) {
+          if (abortController.signal.aborted) return;
+          var batchStart = state.resolvingProgress.cursor;
+          var batch = [];
+          var batchChars = 0;
+          while (batchStart + batch.length < candidateList.length && batch.length < batchSize) {
+              var candidate = candidateList[batchStart + batch.length];
+              var candidateChars = JSON.stringify(candidate).length;
+              if (batch.length > 0 && batchChars + candidateChars > 25000) break;
+              batch.push(candidate);
+              batchChars += candidateChars;
+          }
+
+          statusTextEl.textContent = `实体消歧批次 (${state.resolvingProgress.cursor}/${candidateList.length})...`;
+
+          var prompt = `[novel-resolve-v2] You are a Lore Master. Resolve and disambiguate entities from the provided list.
+CRITICAL REQUIREMENTS:
+1. Merge entities that clearly refer to the same concept/person.
+2. DO NOT force merge uncertain entities. Put them in unresolved_groups.
+3. Keep mention_refs for mapping back.
+4. Output JSON only.
+
+JSON Schema:
+{
+  "canonical_entities": [
+    { "name": "Primary Name", "type": "...", "aliases": ["alias1"], "mention_refs": ["0:m:1"] }
+  ],
+  "unresolved_groups": [
+    { "names": ["Ambiguous1", "Ambiguous2"], "reason": "Not enough context" }
+  ]
+}
+
+Candidates:
+${JSON.stringify(batch)}`;
+
+          try {
+              state.resolvingProgress.attempts = (state.resolvingProgress.attempts || 0) + 1;
+              var aiRes = await callAI(prompt, abortController.signal);
+              var res = aiRes.data;
+              var resolvedEntities = Array.isArray(res.canonical_entities) ? res.canonical_entities : [];
+              {
+                  var batchIdx = batchStart;
+                  resolvedEntities.forEach((ce, idx) => {
+                      ce.id = `ce_${batchIdx}_${idx}`;
+                      var refs = new Set(Array.isArray(ce.mention_refs) ? ce.mention_refs : []);
+                      var matchedCandidates = batch.filter(cand => cand.mention_refs.some(ref => refs.has(ref)) || cand.name === ce.name || (ce.aliases || []).includes(cand.name));
+                      ce.aliases = Array.from(new Set([].concat(ce.aliases || [], matchedCandidates.map(cand => cand.name), ...matchedCandidates.map(cand => cand.aliases || [])))).filter(alias => alias && alias !== ce.name);
+                  });
+
+                  // fallback for missed candidates
+                  var processedNames = new Set();
+                  resolvedEntities.forEach(ce => {
+                      processedNames.add(ce.name);
+                      if (ce.aliases) ce.aliases.forEach(a => processedNames.add(a));
+                  });
+                  batch.forEach(cand => {
+                      if (!processedNames.has(cand.name)) {
+                          resolvedEntities.push({
+                              id: `ce_${batchIdx}_miss_${cand.name}`,
+                              name: cand.name, type: cand.type, aliases: cand.aliases, mention_refs: cand.mention_refs
+                          });
+                      }
+                  });
+
+                  state.resolvingProgress.nextPackages = state.resolvingProgress.nextPackages.concat(resolvedEntities);
+              }
+              if (res.unresolved_groups) {
+                  state.resolvingProgress.unresolvedGroups = state.resolvingProgress.unresolvedGroups.concat(res.unresolved_groups);
+              }
+
+              addDiagnosticLog('info', '实体消歧', '批次处理成功', {
+                  batch_start: batchStart,
+                  batch_size: batch.length,
+                  attempt: state.resolvingProgress.attempts,
+                  max_attempts: 3,
+                  duration_ms: aiRes.duration,
+                  model: aiRes.model,
+                  api_host: aiRes.apiHost
+              });
+              state.resolvingProgress.cursor += batch.length;
+              state.resolvingProgress.error = null;
+              state.resolvingProgress.attempts = 0;
+              await persistCurrentProject();
+          } catch(e) {
+              if (e.name === 'AbortError') return;
+              var errMsg = e.message === '429' ? 'Rate Limit (429)' : e.message;
+              state.resolvingProgress.error = errMsg;
+
+              var waitTime = 0;
+              if (state.resolvingProgress.attempts < 3) {
+                  waitTime = e.message === '429' ? 2000 * Math.pow(2, state.resolvingProgress.attempts - 1) : 1000;
+              }
+
+              addDiagnosticLog(state.resolvingProgress.attempts >= 3 ? 'error' : 'warning', '实体消歧', '批次处理异常', {
+                  batch_start: batchStart,
+                  batch_size: batch.length,
+                  attempt: state.resolvingProgress.attempts,
+                  max_attempts: 3,
+                  error: errMsg,
+                  http_status: e.httpStatus,
+                  duration_ms: e.durationMs,
+                  model: e.model,
+                  api_host: e.apiHost,
+                  response_excerpt: e.responseExcerpt,
+                  wait_time_ms: waitTime
+              });
+
+              await persistCurrentProject();
+              if (state.resolvingProgress.attempts >= 3) {
+                  pauseWithFailed('实体消歧');
+                  return;
+              } else {
+                  await new Promise(r => setTimeout(r, waitTime));
+              }
+          }
+      }
+
+      if (state.resolvingProgress.error) return; // paused
+      state.canonicalEntities = state.resolvingProgress.nextPackages;
+      state.unresolvedGroups = state.resolvingProgress.unresolvedGroups;
+      await persistCurrentProject();
+  }
+
+  async function performAggregation() {
+      var agg = {};
+      state.canonicalEntities.forEach(ce => {
+          if (!agg[ce.id]) {
+              agg[ce.id] = { id: ce.id, name: ce.name, type: ce.type, aliases: ce.aliases || [], mentions: [], grounded_evidence: [], ungrounded_evidence: [], events: [], state_changes: [], relations: [] };
+          }
+      });
+
+      var aliasToId = {};
+      state.canonicalEntities.forEach(ce => {
+          var n = (ce.name || '').trim();
+          if (n) aliasToId[n] = ce.id;
+          (ce.aliases || []).forEach(a => {
+              var an = (a || '').trim();
+              if (an && !aliasToId[an]) aliasToId[an] = ce.id;
+          });
+      });
+
+      function resolveId(name) { return aliasToId[(name || '').trim()] || null; }
+
+      state.unresolvedData = { mentions: [], unresolved_mentions: [], events: [], state_changes: [], relations: [] };
+
+      state.tasks.forEach(t => {
+          if (t.mentionsResult && t.mentionsResult.mentions) {
+              t.mentionsResult.mentions.forEach(m => {
+                  var cid = resolveId(m.name);
+                  var mData = { ...m, chunk_id: t.chunk_id, chapter_index: t.meta.chapter_index };
+                  if (cid) {
+                      agg[cid].mentions.push(mData);
+                      (mData.grounded ? agg[cid].grounded_evidence : agg[cid].ungrounded_evidence).push(mData);
+                  }
+                  else state.unresolvedData.mentions.push(mData);
+              });
+          }
+          if (t.narrativeResult) {
+              (t.narrativeResult.events || []).forEach(e => {
+                  var eData = { ...e, chunk_id: t.chunk_id, chapter_index: t.meta.chapter_index };
+                  var resolved = false;
+                  (e.participants || []).forEach(p => {
+                      var cid = resolveId(p);
+                      if (cid) { agg[cid].events.push(eData); resolved = true; }
+                  });
+                  var unresolvedParticipants = (e.participants || []).filter(p => !resolveId(p));
+                  if (!resolved || unresolvedParticipants.length > 0) state.unresolvedData.events.push({ ...eData, unresolved_participants: unresolvedParticipants });
+              });
+              (t.narrativeResult.state_changes || []).forEach(sc => {
+                  var cid = resolveId(sc.entity);
+                  var scData = { ...sc, chunk_id: t.chunk_id, chapter_index: t.meta.chapter_index };
+                  if (cid) agg[cid].state_changes.push(scData);
+                  else state.unresolvedData.state_changes.push(scData);
+              });
+              (t.narrativeResult.relations || []).forEach(r => {
+                  var cidS = resolveId(r.source);
+                  var cidT = resolveId(r.target);
+                  var rData = { ...r, chunk_id: t.chunk_id, chapter_index: t.meta.chapter_index };
+                  if (cidS) agg[cidS].relations.push(rData);
+                  if (cidT) agg[cidT].relations.push(rData);
+                  if (!cidS || !cidT) state.unresolvedData.relations.push(rData);
+              });
+              (t.narrativeResult.unresolved_mentions || []).forEach(m => {
+                  state.unresolvedData.unresolved_mentions.push({ ...m, chunk_id: t.chunk_id, chapter_index: t.meta.chapter_index });
+              });
+          }
+      });
+
+      // Sort and build timeline
+      Object.values(agg).forEach(entity => {
+          var bySourceOrder = (a, b) => ((a.chapter_index || 0) - (b.chapter_index || 0)) || ((a.chunk_id || 0) - (b.chunk_id || 0)) || ((a.global_start || 0) - (b.global_start || 0));
+          entity.events.sort(bySourceOrder);
+          entity.state_changes.sort(bySourceOrder);
+          entity.relations.sort(bySourceOrder);
+          var timeline = [].concat(entity.events, entity.state_changes, entity.relations).sort(bySourceOrder);
+          entity.timeline = timeline;
+
+          entity.current_state = {};
+          entity.state_changes.forEach(sc => {
+              if (sc.field && sc.after) entity.current_state[sc.field] = sc.after;
+          });
+      });
+
+      state.aggregatedData = agg;
+      await persistCurrentProject();
+  }
+
+  async function generateDraftsBatch() {
+      var entityIds = Object.keys(state.aggregatedData);
+      if (!state.draftingProgress) state.draftingProgress = { cursor: 0, entities: [] };
+
+      var batchSize = 5;
+
+      while (state.draftingProgress.cursor < entityIds.length) {
+          if (abortController.signal.aborted) return;
+          var batchIds = entityIds.slice(state.draftingProgress.cursor, state.draftingProgress.cursor + batchSize);
+          if (state.draftingProgress.status === 'skipped') break;
+
+          var batchData = batchIds.map(id => {
+              var d = state.aggregatedData[id];
+              return {
+                  id: d.id, name: d.name, type: d.type, aliases: d.aliases,
+                   current_state: d.current_state,
+                   grounded_evidence: d.grounded_evidence,
+                   ungrounded_evidence: d.ungrounded_evidence,
+                   timeline: d.timeline
+              };
+          });
+
+          statusTextEl.textContent = `生成草稿批次 (${state.draftingProgress.cursor}/${entityIds.length})...`;
+
+          var prompt = `[novel-worldbook-draft-v2] You are a Worldbook Architect. Generate final lore entries for the provided entities based on aggregated evidence.
+CRITICAL REQUIREMENTS:
+1. Create at least one entry for EVERY provided entity. Do NOT drop any entity.
+2. Incorporate timeline events, relations, and state changes.
+3. Ensure strict JSON output format.
+
+JSON Schema:
+{
+  "entries": [
+    {
+      "entity_id": "...",
+      "category": "character|location|faction|item|rule",
+      "name": "Entity Name",
+      "content": "Final unified lore content",
+      "keys": ["alias1"]
+    }
+  ]
+}
+
+Aggregated Evidence:
+${JSON.stringify(batchData)}`;
+
+          try {
+              state.draftingProgress.attempts = (state.draftingProgress.attempts || 0) + 1;
+              var aiRes = await callAI(prompt, abortController.signal);
+              var res = aiRes.data;
+              var returnedEntries = Array.isArray(res.entries) ? res.entries.filter(e => batchIds.includes(e.entity_id)) : [];
+              var returnedIds = new Set(returnedEntries.map(e => e.entity_id));
+              var missingIds = batchIds.filter(id => !returnedIds.has(id));
+              if (missingIds.length > 0) throw new Error('AI漏发实体: ' + missingIds.join(', '));
+
+              returnedEntries.forEach(e => {
+                  var source = state.aggregatedData[e.entity_id];
+                  e.name = e.name || source.name;
+                  e.category = e.category || source.type;
+                  e.keys = cleanKeys(e.keys, e.name);
+                  e.layer = e.category === 'rule' ? 'blue' : 'green';
+                  e.enabled = true;
+                  e.strategy = e.category === 'rule' ? 'constant' : 'selective';
+                  e.comment = '[小说' + e.category + '] ' + e.name;
+                  e.warnings = validateDraft(e, source);
+              });
+              state.draftingProgress.entities.push(...returnedEntries);
+              addDiagnosticLog('info', '生成草稿', '批次处理成功', {
+                  batch_start: state.draftingProgress.cursor,
+                  batch_size: batchIds.length,
+                  attempt: state.draftingProgress.attempts,
+                  max_attempts: 3,
+                  duration_ms: aiRes.duration,
+                  model: aiRes.model,
+                  api_host: aiRes.apiHost
+              });
+              state.draftingProgress.cursor += batchIds.length;
+              state.draftingProgress.error = null;
+              state.draftingProgress.attempts = 0;
+              await persistCurrentProject();
+          } catch(e) {
+              if (e.name === 'AbortError') return;
+              var errMsg = e.message === '429' ? 'Rate Limit (429)' : e.message;
+              state.draftingProgress.error = errMsg;
+
+              var waitTime = 0;
+              if (state.draftingProgress.attempts < 3) {
+                  waitTime = e.message === '429' ? 2000 * Math.pow(2, state.draftingProgress.attempts - 1) : 1000;
+              }
+
+              addDiagnosticLog(state.draftingProgress.attempts >= 3 ? 'error' : 'warning', '生成草稿', '批次处理异常', {
+                  batch_start: state.draftingProgress.cursor,
+                  batch_size: batchIds.length,
+                  attempt: state.draftingProgress.attempts,
+                  max_attempts: 3,
+                  error: errMsg,
+                  http_status: e.httpStatus,
+                  duration_ms: e.durationMs,
+                  model: e.model,
+                  api_host: e.apiHost,
+                  response_excerpt: e.responseExcerpt,
+                  wait_time_ms: waitTime
+              });
+
+              await persistCurrentProject();
+              if (state.draftingProgress.attempts >= 3) {
+                  pauseWithFailed('生成草稿');
+                  return;
+              } else {
+                  await new Promise(r => setTimeout(r, waitTime));
+              }
+          }
+      }
+
+      if (state.draftingProgress.error) return; // paused
+
+      // Global key uniqueness check
+      var allKeys = new Map();
+      state.draftingProgress.entities.forEach((e, idx) => {
+          e.keys.forEach(k => {
+              if (!allKeys.has(k)) allKeys.set(k, []);
+              allKeys.get(k).push(idx);
+          });
+      });
+      state.draftingProgress.entities.forEach((e, idx) => {
+          var duplicates = e.keys.filter(k => allKeys.get(k).length > 1);
+          if (duplicates.length > 0) e.warnings.push('Key全局重复: ' + duplicates.join(', '));
+      });
+
+      state.drafts = state.draftingProgress.entities;
+      await persistCurrentProject();
+  }
+
+  function validateDraft(entry, sourceData) {
       var warnings = [];
       if(state.focus.indexOf(entry.category) < 0) warnings.push('未勾选的类别: ' + entry.category);
       if(!entry.name) warnings.push('缺失名称');
       if(!entry.content) warnings.push('缺失内容');
       if(state.strictQuality && entry.content && entry.content.length < 20) warnings.push('内容过短');
+      if(!Array.isArray(entry.keys) || entry.keys.indexOf(entry.name) < 0) warnings.push('Name不在keys中');
+
+      var hasGrounded = false;
+      if (sourceData && sourceData.mentions) {
+          hasGrounded = sourceData.mentions.some(m => m.grounded);
+      }
+      if (!hasGrounded) warnings.push('无Grounded证据，可能为幻觉');
+
       return warnings;
   }
 
-  async function callAI(promptText) {
-      var apiUrlEl = document.getElementById('apiUrl');
-      var apiKeyEl = document.getElementById('apiKey');
-      var modelEl = document.getElementById('modelSelect');
-      if (!apiUrlEl || !modelEl || !modelEl.value) throw new Error('未配置AI模型');
-      
-      var res = await fetch(apiUrlEl.value.replace(/\/$/, '') + '/chat/completions', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + (apiKeyEl ? apiKeyEl.value.trim() : '')
-          },
-          body: JSON.stringify({
-              model: modelEl.value,
-              messages: [{role: 'user', content: promptText}],
-              temperature: 0.2
-          })
-      });
-      if(!res.ok) {
-          if(res.status === 429) throw new Error('429');
-          throw new Error('HTTP ' + res.status);
-      }
-      var data = await res.json();
-      var text = data.choices[0].message.content;
-      try {
-          var fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-          if(fence) return JSON.parse(fence[1]);
-          var first = text.indexOf('{');
-          var last = text.lastIndexOf('}');
-          if(first >= 0 && last > first) return JSON.parse(text.slice(first, last + 1));
-          return JSON.parse(text);
-      } catch(e) {
-          throw new Error('JSON 解析失败');
-      }
-  }
-
-  async function processQueue() {
-      var pending = state.tasks.filter(t => t.status === 'pending' || t.status === 'failed');
-      var running = state.tasks.filter(t => t.status === 'running').length;
-      
-      while(pending.length > 0 && running < state.concurrency) {
-          var task = pending.shift();
-          task.status = 'running';
-          task.attempts = (task.attempts || 0) + 1;
-          running++;
-          renderQueue();
-          
-          (async function(t) {
-              try {
-                  var prompt = "Extract novel facts in strictly JSON format: { \"facts\": [ { \"category\": \"character/location/faction/item/rule\", \"name\": \"...\", \"aspect\": \"...\", \"content\": \"...\", \"keys\": [\"...\"] } ] }\n\n" + 
-                               "Focus: " + state.focus.join(',') + "\n" +
-                               "Mode: " + state.narrativeMode + "\n" +
-                               "Context: " + state.contextText + "\n" +
-                               "Text:\n" + t.text;
-                  var result = await callAI(prompt);
-                  t.result = result;
-                  t.status = 'success';
-              } catch(e) {
-                  t.status = 'failed';
-                  t.error = e.message;
-                  if(e.message === '429') {
-                      await new Promise(r => setTimeout(r, 2000));
-                  }
-              }
-              saveState();
-              renderQueue();
-              processQueue();
-          })(task);
-      }
-      
-      if(pending.length === 0 && state.tasks.every(t => t.status === 'success' || t.status === 'failed')) {
-          btnGenerateEl.disabled = false;
-          btnGenerateEl.textContent = '合并为世界书草稿';
-          statusTextEl.textContent = '提取完成，点击合并';
-      }
-  }
-
-  btnGenerateEl.addEventListener('click', async function() {
-      syncInputs();
-      var fullText = (importedFileText + '\n' + state.sourceText).trim();
-      if(!fullText) return alert('没有文本');
-      
-      var sig = hashString(fullText + state.chunkSize + state.narrativeMode + state.focus.join(','));
-      if(state.signature !== sig) {
-          state.signature = sig;
-          var chunks = splitText(fullText, state.chunkSize);
-          state.tasks = chunks.map((c, i) => ({
-              chunk_id: i,
-              text: c,
-              status: 'pending',
-              result: null
-          }));
-          state.drafts = [];
-          saveState();
-      }
-      
-      if(state.tasks.some(t => t.status === 'pending' || t.status === 'failed')) {
-          btnGenerateEl.disabled = true;
-          btnGenerateEl.textContent = '处理中...';
-          processQueue();
-      } else {
-          // Merge
-          btnGenerateEl.disabled = true;
-          btnGenerateEl.textContent = '合并中...';
-          var allFacts = [];
-          state.tasks.forEach(t => {
-              if(t.result && t.result.facts) allFacts = allFacts.concat(t.result.facts);
-          });
-          
-          try {
-              var prompt = "Merge and deduplicate these facts into a unified novel-worldbook-draft-v1 JSON: { \"entries\": [ { \"category\": \"...\", \"layer\": \"green/blue\", \"name\": \"...\", \"aspect\": \"...\", \"content\": \"...\", \"keys\": [\"...\"] } ] }\n\n" +
-                           "Facts:\n" + JSON.stringify(allFacts);
-              var result = await callAI(prompt);
-              if(result && result.entries) {
-                  state.drafts = result.entries.map(e => {
-                      e.keys = cleanKeys(e.keys, e.name);
-                      e.layer = e.category === 'rule' ? 'blue' : 'green';
-                      e.enabled = true;
-                      e.strategy = e.category === 'rule' ? 'constant' : 'selective';
-                      e.comment = '[小说' + e.category + '] ' + e.name;
-                      e.warnings = validateDraft(e);
-                      return e;
-                  });
-                  saveState();
-                  renderAll();
-                  statusTextEl.textContent = '生成完毕，请在下方预览';
-              }
-          } catch(e) {
-              alert('合并失败: ' + e.message);
-          }
-          btnGenerateEl.disabled = false;
-          btnGenerateEl.textContent = '重新合并';
-      }
-  });
-
-  btnResetEl.addEventListener('click', function() {
-      state.tasks = [];
-      state.drafts = [];
-      state.signature = '';
-      saveState();
-      renderAll();
-  });
-
   function applyDrafts(filterFn) {
       if (!window.__getWorldbookEntries__ || !window.__setWorldbookEntries__) return alert('环境不支持');
-      
+
       var current = window.__getWorldbookEntries__();
-      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(current));
-      
+      localStorage.setItem('novelWorkshopSnapshotV2', JSON.stringify(current));
+
       var kept = current.filter(e => !String(e.comment || '').startsWith('[小说'));
-      
+
       var checkboxes = document.querySelectorAll('.draft-checkbox');
       var toAdd = [];
       checkboxes.forEach((cb, idx) => {
@@ -1095,7 +2196,7 @@
               }
           }
       });
-      
+
       window.__setWorldbookEntries__(kept.concat(toAdd));
       if(window.dispatchEvent) {
           window.dispatchEvent(new Event('worldbook-changed'));
@@ -1109,12 +2210,12 @@
   btnApplyGreen.addEventListener('click', () => applyDrafts(d => d.layer === 'green' && (!d.warnings || d.warnings.length === 0)));
   btnApplyBlue.addEventListener('click', () => applyDrafts(d => d.layer === 'blue' && (!d.warnings || d.warnings.length === 0)));
   btnApplySelected.addEventListener('click', () => applyDrafts(d => true));
-  
+
   btnUndoApply.addEventListener('click', function() {
-      var snap = localStorage.getItem(SNAPSHOT_KEY);
+      var snap = localStorage.getItem('novelWorkshopSnapshotV2');
       if(snap && window.__setWorldbookEntries__) {
           window.__setWorldbookEntries__(JSON.parse(snap));
-          localStorage.removeItem(SNAPSHOT_KEY);
+          localStorage.removeItem('novelWorkshopSnapshotV2');
           if(window.dispatchEvent) {
               window.dispatchEvent(new Event('worldbook-changed'));
               window.dispatchEvent(new Event('card-builder-data-changed'));
@@ -1126,10 +2227,178 @@
 
   btnCancelDraft.addEventListener('click', function() {
       state.drafts = [];
-      saveState();
+      persistCurrentProject();
       renderAll();
   });
 
-  loadState();
+  async function loadInitialState() {
+      var lastId = localStorage.getItem('novel_last_project');
+      if (lastId) {
+          var saved = await loadStateDB(lastId);
+          if (saved) {
+              if (!saved.schemaVersion || saved.schemaVersion < 3) {
+                  alert('旧版分析结果不兼容，已保留原文，请重新开始新版分析。');
+                  state.fileText = saved.fileText || '';
+                  state.sourceText = saved.sourceText || '';
+                  state.contextText = saved.contextText || '';
+                  state.importedFileName = saved.importedFileName || '';
+                  state.narrativeMode = saved.narrativeMode || state.narrativeMode;
+                  state.chunkSize = saved.chunkSize || state.chunkSize;
+                  state.concurrency = saved.concurrency || state.concurrency;
+                  state.strictQuality = Boolean(saved.strictQuality);
+                  state.focus = Array.isArray(saved.focus) ? saved.focus : state.focus;
+                  state.projectId = generateProjectId();
+                  await persistCurrentProject();
+              } else {
+                  Object.assign(state, saved);
+              }
+              if (!state.resolvingProgress) state.resolvingProgress = { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null };
+              if (!Array.isArray(state.resolvingProgress.nextPackages)) state.resolvingProgress.nextPackages = [];
+              if (!Array.isArray(state.resolvingProgress.unresolvedGroups)) state.resolvingProgress.unresolvedGroups = [];
+              if (!state.draftingProgress) state.draftingProgress = { cursor: 0, entities: [] };
+              if (!Array.isArray(state.draftingProgress.entities)) state.draftingProgress.entities = [];
+              if (['mentions', 'narrative', 'resolving', 'aggregating', 'drafting'].includes(state.phase)) {
+                  state.phase = 'paused';
+                  state.tasks.forEach(t => {
+                      if(t.mentionsStatus === 'running') t.mentionsStatus = 'pending';
+                      if(t.narrativeStatus === 'running') t.narrativeStatus = 'pending';
+                  });
+              }
+              if(state.importedFileName && !state.fileText) {
+                  // File text needs to be re-imported manually because we can't persist large file text easily or it might exceed quota,
+                  // or user refreshed. Wait for them to re-select if needed.
+              }
+
+              var msg = '已恢复项目。';
+              if(state.tasks.length > 0) {
+                  var successCount = state.tasks.filter(t=>t.narrativeStatus==='success').length;
+                  msg = `已恢复进度: 完成 ${successCount}/${state.tasks.length}`;
+              }
+              statusTextEl.textContent = msg;
+              addDiagnosticLog('info', '工作流', '已恢复本地项目', {
+                  reason: state.phase === 'paused' ? '检测到未完成任务，已转为暂停状态' : '恢复缓存状态'
+              });
+              await persistCurrentProject();
+          }
+      }
+      renderAll();
+  }
+
+
+  var isDiagExpanded = null;
+
+  function renderDiagnosticLogs() {
+      var logs = state.diagnosticLogs || [];
+      var badge = document.getElementById('diagBadge');
+      if (badge) {
+          var errCount = logs.filter(l => l.level === 'error').length;
+          var warnCount = logs.filter(l => l.level === 'warning').length;
+          var txt = '';
+          if (errCount > 0) txt += '<span style="color:#f87171;">' + errCount + ' 错误</span> ';
+          if (warnCount > 0) txt += '<span style="color:#fcd34d;">' + warnCount + ' 警告</span> ';
+          if (!txt) txt = logs.length + ' 条';
+          badge.innerHTML = '(' + txt.trim() + ')';
+      }
+
+      var contentEl = document.getElementById('diagnosticContent');
+      var listEl = document.getElementById('diagnosticLogList');
+      var chevronEl = document.getElementById('diagChevron');
+
+      if (!contentEl || !listEl) return;
+
+      if (logs.length === 0) {
+          listEl.innerHTML = '<div style="color:#64748b; font-size:0.7rem; text-align:center; padding:10px;">暂无诊断日志</div>';
+      } else {
+          listEl.innerHTML = logs.map((l, i) => {
+              var color = l.level === 'error' ? '#f87171' : (l.level === 'warning' ? '#fcd34d' : '#94a3b8');
+              var bg = l.level === 'error' ? 'rgba(248,113,113,0.1)' : (l.level === 'warning' ? 'rgba(252,211,77,0.1)' : 'transparent');
+              var timeStr = new Date(l.timestamp).toLocaleTimeString();
+
+              var detailsHtml = '';
+              if (l.details) {
+                  var detailKeys = Object.keys(l.details).filter(k => k !== 'response_excerpt');
+                  if (detailKeys.length > 0) {
+                      detailsHtml += '<div style="margin-top:4px; font-size:0.65rem; color:#64748b; display:flex; flex-wrap:wrap; gap:6px;">';
+                      detailKeys.forEach(k => {
+                          detailsHtml += '<span style="background:rgba(15,23,42,0.5); padding:2px 4px; border-radius:4px;">' + escapeHtml(k) + ': ' + escapeHtml(l.details[k]) + '</span>';
+                      });
+                      detailsHtml += '</div>';
+                  }
+                  if (l.details.response_excerpt) {
+                      detailsHtml += '<details style="margin-top:4px;"><summary style="font-size:0.65rem; color:#64748b; cursor:pointer;">展开响应片段</summary><pre style="margin:4px 0 0 0; padding:6px; background:rgba(2,6,23,0.6); border-radius:4px; font-size:0.6rem; color:#cbd5e1; white-space:pre-wrap; word-break:break-all; max-height:100px; overflow-y:auto;">' + escapeHtml(l.details.response_excerpt) + '</pre></details>';
+                  }
+              }
+
+              return '<div style="padding:8px; border-radius:6px; background:' + bg + '; border-left:2px solid ' + color + ';">' +
+                     '<div style="display:flex; justify-content:space-between; margin-bottom:4px;">' +
+                     '<span style="font-size:0.65rem; color:#64748b;">' + timeStr + ' [' + escapeHtml(l.stage) + ']</span>' +
+                     '<span style="font-size:0.65rem; font-weight:bold; color:' + color + ';">' + l.level.toUpperCase() + '</span>' +
+                     '</div>' +
+                     '<div style="font-size:0.75rem; color:#e2e8f0; word-break:break-word;">' + escapeHtml(l.message) + '</div>' +
+                     detailsHtml +
+                     '</div>';
+          }).join('');
+      }
+
+      if (isDiagExpanded || (logs.some(l => l.level === 'error') && isDiagExpanded === null)) {
+          contentEl.style.display = 'block';
+          if(chevronEl) chevronEl.textContent = '▲';
+          isDiagExpanded = true;
+      } else {
+          contentEl.style.display = 'none';
+          if(chevronEl) chevronEl.textContent = '▼';
+          if (isDiagExpanded === null) isDiagExpanded = false;
+      }
+  }
+
+  document.addEventListener('click', function(e) {
+      if (e.target.closest('#btnToggleDiagnostics')) {
+          isDiagExpanded = !isDiagExpanded;
+          renderDiagnosticLogs();
+      }
+      if (e.target.closest('#btnClearDiag')) {
+          state.diagnosticLogs = [];
+          persistCurrentProject();
+          renderDiagnosticLogs();
+      }
+      if (e.target.closest('#btnCopyDiag')) {
+          if (!state.diagnosticLogs || state.diagnosticLogs.length === 0) return alert('没有日志可复制');
+          if (!navigator.clipboard || !navigator.clipboard.writeText) return alert('当前浏览器不支持剪贴板写入，请使用“导出 JSON”');
+          navigator.clipboard.writeText(JSON.stringify(getSanitizedDiagnosticLogs(), null, 2))
+              .then(() => { var btn = document.getElementById('btnCopyDiag'); var old = btn.textContent; btn.textContent = '已复制'; setTimeout(()=>btn.textContent=old, 2000); })
+              .catch(err => alert('复制失败: ' + err));
+      }
+      if (e.target.closest('#btnExportDiag')) {
+          if (!state.diagnosticLogs || state.diagnosticLogs.length === 0) return alert('没有日志可导出');
+          var exportData = {
+              schemaVersion: state.schemaVersion,
+              exportedAt: new Date().toISOString(),
+              projectId: state.projectId,
+              config: {
+                  narrativeMode: state.narrativeMode,
+                  chunkSize: state.chunkSize,
+                  concurrency: state.concurrency,
+                  focus: state.focus,
+                  strictQuality: state.strictQuality,
+                  model: document.getElementById('modelSelect') ? document.getElementById('modelSelect').value : 'unknown',
+                  apiHost: document.getElementById('apiUrl') ? (function(){ try{ return new URL(document.getElementById('apiUrl').value).host; } catch(e){ return 'unknown'; } })() : 'unknown'
+              },
+              logs: getSanitizedDiagnosticLogs()
+          };
+          var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          var pad = (n) => String(n).padStart(2, '0');
+          var d = new Date();
+          a.download = 'novel-diagnostics-' + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + '.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+      }
+  });
+
+  loadInitialState();
 })();
 </script>
