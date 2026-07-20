@@ -1,6 +1,6 @@
 ---
 ---
-<div class="panel sb-panel novel-workshop-panel">
+<div class="panel sb-panel novel-workshop-panel novel-disabled">
   <div class="novel-hero">
     <div class="novel-hero-badge">NOVEL LORE WORKSHOP V2</div>
     <div class="novel-hero-main">
@@ -8,6 +8,9 @@
         <h2>📚 小说转角色卡/世界书工坊</h2>
         <p>基于新版 facts-only schema，并行抽取高质量设定，并在应用前提供草稿预览和严格校验。</p>
       </div>
+    </div>
+    <div class="novel-maintenance-banner" role="alert">
+      小说转换模块维护中，暂不可用。本地缓存不会被删除。
     </div>
     <div class="novel-stats" id="novelStatsBar">
       <span class="novel-stat-chip">等待导入文本</span>
@@ -682,6 +685,27 @@
       min-width: 0;
     }
   }
+
+  /* 维护状态样式 */
+  .novel-disabled .novel-import-dock,
+  .novel-disabled .novel-grid,
+  .novel-disabled .novel-stats,
+  .novel-disabled #novelDraftPreview {
+    display: none !important;
+  }
+
+  .novel-maintenance-banner {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #fcd34d;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 </style>
 
 <script is:inline>
@@ -703,6 +727,7 @@
   var state = {
     schemaVersion: 3,
     projectId: '',
+    analysisSignature: '',
     sourceText: '',
     contextText: '',
     narrativeMode: 'story',
@@ -715,6 +740,7 @@
     diagnosticLogs: [],
     importedFileName: '',
     importedFileHash: '',
+    importedFileLength: 0,
     phase: 'idle', // idle, mentions, narrative, resolving, aggregating, drafting, paused, completed, error
     fileText: '',
     stats: {},
@@ -761,6 +787,7 @@
   var btnCancelDraft = document.getElementById('btnCancelDraft');
 
   var abortController = null;
+  var persistInputTimer = null;
 
   function initDB() {
       if(dbPromise) return dbPromise;
@@ -859,15 +886,38 @@
   function generateProjectId() {
       var fullText = ((state.fileText || '') + '\n' + state.sourceText).trim();
       var focusStr = state.focus.slice().sort().join(',');
-      return hashString(fullText + state.contextText + state.chunkSize + state.narrativeMode + state.strictQuality + focusStr);
+      var configText = [
+          (state.contextText || '').length,
+          hashString(state.contextText || ''),
+          fnv1aHash(state.contextText || ''),
+          state.chunkSize,
+          state.narrativeMode,
+          state.strictQuality ? 'strict' : 'standard',
+          focusStr
+      ].join('|');
+      return [
+          fullText.length,
+          hashString(fullText),
+          fnv1aHash(fullText),
+          hashString(configText),
+          fnv1aHash(configText)
+      ].join('-');
   }
-  function hashString(str) {
-    var hash = 0;
+  function hashString(str, seed) {
+    var hash = seed || 0;
     for (var i = 0; i < str.length; i++) {
       hash = ((hash << 5) - hash) + str.charCodeAt(i);
       hash |= 0;
     }
     return String(hash >>> 0);
+  }
+  function fnv1aHash(str) {
+    var hash = 0x811c9dc5;
+    for (var i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
   }
 
   function renderFocusTags() {
@@ -986,6 +1036,28 @@
       estimateTextEl.textContent = `字数约 ${(len/10000).toFixed(1)}万字 | 双轮初读 ${estChunks*2} 次，消歧约 ${resolvingCalls} 次，草稿 ${draftingCalls} 次 | 估时 ${timeStr} (基于每次请求速度)`;
   }
 
+  var renderQueueInterval = null;
+
+  function startQueueRenderInterval() {
+      if (!renderQueueInterval) {
+          renderQueueInterval = setInterval(() => {
+              var hasRunning = state.tasks.some(t => t.mentionsStatus === 'running' || t.narrativeStatus === 'running');
+              if (hasRunning) {
+                  renderQueue();
+              } else {
+                  stopQueueRenderInterval();
+              }
+          }, 1000);
+      }
+  }
+
+  function stopQueueRenderInterval() {
+      if (renderQueueInterval) {
+          clearInterval(renderQueueInterval);
+          renderQueueInterval = null;
+      }
+  }
+
   function renderQueue() {
       if(state.tasks.length === 0) {
           taskQueueEl.style.display = 'none';
@@ -997,15 +1069,26 @@
       var failed = state.tasks.filter(t => t.mentionsStatus === 'failed' || t.narrativeStatus === 'failed').length;
       var skipped = state.tasks.filter(t => t.mentionsStatus === 'skipped' || t.narrativeStatus === 'skipped').length;
       var skipText = skipped > 0 ? ` | 跳过: <span style="color:#fcd34d">${skipped}</span>` : '';
-      queueProgressEl.innerHTML = `总数: ${state.tasks.length} | 成功: <span style="color:#34d399">${success}</span> | 失败: <span style="color:#f87171">${failed}</span>${skipText} | 进度: ${done}/${state.tasks.length}`;
+
+      var mentionsDone = state.tasks.filter(t => t.mentionsStatus === 'success').length;
+      var narrativeDone = state.tasks.filter(t => t.narrativeStatus === 'success').length;
+      var running = state.tasks.filter(t => t.mentionsStatus === 'running' || t.narrativeStatus === 'running').length;
+
+      queueProgressEl.innerHTML = `第一轮提及完成 ${mentionsDone}/${state.tasks.length} | 第二轮叙事完成 ${narrativeDone}/${state.tasks.length} | 运行 ${running} | 失败 <span style="color:#f87171">${failed}</span>${skipText}`;
 
       queueListEl.innerHTML = state.tasks.map(t => {
           var title = t.meta ? String(t.meta.chapter_title || '') + ` (${t.meta.part_index}/${t.meta.part_total})` : 'Chunk ' + t.chunk_id;
           var statusText = '';
    if (t.narrativeStatus === 'success') statusText = '叙事完成';
-   else if (t.narrativeStatus === 'running') statusText = '叙事中...';
+   else if (t.narrativeStatus === 'running') {
+       var duration = t.startedAt ? Math.floor((Date.now() - t.startedAt) / 1000) : 0;
+       statusText = `叙事中... ${duration}秒`;
+   }
    else if (t.mentionsStatus === 'success') statusText = '提及完成';
-   else if (t.mentionsStatus === 'running') statusText = '提集中...';
+   else if (t.mentionsStatus === 'running') {
+       var duration = t.startedAt ? Math.floor((Date.now() - t.startedAt) / 1000) : 0;
+       statusText = `提集中... ${duration}秒`;
+   }
    else if (t.mentionsStatus === 'failed' || t.narrativeStatus === 'failed') {
        var err = t.mentionsStatus === 'failed' ? (t.mentionsError || '提取失败') : (t.narrativeError || '叙事失败');
        var att = t.mentionsStatus === 'failed' ? t.mentionsAttempts : t.narrativeAttempts;
@@ -1147,17 +1230,49 @@
       }
 
       var isIdle = state.phase === 'idle' || state.phase === 'completed';
+      var canRestoreMissingFile = (state.phase === 'paused' || state.phase === 'error') && state.importedFileName && !state.fileText;
       sourceTextEl.disabled = !isIdle;
       contextTextEl.disabled = !isIdle;
       narrativeModeEl.disabled = !isIdle;
       chunkSizeEl.disabled = !isIdle;
       strictQualityEl.disabled = !isIdle;
-      sourceFileEl.disabled = !isIdle;
+      sourceFileEl.disabled = !(isIdle || canRestoreMissingFile);
       btnClearFileEl.disabled = !isIdle;
   }
 
+  function invalidateAnalysisForInput(newSignature, reason, force) {
+      if (!force && state.analysisSignature === newSignature) return;
+
+      addDiagnosticLog('info', '状态重置', '输入或配置变化，旧分析已失效', { reason: reason });
+
+      state.phase = 'idle';
+      state.analysisSignature = '';
+      state.projectId = newSignature;
+
+      state.tasks = [];
+      state.drafts = [];
+      state.canonicalEntities = [];
+      state.aggregatedData = {};
+      state.unresolvedGroups = [];
+      state.unresolvedData = {};
+      state.resolvingProgress = { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null };
+      state.draftingProgress = { cursor: 0, entities: [] };
+
+      statusTextEl.textContent = '输入或配置已变化，等待重新开始分析。';
+      updateEstimates();
+      renderAll();
+      scheduleInputPersist();
+  }
+
+  function scheduleInputPersist() {
+      if (persistInputTimer) clearTimeout(persistInputTimer);
+      persistInputTimer = setTimeout(() => {
+          persistInputTimer = null;
+          persistCurrentProject().catch(err => console.error('保存输入状态失败', err));
+      }, 350);
+  }
+
   function syncInputs() {
-      if(state.phase !== 'idle' && state.phase !== 'completed') return;
       state.sourceText = sourceTextEl.value;
       state.contextText = contextTextEl.value;
       state.narrativeMode = narrativeModeEl.value;
@@ -1165,13 +1280,24 @@
       state.concurrency = Math.max(1, parseInt(concurrencyEl.value) || 3);
       state.strictQuality = strictQualityEl.checked;
 
-      var fullText = (state.fileText || '') + state.sourceText;
-      var newId = generateProjectId();
-      if(state.projectId !== newId && state.phase === 'idle') {
-          state.projectId = newId;
+      if ((state.phase === 'paused' || state.phase === 'error') && state.importedFileName && !state.fileText && state.tasks.length > 0) {
+          updateEstimates();
+          scheduleInputPersist();
+          return;
+      }
+
+      var newSignature = generateProjectId();
+
+      if (state.analysisSignature && newSignature !== state.analysisSignature) {
+          if (state.phase === 'completed' || state.tasks.length > 0) {
+              invalidateAnalysisForInput(newSignature, 'User input changed');
+          }
+      } else if (state.phase === 'idle') {
+          state.projectId = newSignature;
       }
 
       updateEstimates();
+      scheduleInputPersist();
   }
 
   [sourceTextEl, contextTextEl, narrativeModeEl, chunkSizeEl, concurrencyEl, strictQualityEl].forEach(el => {
@@ -1180,101 +1306,239 @@
   });
 
   sourceFileEl.addEventListener('change', function(e) {
-      if(state.phase !== 'idle' && state.phase !== 'completed') return;
+      var canRestoreMissingFile = (state.phase === 'paused' || state.phase === 'error') && state.importedFileName && !state.fileText;
+      if(state.phase !== 'idle' && state.phase !== 'completed' && !canRestoreMissingFile) return;
       var f = e.target.files[0];
       if(!f) return;
       var reader = new FileReader();
       reader.onload = async function(ev) {
-          state.fileText = ev.target.result;
-          state.importedFileName = f.name;
-          state.importedFileHash = hashString(state.fileText);
-          syncInputs();
-          if (!state.projectId) {
-              var fullText = ((state.fileText || '') + '\n' + state.sourceText).trim();
-              state.projectId = generateProjectId();
+          var newFileText = ev.target.result;
+          var newFileHash = hashString(newFileText);
+          var candidateFullText = (newFileText + '\n' + state.sourceText).trim();
+          var existingTaskText = (state.tasks || []).map(task => task.text || '').join('');
+          var tasksMatchCandidate = (state.tasks || []).length > 0 && existingTaskText === candidateFullText;
+          var sameFileContent = state.fileText ? state.fileText === newFileText : tasksMatchCandidate;
+
+          if (!sameFileContent || !tasksMatchCandidate) {
+              state.fileText = newFileText;
+              state.importedFileName = f.name;
+              state.importedFileHash = newFileHash;
+              state.importedFileLength = newFileText.length;
+
+              var newSignature = generateProjectId();
+              invalidateAnalysisForInput(newSignature, 'Imported new file', true);
+
+              var fullText = candidateFullText;
+              if (fullText) {
+                  try {
+                      state.tasks = splitText(fullText, state.chunkSize).map((c, i) => ({
+                          chunk_id: i + 1,
+                          text: c.text,
+                          meta: {
+                              chapter_title: c.chapter_title,
+                              chapter_index: c.chapter_index,
+                              part_index: c.part_index,
+                              part_total: c.part_total,
+                              start_offset: c.start_offset,
+                              end_offset: c.end_offset,
+                              text_hash: c.text_hash
+                          },
+                          mentionsStatus: 'pending', mentionsAttempts: 0, mentionsResult: null, mentionsError: null,
+                          narrativeStatus: 'pending', narrativeAttempts: 0, narrativeResult: null, narrativeError: null
+                      }));
+                      validateChunks(state.tasks.map(t => ({text: t.text, start_offset: t.meta.start_offset, end_offset: t.meta.end_offset})), fullText, state.chunkSize);
+                      state.analysisSignature = newSignature;
+                      statusTextEl.textContent = `已准备 ${state.tasks.length} 个切片，等待开始分析。`;
+                      addDiagnosticLog('info', '文件导入', `成功切分为 ${state.tasks.length} 个片段`);
+                  } catch (err) {
+                      state.tasks = [];
+                      statusTextEl.textContent = '文件切片失败: ' + err.message;
+                      addDiagnosticLog('error', '文件导入', '切片验证失败', { error: err.message });
+                  }
+              }
+          } else {
+              state.fileText = newFileText;
+              state.importedFileName = f.name;
+              state.importedFileHash = newFileHash;
+              state.importedFileLength = newFileText.length;
+              var restoredSignature = generateProjectId();
+              state.projectId = restoredSignature;
+              state.analysisSignature = restoredSignature;
+              if (state.phase === 'paused' || state.phase === 'error') {
+                  statusTextEl.textContent = `已补回原文件并保留 ${state.tasks.length} 个切片，可继续分析。`;
+                  addDiagnosticLog('info', '文件导入', '原文件校验一致，已保留断点进度');
+              } else if (state.phase === 'completed' && state.tasks.length > 0) {
+                  statusTextEl.textContent = '检测到相同文本，已保留此前完成的分析结果；如需重跑请重置项目。';
+                  addDiagnosticLog('info', '文件导入', '检测到相同文本，沿用本地分析缓存');
+              } else if (state.tasks.length > 0) {
+                  statusTextEl.textContent = `检测到相同文本，已保留 ${state.tasks.length} 个现有切片。`;
+              }
           }
+
+          sourceFileEl.value = ''; // Reset input so same file can be selected again
           await persistCurrentProject();
           renderAll();
       };
       reader.readAsText(f);
   });
 
-  btnClearFileEl.addEventListener('click', function() {
+  btnClearFileEl.addEventListener('click', async function() {
       if(state.phase !== 'idle' && state.phase !== 'completed') return;
       state.fileText = '';
       state.importedFileName = '';
       state.importedFileHash = '';
+      state.importedFileLength = 0;
       sourceFileEl.value = '';
-      syncInputs();
+      var newSignature = generateProjectId();
+      invalidateAnalysisForInput(newSignature, 'Cleared file');
+      statusTextEl.textContent = '已清除导入文件，等待重新开始分析。';
+      await persistCurrentProject();
       renderAll();
   });
 
   function splitText(text, size) {
       var chunks = [];
-      var parts = text.split(/(?=(?:^|\n)\s*(?:第[^\n]{1,20}[章节卷回部篇]|chapter\s+\d+))/i);
-      var currentText = "";
-      var currentChapterTitle = "未命名章节";
-      var chapterIndex = 0;
-      var offset = 0;
+      if (!text) return chunks;
 
-      function pushChunk(content, title, cIdx, pIdx, pTotal) {
-          if (!content.trim()) return;
-          chunks.push({
-              text: content,
-              chapter_title: title,
-              chapter_index: cIdx,
-              part_index: pIdx,
-              part_total: pTotal,
-              start_offset: offset,
-              end_offset: offset + content.length,
-              text_hash: hashString(content)
+      var chapterRegex = /^[\uFEFF \t\u3000]*(?:#{1,6}[\uFEFF \t\u3000]*)?((?:第[^\r\n]{1,30}[章节卷回部篇]|Chapter[\uFEFF \t\u3000]+\d+|Chap\.?[\uFEFF \t\u3000]+\d+)[^\r\n]*?)[\uFEFF \t\u3000]*$/gim;
+
+      var chapterIndex = 0;
+      var currentChapterTitle = "前言/未命名章节";
+
+      var chapterMatches = [];
+      var match;
+      var regex = new RegExp(chapterRegex.source, 'gim');
+      while ((match = regex.exec(text)) !== null) {
+          chapterMatches.push({
+              index: match.index,
+              length: match[0].length,
+              title: match[1].trim()
           });
-          offset += content.length;
       }
 
-      parts.forEach(p => {
-          if (!p) return;
-          var match = p.match(/^\s*(第[^\n]{1,20}[章节卷回部篇]|chapter\s+\d+[^\n]*)/i);
-          var title = match ? match[1].trim() : currentChapterTitle;
-          if (match) chapterIndex++;
+      if (chapterMatches.length === 0) {
+          chapterMatches.push({ index: text.length, length: 0, title: "前言/未命名章节" });
+      }
 
-          if (p.length > size) {
-              if (currentText) { pushChunk(currentText, currentChapterTitle, chapterIndex - (match ? 1 : 0), 1, 1); currentText = ""; }
-              var paragraphs = p.split(/(?=\n\s*\n)/);
-              var paraCurrent = "";
-              var subChunks = [];
-              paragraphs.forEach(para => {
-                  if (para.length > size) {
-                      if (paraCurrent) { subChunks.push(paraCurrent); paraCurrent = ""; }
-                      for (var i = 0; i < para.length; i += size) {
-                          subChunks.push(para.substring(i, i + size));
-                      }
-                  } else {
-                      if (paraCurrent.length + para.length > size) {
-                          subChunks.push(paraCurrent);
-                          paraCurrent = para;
-                      } else {
-                          paraCurrent += para;
-                      }
-                  }
-              });
-              if (paraCurrent) subChunks.push(paraCurrent);
-              subChunks.forEach((sc, idx) => pushChunk(sc, title, chapterIndex, idx + 1, subChunks.length));
-              currentChapterTitle = title;
-          } else {
-              if (currentText.length + p.length > size) {
-                  pushChunk(currentText, currentChapterTitle, chapterIndex - (match ? 1 : 0), 1, 1);
-                  currentText = p;
-                  currentChapterTitle = title;
-              } else {
-                  currentText += p;
-                  if (match) currentChapterTitle = title;
+      var currentChapterStart = 0;
+
+      for (var i = 0; i <= chapterMatches.length; i++) {
+          var isLast = i === chapterMatches.length;
+          var nextChapterStart = isLast ? text.length : chapterMatches[i].index;
+
+          if (nextChapterStart > currentChapterStart) {
+              var chapterText = text.slice(currentChapterStart, nextChapterStart);
+              if (chapterText) {
+                  var chapterChunks = splitChapter(chapterText, size, currentChapterStart);
+                  var partTotal = chapterChunks.length;
+
+                  chapterChunks.forEach((chunk, idx) => {
+                      chunks.push({
+                          text: chunk.text,
+                          chapter_title: currentChapterTitle,
+                          chapter_index: chapterIndex,
+                          part_index: idx + 1,
+                          part_total: partTotal,
+                          start_offset: chunk.start_offset,
+                          end_offset: chunk.end_offset,
+                          text_hash: hashString(chunk.text)
+                      });
+                  });
               }
           }
-      });
-      if (currentText) pushChunk(currentText, currentChapterTitle, chapterIndex, 1, 1);
+
+          if (!isLast) {
+              currentChapterTitle = chapterMatches[i].title;
+              chapterIndex++;
+              currentChapterStart = chapterMatches[i].index;
+          }
+      }
 
       return chunks;
+  }
+
+  function splitChapter(text, size, baseOffset) {
+      var chunks = [];
+      var offset = 0;
+
+      while (offset < text.length) {
+          var remaining = text.length - offset;
+          if (remaining <= size) {
+              chunks.push({
+                  text: text.slice(offset),
+                  start_offset: baseOffset + offset,
+                  end_offset: baseOffset + text.length
+              });
+              break;
+          }
+
+          var targetSize = size;
+          var minSize = Math.floor(size * 0.6);
+          var searchArea = text.slice(offset + minSize, offset + targetSize);
+
+          var breakPoint = -1;
+
+          var doubleNewline = searchArea.lastIndexOf('\n\n');
+          if (doubleNewline !== -1) {
+              breakPoint = minSize + doubleNewline + 2;
+          } else {
+              var singleNewline = searchArea.lastIndexOf('\n');
+              if (singleNewline !== -1) {
+                  breakPoint = minSize + singleNewline + 1;
+              } else {
+                  var punctuation = Math.max(
+                      searchArea.lastIndexOf('。'),
+                      searchArea.lastIndexOf('！'),
+                      searchArea.lastIndexOf('？'),
+                      searchArea.lastIndexOf('”')
+                  );
+                  if (punctuation !== -1) {
+                      breakPoint = minSize + punctuation + 1;
+                  }
+              }
+          }
+
+          if (breakPoint === -1) {
+              breakPoint = targetSize;
+          }
+
+          chunks.push({
+              text: text.slice(offset, offset + breakPoint),
+              start_offset: baseOffset + offset,
+              end_offset: baseOffset + offset + breakPoint
+          });
+
+          offset += breakPoint;
+      }
+
+      return chunks;
+  }
+
+  function validateChunks(chunks, original, maxSize) {
+      if (!chunks || chunks.length === 0) {
+          if (original.length > 0) throw new Error("Chunks are empty but original text is not.");
+          return true;
+      }
+
+      var reconstructed = "";
+      var expectedOffset = 0;
+
+      for (var i = 0; i < chunks.length; i++) {
+          var chunk = chunks[i];
+          if (!chunk.text) throw new Error(`Chunk ${i} is empty.`);
+          if (maxSize && chunk.text.length > maxSize) throw new Error(`Chunk ${i} exceeds configured size ${maxSize}.`);
+          if (chunk.start_offset !== expectedOffset) throw new Error(`Chunk ${i} start_offset mismatch. Expected ${expectedOffset}, got ${chunk.start_offset}`);
+          if (chunk.end_offset !== chunk.start_offset + chunk.text.length) throw new Error(`Chunk ${i} end_offset mismatch.`);
+          if (chunk.text !== original.slice(chunk.start_offset, chunk.end_offset)) throw new Error(`Chunk ${i} text slice mismatch.`);
+
+          reconstructed += chunk.text;
+          expectedOffset = chunk.end_offset;
+      }
+
+      if (expectedOffset !== original.length) throw new Error(`Total length mismatch. Expected ${original.length}, got ${expectedOffset}`);
+      if (reconstructed !== original) throw new Error("Reconstructed text does not match original.");
+
+      return true;
   }
 
   function cleanKeys(keys, name) {
@@ -1290,6 +1554,8 @@
       return res;
   }
 
+  var AI_REQUEST_TIMEOUT_MS = 120000;
+
   async function callAI(promptText, signal) {
       var apiUrlEl = document.getElementById('apiUrl');
       var apiKeyEl = document.getElementById('apiKey');
@@ -1300,10 +1566,26 @@
       try { apiHost = new URL(apiUrlEl.value).host; } catch(e) { apiHost = 'invalid-url'; }
       var modelName = modelEl.value;
 
+      var internalController = new AbortController();
+      var timedOut = false;
+      var externallyAborted = Boolean(signal && signal.aborted);
+      var timeoutId = setTimeout(() => {
+          timedOut = true;
+          internalController.abort();
+      }, AI_REQUEST_TIMEOUT_MS);
+
+      var onExternalAbort = () => {
+          externallyAborted = true;
+          internalController.abort();
+      };
+      if (signal) {
+          if (signal.aborted) internalController.abort();
+          signal.addEventListener('abort', onExternalAbort);
+      }
+
       var startTime = Date.now();
-      var res;
       try {
-          res = await fetch(apiUrlEl.value.replace(/\/$/, '') + '/chat/completions', {
+          var res = await fetch(apiUrlEl.value.replace(/\/$/, '') + '/chat/completions', {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
@@ -1314,68 +1596,89 @@
                   messages: [{role: 'user', content: promptText}],
                   temperature: 0.2
               }),
-              signal: signal
+              signal: internalController.signal
           });
-      } catch (err) {
+          var responseText = await res.text();
           var duration = Date.now() - startTime;
-          var customErr = new Error(err.name === 'AbortError' ? 'AbortError' : '网络请求失败: ' + err.message);
-          customErr.name = err.name;
-          customErr.durationMs = duration;
-          customErr.model = modelName;
-          customErr.apiHost = apiHost;
-          throw customErr;
-      }
 
-      var duration = Date.now() - startTime;
+          if(!res.ok) {
+              var httpErr = new Error(res.status === 429 ? '429' : 'HTTP ' + res.status);
+              httpErr.name = 'AIResponseError';
+              httpErr.httpStatus = res.status;
+              httpErr.responseExcerpt = desensitizeExcerpt(responseText);
+              httpErr.durationMs = duration;
+              httpErr.model = modelName;
+              httpErr.apiHost = apiHost;
+              httpErr.isDetailedAIError = true;
+              throw httpErr;
+          }
 
-      if(!res.ok) {
-          var errText = '';
-          try { errText = await res.text(); } catch(e) {}
-          duration = Date.now() - startTime;
-          var customErr = new Error(res.status === 429 ? '429' : 'HTTP ' + res.status);
-          customErr.httpStatus = res.status;
-          customErr.responseExcerpt = desensitizeExcerpt(errText);
-          customErr.durationMs = duration;
-          customErr.model = modelName;
-          customErr.apiHost = apiHost;
-          throw customErr;
-      }
-      var responseText = '';
-      var data;
-      try {
-          responseText = await res.text();
-          data = JSON.parse(responseText);
-      } catch(e) {
-          var envelopeErr = new Error('API响应不是有效JSON');
-          envelopeErr.responseExcerpt = desensitizeExcerpt(responseText);
-          envelopeErr.durationMs = Date.now() - startTime;
-          envelopeErr.model = modelName;
-          envelopeErr.apiHost = apiHost;
-          throw envelopeErr;
-      }
-      var text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
-      if (typeof text !== 'string') {
-          var shapeErr = new Error('API响应缺少 choices[0].message.content');
-          shapeErr.responseExcerpt = desensitizeExcerpt(responseText);
-          shapeErr.durationMs = Date.now() - startTime;
-          shapeErr.model = modelName;
-          shapeErr.apiHost = apiHost;
-          throw shapeErr;
-      }
-      try {
-          var fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-          if(fence) return { data: JSON.parse(fence[1]), duration, model: modelName, apiHost: apiHost };
-          var first = text.indexOf('{');
-          var last = text.lastIndexOf('}');
-          if(first >= 0 && last > first) return { data: JSON.parse(text.slice(first, last + 1)), duration, model: modelName, apiHost: apiHost };
-          return { data: JSON.parse(text), duration, model: modelName, apiHost: apiHost };
-      } catch(e) {
-          var customErr = new Error('JSON 解析失败');
-          customErr.responseExcerpt = desensitizeExcerpt(text);
-          customErr.durationMs = duration;
-          customErr.model = modelName;
-          customErr.apiHost = apiHost;
-          throw customErr;
+          var data;
+          try {
+              data = JSON.parse(responseText);
+          } catch(e) {
+              var envelopeErr = new Error('API响应不是有效JSON');
+              envelopeErr.name = 'AIResponseError';
+              envelopeErr.responseExcerpt = desensitizeExcerpt(responseText);
+              envelopeErr.durationMs = duration;
+              envelopeErr.model = modelName;
+              envelopeErr.apiHost = apiHost;
+              envelopeErr.isDetailedAIError = true;
+              throw envelopeErr;
+          }
+
+          var text = data && data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+          if (typeof text !== 'string') {
+              var shapeErr = new Error('API响应缺少 choices[0].message.content');
+              shapeErr.name = 'AIResponseError';
+              shapeErr.responseExcerpt = desensitizeExcerpt(responseText);
+              shapeErr.durationMs = duration;
+              shapeErr.model = modelName;
+              shapeErr.apiHost = apiHost;
+              shapeErr.isDetailedAIError = true;
+              throw shapeErr;
+          }
+
+          try {
+              var fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+              var parsed;
+              if(fence) parsed = JSON.parse(fence[1]);
+              else {
+                  var first = text.indexOf('{');
+                  var last = text.lastIndexOf('}');
+                  parsed = first >= 0 && last > first ? JSON.parse(text.slice(first, last + 1)) : JSON.parse(text);
+              }
+              return { data: parsed, duration: Date.now() - startTime, model: modelName, apiHost: apiHost };
+          } catch(e) {
+              var parseErr = new Error('JSON 解析失败');
+              parseErr.name = 'AIResponseError';
+              parseErr.responseExcerpt = desensitizeExcerpt(text);
+              parseErr.durationMs = Date.now() - startTime;
+              parseErr.model = modelName;
+              parseErr.apiHost = apiHost;
+              parseErr.isDetailedAIError = true;
+              throw parseErr;
+          }
+      } catch (err) {
+          if (err.isDetailedAIError) throw err;
+          var requestErr;
+          if (timedOut) {
+              requestErr = new Error('请求超时（120秒）');
+              requestErr.name = 'TimeoutError';
+          } else if (externallyAborted || (signal && signal.aborted)) {
+              requestErr = new Error('AbortError');
+              requestErr.name = 'AbortError';
+          } else {
+              requestErr = new Error('网络请求失败: ' + (err.message || '未知错误'));
+              requestErr.name = err.name || 'NetworkError';
+          }
+          requestErr.durationMs = Date.now() - startTime;
+          requestErr.model = modelName;
+          requestErr.apiHost = apiHost;
+          throw requestErr;
+      } finally {
+          clearTimeout(timeoutId);
+          if (signal) signal.removeEventListener('abort', onExternalAbort);
       }
   }
 
@@ -1394,12 +1697,13 @@
       var keepFile = state.fileText;
       var keepName = state.importedFileName;
       var keepHash = state.importedFileHash;
+      var keepLength = state.importedFileLength || (keepFile ? keepFile.length : 0);
       state = {
           schemaVersion: 3,
-          projectId: '', sourceText: state.sourceText, contextText: state.contextText,
+          projectId: '', analysisSignature: '', sourceText: state.sourceText, contextText: state.contextText,
           narrativeMode: state.narrativeMode, chunkSize: state.chunkSize, concurrency: state.concurrency,
           strictQuality: state.strictQuality, focus: state.focus, tasks: [], drafts: [], diagnosticLogs: [],
-          importedFileName: keepName, importedFileHash: keepHash, phase: 'idle',
+          importedFileName: keepName, importedFileHash: keepHash, importedFileLength: keepLength, phase: 'idle',
           resolvingProgress: { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null },
           draftingProgress: { cursor: 0, entities: [] },
           canonicalEntities: [],
@@ -1417,6 +1721,13 @@
   }
 
   async function startWorkflow() {
+      if (state.importedFileName && !state.fileText) {
+          statusTextEl.textContent = '原文件内容缺失，请先重新选择同一文件以恢复断点。';
+          addDiagnosticLog('warning', '工作流', '原文件内容缺失，已阻止继续任务');
+          await persistCurrentProject();
+          renderAll();
+          return;
+      }
       syncInputs();
       abortController = new AbortController();
 
@@ -1425,27 +1736,37 @@
           if(!fullText) return alert('没有文本');
 
           var sig = generateProjectId();
-          if(state.projectId !== sig) {
+          if(state.analysisSignature !== sig || state.tasks.length === 0) {
               state.projectId = sig;
-              var chunks = splitText(fullText, state.chunkSize);
-              state.tasks = chunks.map((c, i) => ({
-                  chunk_id: i,
-                  meta: {
-                      chapter_title: c.chapter_title, chapter_index: c.chapter_index,
-                      part_index: c.part_index, part_total: c.part_total,
-                      start_offset: c.start_offset, end_offset: c.end_offset, text_hash: c.text_hash
-                  },
-                   text: c.text,
-                   mentionsStatus: 'pending', mentionsAttempts: 0, mentionsResult: null, mentionsError: null,
-                   narrativeStatus: 'pending', narrativeAttempts: 0, narrativeResult: null, narrativeError: null
-               }));
-               state.drafts = [];
-               state.resolvingProgress = { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null };
-               state.draftingProgress = { cursor: 0, entities: [] };
-               state.canonicalEntities = [];
-               state.aggregatedData = {};
-               state.unresolvedGroups = [];
-               state.unresolvedData = {};
+              try {
+                  var chunks = splitText(fullText, state.chunkSize);
+                  state.tasks = chunks.map((c, i) => ({
+                      chunk_id: i + 1,
+                      meta: {
+                          chapter_title: c.chapter_title, chapter_index: c.chapter_index,
+                          part_index: c.part_index, part_total: c.part_total,
+                          start_offset: c.start_offset, end_offset: c.end_offset, text_hash: c.text_hash
+                      },
+                       text: c.text,
+                       mentionsStatus: 'pending', mentionsAttempts: 0, mentionsResult: null, mentionsError: null,
+                       narrativeStatus: 'pending', narrativeAttempts: 0, narrativeResult: null, narrativeError: null
+                   }));
+                   validateChunks(state.tasks.map(t => ({text: t.text, start_offset: t.meta.start_offset, end_offset: t.meta.end_offset})), fullText, state.chunkSize);
+                   state.analysisSignature = sig;
+                   state.drafts = [];
+                   state.resolvingProgress = { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null };
+                   state.draftingProgress = { cursor: 0, entities: [] };
+                   state.canonicalEntities = [];
+                   state.aggregatedData = {};
+                   state.unresolvedGroups = [];
+                   state.unresolvedData = {};
+                   addDiagnosticLog('info', '工作流', `成功切分为 ${state.tasks.length} 个片段`);
+              } catch (err) {
+                  state.tasks = [];
+                  addDiagnosticLog('error', '工作流', '切片验证失败', { error: err.message });
+                  alert('切片验证失败，请查看诊断日志。');
+                  return;
+              }
           }
       }
 
@@ -1455,6 +1776,10 @@
 
   async function runPipeline() {
       try {
+          if (state.tasks.length === 0) {
+              throw new Error('未创建任何切片，无法开始分析');
+          }
+
           if (state.phase === 'idle' || state.phase === 'paused' || state.phase === 'mentions') {
               state.phase = 'mentions';
               renderAll();
@@ -1477,6 +1802,10 @@
               await performResolving();
               if(abortController.signal.aborted) return;
               if(state.phase === 'paused' || state.resolvingProgress.error) return;
+
+              if (state.canonicalEntities.length === 0) {
+                  throw new Error('未提取到可生成实体');
+              }
           }
 
           if (state.phase === 'resolving' || state.phase === 'aggregating') {
@@ -1561,7 +1890,11 @@
       if(abortController.signal.aborted) return;
       task.mentionsStatus = 'running';
       task.mentionsAttempts = (task.mentionsAttempts || 0) + 1;
+      task.startedAt = Date.now();
       renderQueue();
+      startQueueRenderInterval();
+
+      addDiagnosticLog('info', '提及提取', '请求开始', { chunk_id: task.chunk_id, attempt: task.mentionsAttempts });
 
       try {
           var prompt = `[novel-mentions-v2] You are a meticulous information extractor. Extract all mentions of entities from the provided text chunk.
@@ -1602,6 +1935,7 @@ ${task.text}`;
               api_host: aiRes.apiHost
           });
           task.mentionsStatus = 'success';
+          task.startedAt = null;
           await persistCurrentProject();
       } catch(e) {
           await handleTaskError(task, 'mentions', e);
@@ -1613,7 +1947,11 @@ ${task.text}`;
       if(abortController.signal.aborted) return;
       task.narrativeStatus = 'running';
       task.narrativeAttempts = (task.narrativeAttempts || 0) + 1;
+      task.startedAt = Date.now();
       renderQueue();
+      startQueueRenderInterval();
+
+      addDiagnosticLog('info', '叙事解析', '请求开始', { chunk_id: task.chunk_id, attempt: task.narrativeAttempts });
 
       try {
           var prompt = `[novel-narrative-v2] You are a narrative analyzer. Analyze events, state changes, and relations in the text chunk based on the identified mentions.
@@ -1668,6 +2006,7 @@ ${task.text}`;
 
           task.narrativeResult = result;
           task.narrativeStatus = 'success';
+          task.startedAt = null;
           await persistCurrentProject();
       } catch(e) {
           await handleTaskError(task, 'narrative', e);
@@ -1680,7 +2019,9 @@ ${task.text}`;
       var attemptsKey = stage + 'Attempts';
       var errorKey = stage + 'Error';
 
-      if (e.name === 'AbortError') {
+      task.startedAt = null;
+
+      if (e.name === 'AbortError' || e.message === 'AbortError') {
           task[statusKey] = 'pending';
           task[attemptsKey]--;
           return;
@@ -1691,7 +2032,7 @@ ${task.text}`;
 
       var waitTime = 0;
       if (task[attemptsKey] < 3) {
-          waitTime = e.message === '429' ? 2000 * Math.pow(2, task[attemptsKey] - 1) : 1000;
+          waitTime = e.name === 'TimeoutError' ? 1000 + Math.random() * 1000 : (e.message === '429' ? 2000 * Math.pow(2, task[attemptsKey] - 1) : 1000);
       }
 
       addDiagnosticLog(task[attemptsKey] >= 3 ? 'error' : 'warning', stage === 'mentions' ? '提及提取' : '叙事解析', '任务执行异常', {
@@ -2251,6 +2592,42 @@ ${JSON.stringify(batchData)}`;
                   await persistCurrentProject();
               } else {
                   Object.assign(state, saved);
+                  state.tasks = Array.isArray(state.tasks) ? state.tasks : [];
+                  state.importedFileLength = state.importedFileLength || (state.fileText ? state.fileText.length : 0);
+
+                  if (state.tasks && state.tasks.length > 0 && !state.analysisSignature) {
+                      if (state.importedFileName && !state.fileText) {
+                          state.analysisSignature = state.projectId || 'awaiting-source-file';
+                          if (!['paused', 'error', 'completed'].includes(state.phase)) state.phase = 'paused';
+                          addDiagnosticLog('warning', '状态恢复', '旧项目缺少原文件，请补选同一文件以恢复断点');
+                      } else {
+                          var migratedFullText = ((state.fileText || '') + '\n' + state.sourceText).trim();
+                          var migratedTaskText = state.tasks.map(task => task.text || '').join('');
+                          if (migratedTaskText === migratedFullText) {
+                          var migratedSignature = generateProjectId();
+                          state.analysisSignature = migratedSignature;
+                          state.projectId = migratedSignature;
+                          addDiagnosticLog('info', '状态恢复', '旧版分析签名已迁移，断点进度已保留');
+                          } else {
+                              state.phase = 'idle';
+                              state.analysisSignature = '';
+                              state.projectId = generateProjectId();
+                              state.tasks = [];
+                              state.drafts = [];
+                              state.canonicalEntities = [];
+                              state.aggregatedData = {};
+                              addDiagnosticLog('warning', '状态恢复', '旧版切片与当前原文不一致，已作废旧分析结果');
+                          }
+                      }
+                  }
+
+                  if ((!state.tasks || state.tasks.length === 0) && state.phase === 'completed') {
+                      state.phase = 'idle';
+                      state.drafts = [];
+                      state.canonicalEntities = [];
+                      state.aggregatedData = {};
+                      addDiagnosticLog('warning', '状态恢复', '检测到异常的完成状态（无任务），已自动修复为等待开始');
+                  }
               }
               if (!state.resolvingProgress) state.resolvingProgress = { cursor: 0, nextPackages: [], unresolvedGroups: [], attempts: 0, error: null };
               if (!Array.isArray(state.resolvingProgress.nextPackages)) state.resolvingProgress.nextPackages = [];
